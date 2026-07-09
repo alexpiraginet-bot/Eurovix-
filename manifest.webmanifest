@@ -1,0 +1,18 @@
+{
+  "name": "EUROVIX — Oficina Especializada BMW",
+  "short_name": "EUROVIX",
+  "description": "Seu BMW na palma da mão: dashboard do veículo, ordens de serviço ao vivo e agendamento online.",
+  "lang": "pt-BR",
+  "start_url": "app.html",
+  "display": "standalone",
+  "background_color": "#060709",
+  "theme_color": "#0A0A0A",
+  "icons": [
+    {
+      "src": "assets/img/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
