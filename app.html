@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>EUROVIX App — Seu BMW na palma da mão</title>
+<meta name="description" content="App do cliente EUROVIX: dashboard do veículo, ordens de serviço em tempo real, agendamento e histórico completo.">
+<link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#060709">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body class="app-body">
+
+<div class="app-shell" id="shell">
+
+  <!-- Splash -->
+  <div class="splash" id="splash">
+    <img src="assets/img/logo-simbolo.svg" alt="">
+    <div style="text-align:center">
+      <span class="wordmark">EUROVI<span class="x">X</span></span><br>
+      <small>Oficina Especializada BMW</small>
+    </div>
+    <div class="loadbar"><i></i></div>
+  </div>
+
+  <!-- Login -->
+  <div class="login-view hide" id="loginView">
+    <div class="login-brand">
+      <img src="assets/img/logo-simbolo.svg" alt="">
+      <div>
+        <span class="wordmark">EUROVI<span class="x">X</span></span><br>
+        <small>Oficina Especializada BMW</small>
+      </div>
+    </div>
+    <form class="login-form" id="loginForm" novalidate>
+      <div class="login-err" id="loginErr">E-mail ou senha inválidos. Dica: use a conta demo abaixo.</div>
+      <div class="field">
+        <label for="l-email">E-mail</label>
+        <input id="l-email" type="email" placeholder="voce@email.com" autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="l-senha">Senha</label>
+        <input id="l-senha" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div class="login-row">
+        <label class="remember"><input type="checkbox" id="l-lembrar" checked> Lembrar-me</label>
+        <a class="forgot" href="#" id="forgotLink">Esqueci minha senha</a>
+      </div>
+      <button class="btn btn-primary" type="submit">Entrar</button>
+      <div class="login-demo">
+        Demonstração — <button type="button" id="demoBtn">entrar com a conta demo</button><br>
+        <span style="font-size:11px">(demo@eurovix.com.br · senha: bmw2026)</span>
+      </div>
+    </form>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header" id="appHeader" hidden>
+    <div class="hello">Olá, <b id="helloName">Cliente</b></div>
+    <div class="hbtns">
+      <button class="hbtn" id="notifBtn" aria-label="Notificações">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5.5a6 6 0 1 1 12 0V16l1.8 2.5H4.2L6 16z"/><path d="M10 21a2.2 2.2 0 0 0 4 0"/></svg>
+        <span class="pip" id="notifPip"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Views -->
+  <main class="views" id="views" hidden>
+    <section class="view active" data-view="inicio"></section>
+    <section class="view" data-view="servicos"></section>
+    <section class="view" data-view="os"></section>
+    <section class="view" data-view="agenda"></section>
+    <section class="view" data-view="perfil"></section>
+  </main>
+
+  <!-- Tab bar -->
+  <nav class="tabbar" id="tabbar" hidden aria-label="Navegação do app">
+    <button class="tab on" data-tab="inicio">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9h-5.5v-5.5h-5V20H4v-9z"/></svg>
+      Início
+    </button>
+    <button class="tab" data-tab="servicos">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.8 6.2a4.4 4.4 0 0 0-5.9 5.4L3 16.5V21h4.5l4.9-4.9a4.4 4.4 0 0 0 5.4-5.9l-3 3-2.8-.7-.7-2.8 3-3z"/></svg>
+      Serviços
+    </button>
+    <button class="tab" data-tab="os">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4.4" cy="6" r="1"/><circle cx="4.4" cy="12" r="1"/><circle cx="4.4" cy="18" r="1"/></svg>
+      OS
+      <span class="pip" id="osPip"></span>
+    </button>
+    <button class="tab" data-tab="agenda">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 2.8V6.5M16 2.8V6.5"/></svg>
+      Agenda
+    </button>
+    <button class="tab" data-tab="perfil">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.2" r="4.2"/><path d="M4 20.5c1.4-3.6 4.4-5.3 8-5.3s6.6 1.7 8 5.3"/></svg>
+      Perfil
+    </button>
+  </nav>
+
+  <!-- Drawer de notificações -->
+  <div class="drawer" id="notifDrawer">
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <b>Notificações</b>
+        <button class="back-btn" id="notifClose" aria-label="Fechar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div id="notifList"></div>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toasts" id="toasts"></div>
+</div>
+
+<aside class="desktop-note">
+  <b>Conceito navegável do app EUROVIX.</b><br>
+  Experiência projetada para o celular — no desktop ela roda neste shell de 430px.
+  A OS #1257 evolui em tempo real enquanto o app está aberto.<br>
+  <a href="index.html">← Voltar ao site</a>
+</aside>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

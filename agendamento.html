@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agendar Serviço — EUROVIX · Oficina Especializada BMW</title>
+<meta name="description" content="Agende a manutenção do seu BMW online em 4 passos. Escolha o serviço, a data e o horário — confirmação imediata.">
+<link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="index.html" aria-label="EUROVIX — voltar ao site">
+      <img src="assets/img/logo-simbolo.svg" alt="" width="44" height="44">
+      <span>
+        <span class="wordmark">EUROVI<span class="x">X</span></span>
+        <small>Oficina Especializada BMW</small>
+      </span>
+    </a>
+    <div class="header-cta">
+      <a class="btn btn-ghost" href="index.html">← Voltar ao site</a>
+    </div>
+  </div>
+</header>
+
+<main class="booking-wrap">
+  <div class="booking-head">
+    <span class="kicker">Agendamento Online</span>
+    <h1>Agende em <span class="r">2 minutos.</span></h1>
+    <p>Escolha o serviço, a data e o horário. Confirmação na hora, sem telefone.</p>
+  </div>
+
+  <div class="progress-steps" id="progress">
+    <div class="pstep on" data-n="1"><span>Veículo</span></div>
+    <div class="pstep" data-n="2"><span>Serviço</span></div>
+    <div class="pstep" data-n="3"><span>Data &amp; Hora</span></div>
+    <div class="pstep" data-n="4"><span>Confirmação</span></div>
+  </div>
+
+  <div class="booking-card">
+
+    <!-- Passo 1 · Veículo -->
+    <section class="bstep" data-step="1">
+      <h2>Sobre o seu BMW</h2>
+      <p class="hint">Esses dados ajudam a preparar o box e as peças certas antes de você chegar.</p>
+      <div class="form-grid">
+        <div class="field">
+          <label for="f-modelo">Modelo *</label>
+          <input id="f-modelo" type="text" placeholder="Ex.: 320i, M135i, X1 sDrive20i" autocomplete="off">
+          <span class="err">Informe o modelo do veículo.</span>
+        </div>
+        <div class="field">
+          <label for="f-ano">Ano *</label>
+          <select id="f-ano">
+            <option value="">Selecione…</option>
+          </select>
+          <span class="err">Selecione o ano.</span>
+        </div>
+        <div class="field">
+          <label for="f-placa">Placa</label>
+          <input id="f-placa" type="text" placeholder="ABC-1D23" maxlength="8" style="text-transform:uppercase">
+          <span class="err"></span>
+        </div>
+        <div class="field">
+          <label for="f-km">Quilometragem aproximada</label>
+          <input id="f-km" type="text" inputmode="numeric" placeholder="Ex.: 48.500">
+          <span class="err"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Passo 2 · Serviço -->
+    <section class="bstep" data-step="2" hidden>
+      <h2>O que o seu BMW precisa?</h2>
+      <p class="hint">Selecione a linha de serviço. Se não tiver certeza, escolha <b>Diagnóstico</b> — a avaliação indica o caminho.</p>
+      <div class="svc-options" id="svcOptions"></div>
+      <div class="field full" style="margin-top:16px">
+        <label for="f-obs">Descreva o sintoma ou o que deseja (opcional)</label>
+        <textarea id="f-obs" placeholder="Ex.: barulho no trem de força ao passar em lombada; luz do motor acesa; quero orçamento de Stage 1…"></textarea>
+      </div>
+    </section>
+
+    <!-- Passo 3 · Data & Hora -->
+    <section class="bstep" data-step="3" hidden>
+      <h2>Quando fica melhor para você?</h2>
+      <p class="hint">Próximos dias úteis com box disponível. Sábado atendemos até 12h.</p>
+      <div class="date-grid" id="dateGrid"></div>
+      <h2 style="font-size:16px;margin-top:6px">Horário de entrada</h2>
+      <p class="hint" style="margin-bottom:14px">O veículo pode ficar conosco pelo tempo indicado no orçamento.</p>
+      <div class="slot-grid" id="slotGrid"></div>
+    </section>
+
+    <!-- Passo 4 · Contato & Confirmação -->
+    <section class="bstep" data-step="4" hidden>
+      <h2>Quase lá — seus dados</h2>
+      <p class="hint">Usamos seu contato apenas para confirmar o agendamento e avisar sobre o serviço.</p>
+      <div class="form-grid">
+        <div class="field">
+          <label for="f-nome">Nome completo *</label>
+          <input id="f-nome" type="text" placeholder="Seu nome" autocomplete="name">
+          <span class="err">Informe seu nome.</span>
+        </div>
+        <div class="field">
+          <label for="f-tel">Celular / WhatsApp *</label>
+          <input id="f-tel" type="tel" inputmode="tel" placeholder="(27) 99999-0000" autocomplete="tel">
+          <span class="err">Informe um telefone válido.</span>
+        </div>
+        <div class="field full">
+          <label for="f-email">E-mail (opcional)</label>
+          <input id="f-email" type="email" placeholder="voce@email.com" autocomplete="email">
+          <span class="err">E-mail inválido.</span>
+        </div>
+      </div>
+      <div class="summary" id="summary" style="margin-top:22px"></div>
+    </section>
+
+    <!-- Sucesso -->
+    <section class="bstep" data-step="5" hidden>
+      <div class="success-box">
+        <div class="big-check">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5L19.5 7"/></svg>
+        </div>
+        <h2 style="font-family:var(--font-display);font-weight:800">Agendamento confirmado!</h2>
+        <div class="proto" id="protoBox">EVX-000000</div>
+        <p id="successMsg">Guarde o protocolo. Enviamos os detalhes por WhatsApp e você também pode acompanhar tudo pelo app do cliente.</p>
+        <div class="success-actions">
+          <a class="btn btn-primary" id="whatsLink" href="#" target="_blank" rel="noopener">Confirmar no WhatsApp</a>
+          <a class="btn btn-secondary" href="app.html">Acompanhar no app</a>
+          <a class="btn btn-ghost" href="index.html">Voltar ao site</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="booking-nav" id="bookingNav">
+      <button class="btn btn-secondary" id="btnBack" disabled>← Voltar</button>
+      <button class="btn btn-primary" id="btnNext">Continuar →</button>
+    </div>
+  </div>
+
+  <p style="text-align:center;color:var(--txt-3);font-size:12.5px;margin-top:22px">
+    Prefere falar com gente de verdade? <a href="https://wa.me/5527999004890" target="_blank" rel="noopener" style="color:var(--red);font-weight:600">Chame no WhatsApp</a> ou ligue (27) 3020-4890.
+  </p>
+</main>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/agendamento.js"></script>
+</body>
+</html>
