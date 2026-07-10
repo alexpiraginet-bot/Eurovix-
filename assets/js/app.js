@@ -486,7 +486,7 @@
         </div>
         <p style="font-size:10px;color:var(--txt-3);margin:6px 0 8px">Assine para registrar o aceite (validade jurídica: assinatura + IP + timestamp + hash do documento).</p>
         <div class="sig-pad" style="background:#F5F6F8;border-radius:12px"><canvas id="apSig" style="width:100%;height:110px;touch-action:none;display:block;border-radius:12px"></canvas></div>
-        <button class="btn btn-primary" style="width:100%;margin-top:12px;padding:14px" id="apConfirm">Aprovar selecionados ✓</button>
+        <button class="btn-image" type="button" style="margin-top:12px" id="apConfirm"><img src="assets/img/ui/btn-aprovar.webp" alt="Aprovar orçamento" width="1000" height="253"></button>
       </div>`;
   }
 
