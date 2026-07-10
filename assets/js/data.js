@@ -177,11 +177,13 @@ const EVX = (() => {
   const SLOTS = ['08:00', '09:00', '10:00', '11:00', '13:30', '14:30', '15:30', '16:30'];
 
   const CONTACT = {
-    endereco: 'Av. Nossa Senhora da Penha, 1240 — Enseada do Suá, Vitória/ES',
-    telefone: '(27) 3020-4890',
-    whatsapp: '5527999004890',
-    email: 'contato@eurovix.com.br',
-    horario: 'Seg – Sex · 8h às 18h  |  Sáb · 8h às 12h',
+    // Dados públicos reais (CNPJ 45.979.822/0001-02 · registros e diretórios)
+    endereco: 'R. Maria de Lourdes Garcia, 303 — Monte Belo, Vitória/ES · CEP 29053-310',
+    telefone: '(27) 3344-5093',
+    instagram: '@eurovix027',
+    instagramUrl: 'https://www.instagram.com/eurovix027',
+    dm: 'https://ig.me/m/eurovix027',
+    horario: 'Seg – Sex · horário comercial',
   };
 
   /* ---------- Helpers de persistência ---------- */

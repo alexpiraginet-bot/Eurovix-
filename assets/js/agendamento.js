@@ -236,12 +236,8 @@
     EVX.saveAppointment(appt);
 
     $('#protoBox').textContent = appt.protocolo;
-    const msg = `Olá! Acabei de agendar pelo site.\n` +
-      `Protocolo: ${appt.protocolo}\n` +
-      `Veículo: ${appt.veiculo}${appt.placa ? ' (' + appt.placa + ')' : ''}\n` +
-      `Serviço: ${appt.servicoNome}\n` +
-      `Data: ${appt.dataLabel} às ${appt.hora}`;
-    $('#whatsLink').href = `https://wa.me/${EVX.CONTACT.whatsapp}?text=${encodeURIComponent(msg)}`;
+    // DM do Instagram não aceita texto pré-preenchido — o protocolo fica visível p/ copiar
+    $('#whatsLink').href = EVX.CONTACT.dm;
     show(5);
   }
 
