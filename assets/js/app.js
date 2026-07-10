@@ -161,6 +161,12 @@
         </div>
       </div>
 
+      <div class="sec-label">Seu BMW em 3D — inspeção digital <a data-goto="os">minhas OS</a></div>
+      <div class="acard" style="padding:0;overflow:hidden;border-radius:14px">
+        <div id="twin3d" style="height:236px"></div>
+        <p style="font-size:10px;color:var(--ink-3);padding:8px 14px;border-top:1px solid var(--line)">Arraste para girar · passe o dedo nos pontos para ver o status de cada item (DVI).</p>
+      </div>
+
       <div class="sec-label">Saúde do veículo</div>
       <div class="health-grid">
         ${Object.entries(v.saude).map(([k, n]) => `
@@ -198,6 +204,7 @@
       renderInicio();
       toast('Veículo alterado', `Mostrando ${vehicle().modelo} (${vehicle().placa}).`, 'ok');
     });
+    if (window.EVXTwin) EVXTwin.mount('#twin3d', { saude: v.saude, modelo: v.modelo, compact: true });
     bindCommon($('[data-view="inicio"]'));
   }
 

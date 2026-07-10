@@ -270,12 +270,39 @@
   </div>
 </section>
 
+
+<!-- ═══════════ GÊMEO DIGITAL 3D ═══════════ -->
+<section class="section twin-section" id="inspecao3d">
+  <div class="container">
+    <div class="twin-grid">
+      <div class="reveal">
+        <span class="kicker">05 · Inspeção Digital</span>
+        <h2 style="font-size:clamp(26px,3.2vw,42px);font-weight:700;line-height:1.1;margin:14px 0;color:#fff">Seu BMW em 3D.<br><span style="color:var(--bmw)">Transparência total.</span></h2>
+        <p style="color:#C9C9C9;line-height:1.7;font-size:15px">Cada inspeção vira um gêmeo digital do seu veículo: os pontos verificados no DVI aparecem sobre o carro em 3 cores — toque em qualquer ponto e veja o status real do item, com foto e recomendação técnica.</p>
+        <ul class="about-points app-features" style="margin-top:22px">
+          <li><span class="chip" style="background:rgba(28,105,212,.18);color:#6EA5E8">3D</span><div><b style="color:#fff">Hotspots do DVI ao vivo</b><p style="color:#9E9E9E">🔴 crítico · 🟡 preventivo · 🟢 ok — direto sobre o modelo do seu carro.</p></div></li>
+          <li><span class="chip" style="background:rgba(28,105,212,.18);color:#6EA5E8">360°</span><div><b style="color:#fff">Gire, aproxime, entenda</b><p style="color:#9E9E9E">A mesma visão que o técnico tem no box, na palma da sua mão.</p></div></li>
+        </ul>
+        <div class="hero-actions" style="margin-top:26px">
+          <a class="btn btn-primary" href="app.html">Ver no app</a>
+        </div>
+      </div>
+      <div class="reveal">
+        <div class="twin-frame">
+          <div id="twinSite" style="height:380px"></div>
+          <div class="twin-hint">Arraste para girar · pontos coloridos = itens do DVI</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ═══════════ APP ═══════════ -->
 <section class="section" id="app">
   <div class="container">
     <div class="app-section-grid">
       <div class="reveal">
-        <span class="kicker">05 · App do Cliente</span>
+        <span class="kicker">06 · App do Cliente</span>
         <h2 style="font-family:var(--font-display);font-size:clamp(26px,3.2vw,42px);font-weight:800;line-height:1.1;margin:14px 0">O seu BMW, <span class="r">na palma da mão.</span></h2>
         <p style="color:var(--txt-2);line-height:1.7;font-size:15px">O app EUROVIX transforma a oficina em relacionamento contínuo. Quilometragem, próxima revisão, ordens de serviço ao vivo e agendamento em um toque.</p>
         <ul class="about-points app-features">
@@ -333,7 +360,7 @@
 <section class="section alt" id="depoimentos">
   <div class="container">
     <div class="section-head center reveal">
-      <span class="kicker">06 · Clientes</span>
+      <span class="kicker">07 · Clientes</span>
       <h2>Quem confia o BMW <span class="r">à EUROVIX.</span></h2>
     </div>
     <div class="testimonials">
@@ -366,7 +393,7 @@
 <section class="section" id="faq">
   <div class="container">
     <div class="section-head center reveal">
-      <span class="kicker">07 · Dúvidas Frequentes</span>
+      <span class="kicker">08 · Dúvidas Frequentes</span>
       <h2>Perguntas que <span class="r">sempre</span> ouvimos.</h2>
     </div>
     <div class="faq-list reveal">
@@ -432,7 +459,7 @@
 <section class="section" id="contato">
   <div class="container">
     <div class="section-head reveal">
-      <span class="kicker">08 · Contato</span>
+      <span class="kicker">09 · Contato</span>
       <h2>Vem tomar um café <span class="r">no box.</span></h2>
       <p>Estamos na Enseada do Suá, a 5 minutos da Terceira Ponte. Estacionamento próprio e sala de espera com Wi-Fi.</p>
     </div>
@@ -517,7 +544,12 @@
   <svg class="ico" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-whats"/></svg>
 </a>
 
+<script src="assets/vendor/three.min.js"></script>
+<script src="assets/js/twin3d.js"></script>
 <script src="assets/js/data.js"></script>
 <script src="assets/js/site.js"></script>
+<script>
+  if (window.EVXTwin) EVXTwin.mount('#twinSite', { saude: { oleo: 78, freios: 64, pneus: 82, bateria: 91 } });
+</script>
 </body>
 </html>
