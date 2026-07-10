@@ -520,7 +520,7 @@
         <div class="pay-code" id="payCode"></div>
         <button type="button" class="btn btn-secondary pay-copy-btn" id="payCopyBtn">Copiar código Pix</button>
         <button type="button" class="btn-image" id="payPix"><img src="assets/img/ui/btn-pix.webp" alt="Pagar com Pix" width="1000" height="228"></button>
-        <p class="pay-note">Ao confirmar, a nota fiscal e a garantia de cada item são liberadas na hora.</p>
+        <p class="pay-note">${WERK.cloud ? 'Depois de pagar no app do seu banco, a confirmação do Pix chega em instantes e libera a nota fiscal e a garantia aqui automaticamente.' : 'Ao confirmar, a nota fiscal e a garantia de cada item são liberadas na hora.'}</p>
       </div>`;
   }
   function bindPagamento(o, view) {
@@ -556,9 +556,18 @@
     const pay = $('#payPix', view);
     if (pay) pay.addEventListener('click', () => {
       if (pay.disabled) return;
-      pay.disabled = true; // bloqueia duplo clique antes do re-render (registrarPagamento também é idempotente)
-      // DEMO: confirma o pagamento na hora. Em produção, o gateway (Mercado
-      // Pago / Stone) confirma por webhook e dispara este mesmo efeito.
+      pay.disabled = true;
+      if (WERK.cloud) {
+        // Na nuvem, quem confirma o Pix é o banco/gateway por webhook — o cliente
+        // não grava a OS (RLS é staff-only). Estado honesto de "aguardando", sem
+        // fingir a confirmação; a NF/garantia liberam quando o pagamento cair.
+        toast('Pagamento em processamento', 'Assim que o banco confirmar o Pix, a nota fiscal e a garantia são liberadas aqui.');
+        const note = $('.pay-note', view);
+        if (note) note.textContent = 'Aguardando a confirmação do banco/gateway — a nota fiscal e a garantia liberam automaticamente assim que o Pix cair.';
+        return;
+      }
+      // DEMO/local: confirma na hora (ilustrativo). Em produção o gateway
+      // (Mercado Pago / Stone) confirma por webhook e dispara este mesmo efeito.
       WERK.registrarPagamento(o.numero, { valor: total, desc: `Pix ${WERK.brl(total)} · NF emitida · garantia ativada`, ator: 'Cliente (app)' });
       toast('Pagamento confirmado ✓', 'Nota fiscal e garantia liberadas. Recibo em Documentos.');
       renderOSDetail(view);

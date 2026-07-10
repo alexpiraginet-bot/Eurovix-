@@ -862,8 +862,8 @@
   };
 
   // Pagamento no modo nuvem: escrita otimista via updateOS do adaptador (espelho
-  // + push async, igual ao checkout do painel antes) reusando a regra pura
-  // local.aplicarPagamento — mesma NF/garantia do modo local, sem divergir.
+  // + push async, igual ao checkout do painel antes) reusando local.aplicarPagamento
+  // (a regra de NF/garantia, que muta a OS) — mesma lógica do modo local, sem divergir.
   const registrarPagamento = (numero, opts) => {
     opts = opts || {};
     const alvo = getOS(numero);

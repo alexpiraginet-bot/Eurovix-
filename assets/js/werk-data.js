@@ -614,7 +614,8 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     if (aprovadosN) setStatus(numero, 'execucao', 'Sistema', 'Itens aprovados liberados para o box.');
     return getOS(numero);
   }
-  // Regra de negócio pura (formato da NF + garantias) — muta um objeto OS.
+  // Regra de negócio do pagamento (formato da NF + garantias) — muta a OS `o`
+  // (efeito colateral intencional, chamada dentro de um mutator do updateOS).
   // Fonte única, delegada tanto pelo registrarPagamento local quanto pelo do
   // adaptador de nuvem (werk-cloud.js), para os dois modos nunca divergirem.
   function aplicarPagamento(o, opts, agora, cfgG) {
