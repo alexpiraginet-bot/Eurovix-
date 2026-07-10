@@ -427,6 +427,7 @@ body.app-body{
   content:"";position:absolute;inset:0;border-radius:inherit;padding:1.6px;pointer-events:none;
   background:linear-gradient(90deg,rgba(28,105,212,.15),rgba(130,185,255,.95) 22%,#ffffff 50%,rgba(130,185,255,.95) 78%,rgba(28,105,212,.15));
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
   -webkit-mask-composite:xor;mask-composite:exclude;
   opacity:.85;
 }
