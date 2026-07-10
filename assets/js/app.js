@@ -196,6 +196,17 @@
     if (cls === 'approve') return '<span class="os-badge approve">Aprovar orçamento</span>';
     return `<span class="os-badge ${cls === 'done' ? 'done' : 'live'}">${st ? st.cliente : o.status}</span>`;
   }
+  // pílula-imagem do status atual (arte 3D por etapa) — usada no detalhe da OS;
+  // a lista segue com o badge de texto compacto. 'entregue' não tem arte própria.
+  const STATUS_PILL = { fila: 'pill-fila', diagnostico: 'pill-diagnostico', aprovacao: 'pill-aprovacao', peca: 'pill-peca', execucao: 'pill-execucao', qc: 'pill-qc', lavagem: 'pill-lavagem', pronto: 'pill-pronto' };
+  const STATUS_PILL_H = { 'pill-fila': 245, 'pill-diagnostico': 269, 'pill-aprovacao': 214, 'pill-peca': 239, 'pill-execucao': 243, 'pill-qc': 223, 'pill-lavagem': 227, 'pill-pronto': 206 };
+  function statusPillImg(o) {
+    const st = WERK.STATUS[WERK.statusIdx(o.status)];
+    const key = STATUS_PILL[o.status];
+    if (o.status !== 'entregue' && key && st)
+      return `<div class="status-pill"><img src="assets/img/status/${key}.webp" alt="${st.cliente}" width="1000" height="${STATUS_PILL_H[key]}" loading="lazy"></div>`;
+    return osBadge(o);
+  }
   function osCardHTML(o) {
     return `
       <div class="os-card" data-os="${o.numero}" role="button" tabindex="0">
@@ -360,7 +371,7 @@
           <span>${o.veiculo} · ${o.placa} · aberta em ${WERK.fd(o.criada)}</span>
         </div>
       </div>
-      ${osBadge(o)}
+      ${statusPillImg(o)}
 
       <div class="sec-label" style="margin-top:16px">Rastreamento</div>
       <div class="acard">
@@ -486,7 +497,7 @@
         </div>
         <p style="font-size:10px;color:var(--txt-3);margin:6px 0 8px">Assine para registrar o aceite (validade jurídica: assinatura + IP + timestamp + hash do documento).</p>
         <div class="sig-pad" style="background:#F5F6F8;border-radius:12px"><canvas id="apSig" style="width:100%;height:110px;touch-action:none;display:block;border-radius:12px"></canvas></div>
-        <button class="btn btn-primary" style="width:100%;margin-top:12px;padding:14px" id="apConfirm">Aprovar selecionados ✓</button>
+        <button class="btn-image" type="button" style="margin-top:12px" id="apConfirm"><img src="assets/img/ui/btn-aprovar-sel.webp" alt="Aprovar selecionados" width="1000" height="227"></button>
       </div>`;
   }
 
