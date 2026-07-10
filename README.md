@@ -31,7 +31,8 @@ python3 -m http.server 8080    # ou npx serve .
 2. No app: entre com a conta demo → aba **OS** → OS #1258 → aprove o orçamento **item a item** (escolha níveis, desmarque as pastilhas, assine).
 3. Veja o painel refletir na hora (evento de storage = realtime da demo). Avance a OS: micro-update → QC (dupla assinatura) → lavagem → pronto → **checkout Pix** → entrega.
 4. De volta ao app: NPS pós-entrega, garantias com contagem regressiva no perfil e a pastilha adiada virando **pendência futura** no início.
-5. No painel: **Novo Check-in** (VIN com dígito verificador validado em tempo real), fotos, mapa de danos, assinatura → **Termo de Entrada em PDF**.
+5. No painel: **Novo Check-in** (VIN com dígito verificador validado em tempo real), fotos, mapa de danos, assinatura → **Termo de Entrada em PDF** — e o card **"Acesso do cliente ao app"**: copie o link de convite (ou envie por WhatsApp / QR no Termo) e abra em outra aba para ver o cliente criando a própria senha.
+6. Fluxo de convite sem check-in: abra `app.html?convite=demo-marcelo` (Marcelo vem de fábrica com convite pendente).
 
 ## 📄 Superfícies
 
@@ -39,12 +40,14 @@ python3 -m http.server 8080    # ou npx serve .
 |---|---|
 | `index.html` | Site premium (hero, pilares, 6 serviços, performance, processo, depoimentos, FAQ, contato). |
 | `agendamento.html` | Agendamento em 4 passos com protocolo e WhatsApp (Etapa 0 — pré-chegada). |
-| `app.html` | App do cliente: dashboard, rastreamento estilo encomenda, **aprovação item a item com 3 níveis + assinatura + hash/IP/timestamp**, chat com consultor, pendências, garantia por item com contagem, NPS, cofre digital. |
-| `werkos.html` | **Painel da oficina**: kanban 8 etapas, check-in digital, DVI, motor de peças, orçamento AW, QC, checkout Pix/NF, veículos & prontuário por VIN, gestão (DRE, comissão por AW, curva ABC, exports CSV), configurações. |
+| `app.html` | App do cliente: **login por telefone + senha (criada via link de convite do check-in)**, garagem com todos os veículos do telefone, dashboard, rastreamento estilo encomenda, **aprovação item a item com 3 níveis + assinatura + hash/IP/timestamp**, chat com consultor, pendências, garantia por item com contagem, NPS, cofre digital e **prontuário transferível por veículo**. |
+| `werkos.html` | **Painel da oficina**: kanban 8 etapas, check-in digital (gera o **link de acesso do cliente** — copiar/WhatsApp/QR), DVI, motor de peças, orçamento AW, QC, checkout Pix/NF, veículos & prontuário por VIN, **Clientes & Acesso**, gestão (DRE, comissão por AW, curva ABC, exports CSV), configurações. |
 | `documento.html` | Gerador de documentos: Termo de Entrada, DVI, Orçamento, OS, Fatura, Certificado de Garantia, **Prontuário vitalício por VIN** — todos imprimíveis (`?tipo=…&os=…` / `?tipo=prontuario&vin=…`). |
 | `apresentacao.html` | Deck original de 9 slides do escopo. |
 
-Conta demo do app: `demo@eurovix.com.br` · `bmw2026` (ou o botão de conta demo). Reset da demo: **Configurações → Resetar demo** no painel.
+**Acesso do cliente ao app:** o cadastro nasce no check-in — o painel gera um **link de convite exclusivo** (`app.html?convite=…`, também impresso com QR no Termo de Entrada); o cliente abre, **cria a própria senha**, e o login passa a ser **telefone + senha**. A **garagem segue o telefone do último check-in de cada placa**: se o carro for vendido, o próximo check-in (mesma placa, telefone do novo dono) migra o veículo para a garagem do comprador automaticamente — quem vendeu mantém as OS e garantias que pagou, e o **prontuário por VIN é exportável** (app → Perfil, ou painel → Veículos) para entregar ao novo dono.
+
+Conta demo do app: telefone `(27) 99900-0000` · senha `bmw2026` (ou o botão de conta demo). Convite pendente de fábrica: `app.html?convite=demo-marcelo`. Reset da demo: **Configurações → Resetar demo** no painel.
 
 ## 🔩 WERK OS — cobertura da especificação
 
@@ -60,7 +63,7 @@ Conta demo do app: `demo@eurovix.com.br` · `bmw2026` (ou o botão de conta demo
 | **Etapa 7** Checkout | ✅ fatura, **Pix BR Code EMV com CRC16 real**, parcelamento, NF automática (simulada), janela de retirada | Orders API MP/Stone + NFS-e municipal |
 | **Etapa 8** Pós-serviço | ✅ relatório PDF, **garantia digital por item com countdown**, NPS 24h (na entrega), pendências reapresentadas | régua de e-mail/push agendada |
 | **Motor de Peças** | ✅ 4 camadas simuladas com interface fiel: VIN→ETK→part number→cross-ref (Lemförder/Sachs/Mahle/Brembo…)→cotação 5 fornecedores (preço × prazo) | assinaturas PartsLink24 + TecDoc + conectores B2B |
-| **Banco de dados** | ✅ entidades espelhadas em `localStorage`: VEICULO (VIN pk), OS→ITEM_DIAG→ITEM_ORC, GARANTIA, MIDIA (thumb), **EVENTO_TIMELINE imutável**, PAGAMENTO | Postgres/Supabase (schema já desenhado pelas entidades) |
+| **Banco de dados** | ✅ entidades espelhadas em `localStorage`: VEICULO (VIN pk, telefone do dono atual), **CLIENTE (telefone pk, senha + convite)**, OS→ITEM_DIAG→ITEM_ORC, GARANTIA, MIDIA (thumb), **EVENTO_TIMELINE imutável**, PAGAMENTO | Postgres/Supabase (schema já desenhado pelas entidades) |
 | **Nuvem & mídia** | ⚠ thumbnails em localStorage (limite do navegador) | S3/R2 com lifecycle, indexação por VIN, LGPD |
 | **Documentos** | ✅ 7 PDFs via print + **exports CSV** (DRE, ABC) | geração server-side |
 | **Extras** | ✅ comissão por AW, DRE por OS, **recall por VIN no check-in**, cofre digital, gestão margem | curva de risco por motor (dados próprios), cortesia/Uber |

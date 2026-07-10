@@ -443,13 +443,20 @@
           },
           ator: 'Recepção',
         });
-        WERK.upsertVehicle({ vin: ck.vin, ...ck.decoded, placa: ck.placa, km: +ck.odometro, cliente: ck.cliente, cofre: [] });
+        WERK.upsertVehicle({ vin: ck.vin, ...ck.decoded, placa: ck.placa, km: +ck.odometro, cliente: ck.cliente, telefone: ck.telefone });
+        ck.clienteRec = WERK.upsertCliente({ nome: ck.cliente, telefone: ck.telefone });
         ck.osNum = os.numero; ck.step = 4; renderCheckin();
       });
     }
 
-    /* ---- Passo 4: termo gerado ---- */
+    /* ---- Passo 4: termo gerado + acesso do cliente ---- */
     if (ck.step === 4) {
+      const rec = ck.clienteRec;
+      const url = rec ? WERK.conviteUrl(rec) : '';
+      const ativo = !!(rec && rec.senha);
+      const primeiro = (ck.cliente || 'Cliente').split(' ')[0];
+      const msgWa = `Olá, ${primeiro}! Seu ${ck.decoded.modelo} deu entrada na EUROVIX (OS #${ck.osNum}). ` +
+        (ativo ? `Acompanhe tudo pelo app — login: seu telefone. ${url}` : `Crie seu acesso e acompanhe tudo pelo app: ${url}`);
       body.innerHTML = `
         <div class="wk-panel" style="text-align:center;padding:40px 20px">
           <div style="font-size:40px;margin-bottom:8px">✅</div>
@@ -462,7 +469,30 @@
             <a class="btn btn-secondary" href="documento.html?tipo=termo&os=${ck.osNum}" target="_blank">📄 Ver Termo (PDF)</a>
             <button class="btn btn-primary" onclick="location.hash='#/os/${ck.osNum}'">Abrir OS → Diagnóstico</button>
           </div>
+        </div>
+        <div class="wk-panel">
+          <h3>${I('key')} Acesso do cliente ao app ${rec ? `<span class="ap-badge ${ativo ? 'aprovado' : 'pendente'}">${ativo ? 'acesso já ativo' : 'convite pendente'}</span>` : ''}</h3>
+          ${rec ? `
+            <p style="font-size:12px;color:var(--txt-2);margin-bottom:10px">
+              ${ativo
+                ? `${primeiro} já tem acesso — entra com o telefone ${rec.telefone} + a senha que criou. A garagem dele já mostra este veículo.`
+                : `Envie o link exclusivo: ${primeiro} abre, cria a própria senha e acompanha tudo pelo app (login = telefone). O link também sai impresso no Termo de Entrada.`}
+            </p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+              <code style="flex:1;min-width:220px;background:var(--navy);border:1px solid var(--line-strong);border-radius:9px;padding:10px 12px;font-size:11px;color:var(--txt-2);overflow-wrap:anywhere">${url}</code>
+              <button class="btn btn-secondary" id="ckCopy">Copiar link</button>
+              <a class="btn btn-secondary" target="_blank" rel="noopener" href="${WERK.waLink(rec.telefone, msgWa)}">Enviar por WhatsApp</a>
+            </div>
+            <div id="ckQr" style="margin-top:12px"></div>
+          ` : '<p style="font-size:12px;color:var(--txt-3)">Check-in sem telefone — informe o telefone/WhatsApp do cliente no próximo check-in para gerar o link de acesso ao app.</p>'}
         </div>`;
+      const cp = $('#ckCopy');
+      if (cp) cp.addEventListener('click', () => { navigator.clipboard.writeText(url); toast('Link copiado', 'Cole no WhatsApp ou SMS do cliente.'); });
+      const qrEl = $('#ckQr');
+      if (qrEl && rec && typeof qrcode === 'function') {
+        const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+        qrEl.innerHTML = `<div style="display:inline-block;background:#fff;padding:8px;border-radius:8px;vertical-align:middle">${qr.createSvgTag(3, 0)}</div><span style="font-size:10.5px;color:var(--txt-3);margin-left:10px">cliente aponta a câmera → cria a senha</span>`;
+      }
     }
   }
 
@@ -473,6 +503,7 @@
     const os = WERK.getOS(num);
     if (!os) { go('kanban'); return; }
     const cfg = WERK.getConfig();
+    const cli = WERK.clientePorTelefone(os.telefone);
     const idx = WERK.statusIdx(os.status);
     const aprovaveis = os.itens.filter(i => i.severidade !== 'ok');
     const aprovados = aprovaveis.filter(i => i.aprovacao === 'aprovado');
@@ -493,6 +524,7 @@
         <div class="meta">
           <b>${os.veiculo} · ${os.placa}</b>
           <span>${os.cliente} · ${os.telefone || 's/ tel'} · VIN <code style="font-size:10.5px">${os.vin}</code> · Téc: ${os.tecnico}</span>
+          ${cli ? `<span style="margin-top:4px"><button class="quote-btn" id="osConvite">📲 ${cli.senha ? 'app ativo' : 'convite pendente'} · copiar link de acesso</button></span>` : ''}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">${docs}</div>
       </div>
@@ -555,6 +587,11 @@
         </div>
       </div>`;
 
+    const convBtn = $('#osConvite');
+    if (convBtn) convBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(WERK.conviteUrl(cli));
+      toast('Link de acesso copiado', cli.senha ? 'Cliente já ativo — o link só reabre o app.' : 'Envie ao cliente: ele cria a senha no primeiro acesso.');
+    });
     renderOSActions(os, { aprovaveis, aprovados, pendentes, midiaOk });
     bindOSHandlers(os);
   };
@@ -923,6 +960,44 @@
   };
 
   /* ============================================================
+     VIEW · CLIENTES & ACESSO AO APP
+     ============================================================ */
+  views.clientes = () => {
+    const clientes = WERK.getClientes();
+    const oss = WERK.getAllOS();
+    main.innerHTML = head('Clientes & Acesso', 'O acesso nasce no check-in: link de convite → cliente cria a senha → login por telefone.',
+      `<button class="btn btn-primary" onclick="location.hash='#/checkin'">+ Novo check-in</button>`) + `
+      <div class="wk-panel">
+        <table class="wk-table">
+          <tr><th>Cliente</th><th>Telefone (login)</th><th>Garagem</th><th class="num">OS</th><th>Acesso</th><th></th></tr>
+          ${clientes.map(c => {
+            const g = WERK.garagemDe(c.telefone);
+            const n = oss.filter(o => WERK.normTel(o.telefone) === WERK.normTel(c.telefone)).length;
+            return `
+            <tr>
+              <td><b>${c.nome}</b></td>
+              <td>${c.telefone}</td>
+              <td style="font-size:11px">${g.map(v => v.placa).join(' · ') || '—'}</td>
+              <td class="num">${n}</td>
+              <td>${c.senha ? `<span class="ap-badge aprovado">ativo${c.ativadoEm ? ' · ' + WERK.fd(c.ativadoEm) : ''}</span>` : '<span class="ap-badge pendente">convite pendente</span>'}</td>
+              <td style="white-space:nowrap">
+                <button class="quote-btn" data-copy-convite="${c.convite}">copiar link</button>
+                <a class="quote-btn" target="_blank" rel="noopener" href="${WERK.waLink(c.telefone, `Olá, ${c.nome.split(' ')[0]}! Acompanhe seu BMW pelo app EUROVIX: ${WERK.conviteUrl(c)}`)}">WhatsApp</a>
+              </td>
+            </tr>`;
+          }).join('') || '<tr><td colspan="6" style="color:var(--txt-3)">Nenhum cliente ainda — o cadastro nasce no check-in.</td></tr>'}
+        </table>
+        <p style="font-size:10.5px;color:var(--txt-3);margin-top:10px">A garagem segue o telefone do último check-in de cada placa: trocou de dono, o carro migra sozinho para o acesso do novo dono — e o histórico pago continua com quem pagou. Prontuário completo (por VIN) exportável em Veículos.</p>
+      </div>`;
+    $$('[data-copy-convite]').forEach(b => b.addEventListener('click', () => {
+      const c = WERK.clientePorConvite(b.dataset.copyConvite);
+      if (!c) return;
+      navigator.clipboard.writeText(WERK.conviteUrl(c));
+      toast('Link copiado', c.senha ? 'Cliente já ativo — o link só reabre o app.' : 'Envie ao cliente: ele cria a senha no primeiro acesso.');
+    }));
+  };
+
+  /* ============================================================
      VIEW · MOTOR DE PEÇAS (playground das 4 camadas)
      ============================================================ */
   views.pecas = () => {
@@ -1098,6 +1173,7 @@
         ['WBY7Z21000', 'BMW i4 eDrive40 (G26)'],
       ];
       const nomes = ['Carlos Souza', 'Fernanda Lima', 'João Pedro', 'Mariana Alves', 'Rafael Torres', 'Beatriz Melo', 'Gustavo Rocha', 'Larissa Prado', 'Eduardo Nunes', 'Camila Duarte'];
+      const fones = nomes.map((_, i) => `(27) 9910${i}-000${i}`); // fictícios, determinísticos por nome
       const cats = ['oleo', 'freio_d', 'disco_d', 'vela', 'amortecedor', 'bieleta', 'bomba_agua', 'correia'];
       const cfg2 = WERK.getConfig();
       const AL = 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789';
@@ -1108,14 +1184,18 @@
         for (let j = 0; j < 7; j++) sufixo += AL[rnd(AL.length)];
         const vin = WERK.fixVIN(pref + sufixo);
         const placa = AL[rnd(24)] + AL[rnd(24)] + AL[rnd(24)] + '-' + rnd(10) + AL[rnd(24)] + rnd(10) + rnd(10);
+        const ni = rnd(nomes.length);
+        const odo = 20000 + rnd(90000);
         const os = WERK.novaOS({
           vin, veiculo: nomeM, placa,
-          cliente: nomes[rnd(nomes.length)], telefone: '',
+          cliente: nomes[ni], telefone: fones[ni],
           sintoma: 'OS de carga de teste.',
           tecnico: cfg2.tecnicos[rnd(cfg2.tecnicos.length)].nome,
-          checkin: { ts: new Date().toISOString(), odometro: 20000 + rnd(90000), combustivel: 25 + rnd(70), itens: {}, luzes: [], danos: [], fotos: 4, assinatura: true },
+          checkin: { ts: new Date().toISOString(), odometro: odo, combustivel: 25 + rnd(70), itens: {}, luzes: [], danos: [], fotos: 4, assinatura: true },
           ator: 'Carga de teste',
         });
+        WERK.upsertVehicle({ vin, ...WERK.decodeVIN(vin), placa, km: odo, cliente: nomes[ni], telefone: fones[ni] });
+        WERK.upsertCliente({ nome: nomes[ni], telefone: fones[ni] });
         const stIdx = rnd(WERK.STATUS.length);
         WERK.updateOS(os.numero, (o) => {
           const nItens = 1 + rnd(3);

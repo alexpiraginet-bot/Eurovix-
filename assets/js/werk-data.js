@@ -233,6 +233,63 @@ const WERK = (() => {
     return v;
   }
 
+  /* ---------- Clientes & acesso ao app (convite → telefone + senha) ---------- */
+  const normTel = (s) => String(s || '').replace(/\D/g, '');
+  const normPlaca = (s) => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const enc = (s) => btoa(unescape(encodeURIComponent(s)));
+
+  const getClientes = () => read(KEYS.clients, []);
+  const saveClientes = (l) => write(KEYS.clients, l);
+  function novoToken(lista) {
+    let t;
+    do { t = Math.random().toString(36).slice(2, 10); } while (lista.some(c => c.convite === t));
+    return t;
+  }
+  function upsertCliente(dados) {
+    const tel = normTel(dados.telefone);
+    if (!tel) return null;
+    const lista = getClientes();
+    let c = lista.find(x => normTel(x.telefone) === tel);
+    if (c) {
+      if (dados.nome) c.nome = dados.nome;
+      c.telefone = dados.telefone;
+    } else {
+      c = {
+        nome: dados.nome || 'Cliente EUROVIX', telefone: dados.telefone,
+        senha: null, convite: dados.convite || novoToken(lista),
+        desde: dados.desde || new Date().getFullYear(),
+        criadoEm: new Date().toISOString(), ativadoEm: null,
+      };
+      lista.push(c);
+    }
+    saveClientes(lista);
+    return c;
+  }
+  const clientePorTelefone = (tel) => { const t = normTel(tel); return (t && getClientes().find(c => normTel(c.telefone) === t)) || null; };
+  const clientePorConvite = (tok) => (tok && getClientes().find(c => c.convite === tok)) || null;
+  function ativarCliente(tok, senha) {
+    const lista = getClientes();
+    const c = lista.find(x => x.convite === tok);
+    if (!c) return null;
+    c.senha = enc(senha);
+    c.ativadoEm = new Date().toISOString();
+    saveClientes(lista);
+    return c;
+  }
+  function loginCliente(telefone, senha) {
+    const c = clientePorTelefone(telefone);
+    return (c && c.senha && senha && c.senha === enc(senha)) ? c : null;
+  }
+  function garagemDe(telefone) {
+    const t = normTel(telefone);
+    return t ? getVehicles().filter(v => normTel(v.telefone) === t) : [];
+  }
+  const conviteUrl = (c) => new URL('app.html?convite=' + c.convite, location.href).href;
+  function waLink(telefone, texto) {
+    const d = normTel(telefone);
+    return `https://wa.me/${d.length > 11 ? d : '55' + d}?text=${encodeURIComponent(texto || '')}`;
+  }
+
   const getAllOS = () => read(KEYS.os, []);
   const saveAllOS = (l) => write(KEYS.os, l);
   const getOS = (num) => getAllOS().find(o => o.numero === +num);
@@ -372,9 +429,9 @@ const WERK = (() => {
       g20:  fixVIN('WBA7A91000' + '7B12933'),
       x1:   fixVIN('WBAJA51050' + '5C60481'),
     };
-    upsertVehicle({ vin: vins.m135, ...decodeVIN(vins.m135), placa: 'RQV-2D47', cor: 'Preto Safira',  km: 48500, cliente: 'Ricardo Almeida', cofre: ['Manual do proprietário.pdf', 'Nota da chave codificada.pdf', 'Laudo cautelar 2024.pdf'] });
-    upsertVehicle({ vin: vins.g20,  ...decodeVIN(vins.g20),  placa: 'SBX-9F31', cor: 'Branco Alpino', km: 61200, cliente: 'Marcelo Costa',  cofre: ['Manual do proprietário.pdf'] });
-    upsertVehicle({ vin: vins.x1,   ...decodeVIN(vins.x1),   placa: 'RWK-7B12', cor: 'Branco Alpino', km: 21300, cliente: 'Ricardo Almeida', cofre: [] });
+    upsertVehicle({ vin: vins.m135, ...decodeVIN(vins.m135), placa: 'RQV-2D47', cor: 'Preto Safira',  km: 48500, cliente: 'Ricardo Almeida', telefone: '(27) 99900-0000', cofre: ['Manual do proprietário.pdf', 'Nota da chave codificada.pdf', 'Laudo cautelar 2024.pdf'] });
+    upsertVehicle({ vin: vins.g20,  ...decodeVIN(vins.g20),  placa: 'SBX-9F31', cor: 'Branco Alpino', km: 61200, cliente: 'Marcelo Costa',  telefone: '(27) 98811-2233', cofre: ['Manual do proprietário.pdf'] });
+    upsertVehicle({ vin: vins.x1,   ...decodeVIN(vins.x1),   placa: 'RWK-7B12', cor: 'Branco Alpino', km: 21300, cliente: 'Ricardo Almeida', telefone: '(27) 99900-0000', cofre: [] });
 
     itemSeq = 0;
 
@@ -469,11 +526,54 @@ const WERK = (() => {
     write(KEYS.seedv, true);
   }
 
+  /* ---------- Migração lazy: clientes derivados das OS (idempotente) ---------- */
+  function ensureClients() {
+    const porData = (l) => [...l].sort((a, b) => new Date(a.criada) - new Date(b.criada));
+
+    // 1 · veículo herda o telefone do check-in mais recente do VIN (dados legados)
+    const veics = getVehicles();
+    let vMudou = false;
+    veics.forEach(v => {
+      if (normTel(v.telefone)) return;
+      const os = porData(getAllOS()).reverse().find(o => o.vin === v.vin && normTel(o.telefone));
+      if (os) { v.telefone = os.telefone; vMudou = true; }
+    });
+    if (vMudou) saveVehicles(veics);
+
+    // 2 · registros de cliente derivados das OS (mais antiga → mais nova; último nome vence)
+    const lista = getClientes();
+    let cMudou = false;
+    porData(getAllOS()).forEach(o => {
+      const t = normTel(o.telefone);
+      if (!t) return;
+      let c = lista.find(x => normTel(x.telefone) === t);
+      if (!c) {
+        c = { nome: o.cliente, telefone: o.telefone, senha: null, convite: novoToken(lista),
+              desde: new Date(o.criada).getFullYear(), criadoEm: new Date().toISOString(), ativadoEm: null };
+        lista.push(c); cMudou = true;
+      } else if (o.cliente && c.nome !== o.cliente) { c.nome = o.cliente; cMudou = true; }
+    });
+
+    // 3 · personas demo (fill-only: nunca sobrescreve senha já criada)
+    [
+      { tel: '27999000000', convite: 'demo-ricardo', senha: enc('bmw2026'), desde: 2021 },
+      { tel: '27988112233', convite: 'demo-marcelo', senha: null, desde: 2024 },
+    ].forEach(d => {
+      const c = lista.find(x => normTel(x.telefone) === d.tel);
+      if (!c) return;
+      if (c.convite !== d.convite && !c.ativadoEm) { c.convite = d.convite; cMudou = true; }
+      if (!c.senha && d.senha) { c.senha = d.senha; c.ativadoEm = new Date().toISOString(); cMudou = true; }
+      if (c.desde !== d.desde) { c.desde = d.desde; cMudou = true; }
+    });
+    if (cMudou) saveClientes(lista);
+  }
+
   /* ---------- Pendências (itens recusados → régua) ---------- */
-  function pendencias(cliente) {
+  function pendencias(telefone) {
+    const t = normTel(telefone);
     const out = [];
     getAllOS().forEach(o => {
-      if (cliente && o.cliente !== cliente) return;
+      if (t && normTel(o.telefone) !== t) return;
       o.itens.forEach(i => {
         if (i.aprovacao === 'recusado') out.push({ os: o.numero, veiculo: o.veiculo, placa: o.placa, item: i });
       });
@@ -492,6 +592,7 @@ const WERK = (() => {
   const fd = (iso) => new Date(iso).toLocaleDateString('pt-BR');
 
   seed();
+  ensureClients();
 
   return {
     KEYS, STATUS, statusIdx, CATEGORIAS, ETK, SUPPLIERS, AW_TABLE,
@@ -499,6 +600,8 @@ const WERK = (() => {
     motorDePecas, itemPreco, totalOS, custoOS,
     getConfig, saveConfig,
     getVehicles, upsertVehicle,
+    normTel, normPlaca, getClientes, upsertCliente, clientePorTelefone, clientePorConvite,
+    ativarCliente, loginCliente, garagemDe, conviteUrl, waLink,
     getAllOS, saveAllOS, getOS, novaOS, novoItem, updateOS, setStatus,
     pendencias, chatSend,
     pixPayload, brl, fdt, fd,

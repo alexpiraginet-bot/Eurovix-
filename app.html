@@ -33,10 +33,11 @@
       <img class="login-logo" src="assets/img/brand/logo-oficial-preto.png" alt="EUROVIX — Oficina Especializada BMW">
     </div>
     <form class="login-form" id="loginForm" novalidate>
-      <div class="login-err" id="loginErr">E-mail ou senha inválidos. Dica: use a conta demo abaixo.</div>
+      <div class="login-err" id="loginErr">Telefone ou senha inválidos. Recebeu um link de convite? Abra-o para criar sua senha.</div>
+      <div class="login-info" id="loginInfo"></div>
       <div class="field">
-        <label for="l-email">E-mail</label>
-        <input id="l-email" type="email" placeholder="voce@email.com" autocomplete="username">
+        <label for="l-tel">Telefone (WhatsApp)</label>
+        <input id="l-tel" type="tel" placeholder="(27) 9…" autocomplete="tel">
       </div>
       <div class="field">
         <label for="l-senha">Senha</label>
@@ -49,7 +50,36 @@
       <button class="btn btn-primary" type="submit">Entrar</button>
       <div class="login-demo">
         Demonstração — <button type="button" id="demoBtn">entrar com a conta demo</button><br>
-        <span style="font-size:11px">(demo@eurovix.com.br · senha: bmw2026)</span>
+        <span style="font-size:11px">((27) 99900-0000 · senha: bmw2026)</span>
+      </div>
+    </form>
+  </div>
+
+  <!-- Cadastro via convite (link exclusivo gerado no check-in) -->
+  <div class="login-view hide" id="conviteView">
+    <div class="login-brand">
+      <img class="login-icon" src="assets/img/brand/app-icon-dark.png" alt="">
+      <img class="login-logo" src="assets/img/brand/logo-oficial-preto.png" alt="EUROVIX — Oficina Especializada BMW">
+    </div>
+    <form class="login-form" id="conviteForm" novalidate>
+      <p class="conv-hello" id="convHello"></p>
+      <div class="conv-veics" id="convVeics"></div>
+      <div class="login-err" id="convErr">Senhas não conferem — mínimo de 4 caracteres nas duas.</div>
+      <div class="field">
+        <label for="c-tel">Seu telefone (será seu login)</label>
+        <input id="c-tel" type="tel" disabled>
+      </div>
+      <div class="field">
+        <label for="c-senha">Crie sua senha</label>
+        <input id="c-senha" type="password" placeholder="mínimo 4 caracteres" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="c-senha2">Confirme a senha</label>
+        <input id="c-senha2" type="password" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <button class="btn btn-primary" type="submit">Criar acesso e entrar</button>
+      <div class="login-demo">
+        Já tem senha? <button type="button" id="convToLogin">entrar com telefone e senha</button>
       </div>
     </form>
   </div>
@@ -120,7 +150,7 @@
 <aside class="desktop-note">
   <b>Conceito navegável do app EUROVIX.</b><br>
   Experiência projetada para o celular — no desktop ela roda neste shell de 430px.
-  A OS #1257 evolui em tempo real enquanto o app está aberto.<br>
+  As OS evoluem em tempo real enquanto o app está aberto.<br>
   <a href="index.html">← Voltar ao site</a>
 </aside>
 

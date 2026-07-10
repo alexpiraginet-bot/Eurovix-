@@ -12,8 +12,6 @@
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => [...(el || document).querySelectorAll(s)];
 
-  const DEMO_CLIENTE = 'Ricardo Almeida';
-
   const state = {
     user: null,
     vehicleIdx: 0,
@@ -26,39 +24,93 @@
      ============================================================ */
   const splash = $('#splash');
   const loginView = $('#loginView');
+  const conviteView = $('#conviteView');
+  const CONVITE = new URLSearchParams(location.search).get('convite');
 
   setTimeout(() => {
     splash.classList.add('hide');
+    if (CONVITE) { handleConvite(CONVITE); return; }
     const session = EVX.getSession();
-    if (session) enter(session);
-    else loginView.classList.remove('hide');
+    if (session && session.telefone) enter(session);
+    else {
+      if (session) EVX.clearSession(); // sessão antiga (e-mail) → acesso agora é por telefone
+      loginView.classList.remove('hide');
+    }
   }, 1400);
 
   /* ============================================================
-     Login
+     Login por telefone + senha · convite do check-in
      ============================================================ */
+  function loginInfo(msg) {
+    const el = $('#loginInfo');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  function handleConvite(tok) {
+    const c = WERK.clientePorConvite(tok);
+    if (!c) {
+      loginView.classList.remove('hide');
+      loginInfo('Convite não encontrado neste aparelho. Peça um novo link no balcão da EUROVIX ou entre com telefone e senha.');
+      return;
+    }
+    if (c.senha) {
+      $('#l-tel').value = c.telefone;
+      loginView.classList.remove('hide');
+      loginInfo('Seu acesso já está ativo — entre com sua senha.');
+      return;
+    }
+    $('#convHello').textContent = `Bem-vindo(a), ${c.nome.split(' ')[0]}!`;
+    const g = WERK.garagemDe(c.telefone);
+    $('#convVeics').innerHTML = g.length
+      ? g.map(v => `<div class="conv-veic">${EVX.icon('car', 20)}<div><b>${v.modelo}</b><br><span>${v.placa}${v.cor ? ' · ' + v.cor : ''}</span></div></div>`).join('')
+      : `<div class="conv-veic">${EVX.icon('car', 20)}<span>Seus veículos aparecem aqui após o check-in.</span></div>`;
+    $('#c-tel').value = c.telefone;
+    conviteView.classList.remove('hide');
+  }
+
   $('#demoBtn').addEventListener('click', () => {
-    $('#l-email').value = EVX.DEMO_USER.email;
+    $('#l-tel').value = EVX.DEMO_USER.telefone;
     $('#l-senha').value = 'bmw2026';
-    doLogin(EVX.DEMO_USER.email, 'bmw2026');
+    doLogin(EVX.DEMO_USER.telefone, 'bmw2026');
   });
   $('#loginForm').addEventListener('submit', (e) => {
     e.preventDefault();
-    doLogin($('#l-email').value.trim(), $('#l-senha').value);
+    doLogin($('#l-tel').value.trim(), $('#l-senha').value);
   });
   $('#forgotLink').addEventListener('click', (e) => {
     e.preventDefault();
-    toast('Recuperação de senha', 'No app final, você recebe um link por e-mail. Na demo, use a conta demo. 😉', 'ok');
+    toast('Recuperação de acesso', 'Peça um novo link de acesso no balcão ou pelo WhatsApp da EUROVIX — você cria a senha de novo na hora.', 'ok');
   });
 
-  function doLogin(email, senha) {
-    const err = $('#loginErr');
-    if (!/^\S+@\S+\.\S+$/.test(email) || senha.length < 4) { err.classList.add('show'); return; }
+  $('#conviteForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const err = $('#convErr');
+    const s1 = $('#c-senha').value, s2 = $('#c-senha2').value;
+    if (s1.length < 4 || s1 !== s2) { err.classList.add('show'); return; }
     err.classList.remove('show');
-    const isDemo = email.toLowerCase() === EVX.DEMO_USER.email;
-    const nome = isDemo ? EVX.DEMO_USER.nome
-      : email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    const session = { nome, email, desde: isDemo ? EVX.DEMO_USER.cliente_desde : 2026 };
+    const c = WERK.ativarCliente(CONVITE, s1);
+    if (!c) { err.textContent = 'Convite inválido — peça um novo link no balcão.'; err.classList.add('show'); return; }
+    const session = { nome: c.nome, telefone: c.telefone, desde: c.desde };
+    EVX.setSession(session);
+    history.replaceState(null, '', location.pathname);
+    conviteView.classList.add('hide');
+    toast('Acesso criado ✓', 'Seu login é o seu telefone. Bem-vindo(a) ao app EUROVIX!', 'ok');
+    enter(session);
+  });
+  $('#convToLogin').addEventListener('click', () => {
+    const c = WERK.clientePorConvite(CONVITE);
+    if (c) $('#l-tel').value = c.telefone;
+    conviteView.classList.add('hide');
+    loginView.classList.remove('hide');
+  });
+
+  function doLogin(tel, senha) {
+    const err = $('#loginErr');
+    const c = WERK.loginCliente(tel, senha);
+    if (!c) { err.classList.add('show'); return; }
+    err.classList.remove('show');
+    const session = { nome: c.nome, telefone: c.telefone, desde: c.desde };
     if ($('#l-lembrar').checked) EVX.setSession(session);
     enter(session);
   }
@@ -73,7 +125,9 @@
 
     if (!EVX.getNotifications().length) {
       EVX.pushNotification({ titulo: 'Bem-vindo ao app EUROVIX!', texto: 'Acompanhe seu BMW, aprove orçamentos item a item e fale com seu consultor por aqui.', quando: Date.now(), tipo: 'ok' });
-      EVX.pushNotification({ titulo: 'OS #1258 aguarda sua aprovação', texto: 'O orçamento da revisão + bieletas está pronto — aprove pelo app.', quando: Date.now(), tipo: 'os' });
+      if (myOS().some(o => o.numero === 1258 && o.status === 'aprovacao')) {
+        EVX.pushNotification({ titulo: 'OS #1258 aguarda sua aprovação', texto: 'O orçamento da revisão + bieletas está pronto — aprove pelo app.', quando: Date.now(), tipo: 'os' });
+      }
     }
     renderAll();
   }
@@ -97,13 +151,33 @@
     const h = Math.round(m / 60);
     return h < 24 ? `há ${h} h` : `há ${Math.round(h / 24)} d`;
   }
-  const vehicle = () => EVX.VEHICLES[state.vehicleIdx];
+  /* Garagem: veículos cujo ÚLTIMO check-in pertence a este telefone.
+     EVX.VEHICLES vira só catálogo de saúde curada (match por placa). */
+  const garagem = () => WERK.garagemDe(state.user ? state.user.telefone : '');
+  const DEFAULT_SAUDE = { oleo: 82, freios: 76, pneus: 84, bateria: 90 };
+  function vehicleView(v) {
+    const st = EVX.VEHICLES.find(s => WERK.normPlaca(s.placa) === WERK.normPlaca(v.placa));
+    const km = v.km || (st ? st.km : 0);
+    const marco = (Math.floor(km / 10000) + 1) * 10000;
+    return {
+      vin: v.vin, modelo: v.modelo,
+      ano: v.anoModelo || (st ? st.ano : ''), cor: v.cor || (st ? st.cor : '—'),
+      placa: v.placa || '—', km,
+      proxRevisao: st ? st.proxRevisao : { km: marco, titulo: `Revisão dos ${marco.toLocaleString('pt-BR')} km`, restante: Math.max(0, marco - km) },
+      saude: st ? st.saude : DEFAULT_SAUDE,
+    };
+  }
+  function vehicle() {
+    const g = garagem();
+    if (!g.length) return null;
+    if (state.vehicleIdx >= g.length) state.vehicleIdx = 0;
+    return vehicleView(g[state.vehicleIdx]);
+  }
 
-  /* OS do cliente logado (demo enxerga o dataset do Ricardo) */
+  /* OS do cliente logado — vínculo pelo telefone registrado no check-in */
   function myOS() {
-    const nomes = [state.user.nome];
-    if (state.user.email === EVX.DEMO_USER.email) nomes.push(DEMO_CLIENTE);
-    return WERK.getAllOS().filter(o => nomes.includes(o.cliente));
+    const t = WERK.normTel(state.user ? state.user.telefone : '');
+    return t ? WERK.getAllOS().filter(o => WERK.normTel(o.telefone) === t) : [];
   }
   const osAtivas = () => myOS().filter(o => o.status !== 'entregue');
   const osConcluidas = () => myOS().filter(o => o.status === 'entregue');
@@ -136,21 +210,23 @@
      Início
      ============================================================ */
   function renderInicio() {
+    const g = garagem();
     const v = vehicle();
-    const pct = Math.min(100, Math.round((v.km / v.proxRevisao.km) * 100));
+    const pct = v ? Math.min(100, Math.round((v.km / v.proxRevisao.km) * 100)) : 0;
     const live = osAtivas();
-    const pend = WERK.pendencias(state.user.email === EVX.DEMO_USER.email ? DEMO_CLIENTE : state.user.nome);
+    const pend = WERK.pendencias(state.user.telefone);
     const healthClass = (n) => n >= 75 ? 'g' : n >= 50 ? 'w' : 'd';
     const healthLabel = { oleo: 'Óleo', freios: 'Freios', pneus: 'Pneus', bateria: 'Bateria' };
 
     $('[data-view="inicio"]').innerHTML = `
+      ${v ? `
       <div class="vehicle-card">
         <div class="vc-top">
           <div>
             <div class="mod">${v.modelo}</div>
             <div class="sub">${v.ano} · ${v.cor} · ${v.placa}</div>
           </div>
-          <button class="vc-switch" id="vcSwitch">Trocar ⇄</button>
+          ${g.length > 1 ? '<button class="vc-switch" id="vcSwitch">Trocar ⇄</button>' : ''}
         </div>
         <div class="vc-km"><span class="v">${v.km.toLocaleString('pt-BR')} km</span><span class="k">odômetro</span></div>
         <div class="vc-bar"><i style="width:${pct}%"></i></div>
@@ -175,6 +251,21 @@
             <div class="hbar"><i style="width:${n}%"></i></div>
           </div>`).join('')}
       </div>
+      ` : `
+      <div class="vehicle-card">
+        <div class="vc-top">
+          <div>
+            <div class="mod">Sua garagem</div>
+            <div class="sub">Nenhum veículo vinculado no momento</div>
+          </div>
+        </div>
+        <div class="vc-next">Seu BMW entra aqui automaticamente no check-in da EUROVIX — e a garagem segue sempre o dono atual de cada placa.</div>
+        <div class="vc-cta">
+          <a class="btn btn-primary" href="agendamento.html">Agendar visita</a>
+          <button class="btn btn-secondary" data-goto="os">Minhas OS</button>
+        </div>
+      </div>
+      `}
 
       <div class="sec-label">Ações rápidas</div>
       <div class="quick-grid">
@@ -199,12 +290,13 @@
           </div>`).join('')}` : ''}
     `;
 
-    $('#vcSwitch').addEventListener('click', () => {
-      state.vehicleIdx = (state.vehicleIdx + 1) % EVX.VEHICLES.length;
+    const sw = $('#vcSwitch');
+    if (sw) sw.addEventListener('click', () => {
+      state.vehicleIdx = (state.vehicleIdx + 1) % garagem().length;
       renderInicio();
       toast('Veículo alterado', `Mostrando ${vehicle().modelo} (${vehicle().placa}).`, 'ok');
     });
-    if (window.EVXTwin) EVXTwin.mount('#twin3d', { saude: v.saude, modelo: v.modelo, compact: true });
+    if (v && window.EVXTwin) EVXTwin.mount('#twin3d', { saude: v.saude, modelo: v.modelo, compact: true });
     bindCommon($('[data-view="inicio"]'));
   }
 
@@ -500,7 +592,7 @@
     const u = state.user;
     const initials = u.nome.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
     const garantias = myOS().flatMap(o => o.itens.filter(i => i.garantia).map(i => ({ os: o.numero, item: i })));
-    const cofres = WERK.getVehicles().filter(v => v.cliente === (u.email === EVX.DEMO_USER.email ? DEMO_CLIENTE : u.nome));
+    const cofres = garagem();
 
     $('[data-view="perfil"]').innerHTML = `
       <h2 class="vtitle">Perfil</h2>
@@ -508,7 +600,7 @@
         <span class="profile-avatar">${initials}</span>
         <div>
           <b>${u.nome}</b>
-          <span>${u.email}</span><br>
+          <span>${u.telefone} · seu login no app</span><br>
           <span style="color:var(--red);font-family:var(--font-display);font-weight:700;font-size:10.5px;letter-spacing:.08em">CLIENTE DESDE ${u.desde}</span>
         </div>
       </div>
@@ -534,14 +626,24 @@
           || '<div style="padding:14px 16px;font-size:12px;color:var(--txt-3)">Manual, nota da chave codificada e laudos aparecem aqui.</div>'}
       </div>
 
-      <div class="sec-label">Meus veículos</div>
+      <div class="sec-label">Minha garagem</div>
       <div class="plist">
-        ${EVX.VEHICLES.map((v, i) => `
+        ${garagem().map((v, i) => `
           <button class="prow" data-vehicle="${i}">
             ${EVX.icon('car', 20)}
-            <div><b>${v.modelo} · ${v.ano}</b><span>${v.placa} · ${v.km.toLocaleString('pt-BR')} km</span></div>
+            <div><b>${v.modelo}${v.anoModelo ? ' · ' + v.anoModelo : ''}</b><span>${v.placa} · ${(v.km || 0).toLocaleString('pt-BR')} km</span></div>
             ${i === state.vehicleIdx ? '<span class="os-badge done" style="margin-left:auto">ativo</span>' : '<span class="chev">›</span>'}
-          </button>`).join('')}
+          </button>`).join('') || '<div style="padding:14px 16px;font-size:12px;color:var(--txt-3)">Nenhum veículo vinculado — ele entra aqui no próximo check-in.</div>'}
+      </div>
+
+      <div class="sec-label">Histórico do veículo — transferível</div>
+      <div class="plist">
+        ${garagem().map(v => `
+          <a class="prow" href="documento.html?tipo=prontuario&vin=${v.vin}" target="_blank">
+            ${EVX.icon('doc', 20)}
+            <div><b>Prontuário completo · ${v.placa}</b><span>PDF por chassi — na venda, entregue ao comprador</span></div>
+            <span class="chev">›</span>
+          </a>`).join('') || '<div style="padding:14px 16px;font-size:12px;color:var(--txt-3)">O prontuário de cada veículo seu aparece aqui.</div>'}
       </div>
 
       <div class="sec-label">Conta</div>
