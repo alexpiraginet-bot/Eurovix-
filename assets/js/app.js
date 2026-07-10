@@ -556,19 +556,10 @@
     const pay = $('#payPix', view);
     if (pay) pay.addEventListener('click', () => {
       if (pay.disabled) return;
-      pay.disabled = true; // idempotência: bloqueia duplo clique antes do re-render
-      const live = WERK.getOS(o.numero);
-      if (live && live.pagamento) { renderOSDetail(view); return; } // já pago
+      pay.disabled = true; // bloqueia duplo clique antes do re-render (registrarPagamento também é idempotente)
       // DEMO: confirma o pagamento na hora. Em produção, o gateway (Mercado
       // Pago / Stone) confirma por webhook e dispara este mesmo efeito.
-      const cfgG = WERK.getConfig().garantiaMeses;
-      const agora = new Date();
-      WERK.updateOS(o.numero, os => {
-        os.pagamento = { metodo: 'Pix', valor: total, ts: agora.toISOString(), txid: 'EVX' + o.numero };
-        os.nf = { numero: `NFS-e ${agora.getFullYear()}/${String(400 + o.numero % 100).padStart(6, '0')}`, ts: agora.toISOString() };
-        const fim = new Date(agora); fim.setMonth(fim.getMonth() + (cfgG.peca ?? 12));
-        os.itens.forEach(i => { if (i.aprovacao === 'aprovado') i.garantia = { inicio: agora.toISOString().slice(0, 10), fim: fim.toISOString().slice(0, 10) }; });
-      }, { tipo: 'entrega', titulo: 'Pagamento confirmado', desc: `Pix ${WERK.brl(total)} · NF emitida · garantia ativada`, ator: 'Cliente (app)' });
+      WERK.registrarPagamento(o.numero, { valor: total, desc: `Pix ${WERK.brl(total)} · NF emitida · garantia ativada`, ator: 'Cliente (app)' });
       toast('Pagamento confirmado ✓', 'Nota fiscal e garantia liberadas. Recibo em Documentos.');
       renderOSDetail(view);
     });

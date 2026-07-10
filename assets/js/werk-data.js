@@ -614,6 +614,26 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     if (aprovadosN) setStatus(numero, 'execucao', 'Sistema', 'Itens aprovados liberados para o box.');
     return getOS(numero);
   }
+  // Registra pagamento + NF + garantias de uma OS num único ponto — usado tanto
+  // pelo checkout do painel quanto pelo pagamento no app do cliente, para não
+  // divergir o formato da NF nem as regras de garantia. Idempotente: se a OS já
+  // tem pagamento, não sobrescreve. opts: { valor, metodo, retirada, ator, desc }.
+  function registrarPagamento(numero, opts) {
+    opts = opts || {};
+    const alvo = getOS(numero);
+    if (!alvo || alvo.pagamento) return alvo || null;
+    const cfgG = getConfig().garantiaMeses;
+    const agora = new Date();
+    const valor = opts.valor != null ? opts.valor : totalOS(alvo, true);
+    updateOS(numero, o => {
+      o.pagamento = { metodo: opts.metodo || 'Pix', valor, ts: agora.toISOString(), txid: 'EVX' + o.numero };
+      if (opts.retirada) o.pagamento.retirada = opts.retirada;
+      o.nf = { numero: `NFS-e ${agora.getFullYear()}/${String(400 + o.numero % 100).padStart(6, '0')}`, ts: agora.toISOString() };
+      const fim = new Date(agora); fim.setMonth(fim.getMonth() + (cfgG.peca ?? 12));
+      o.itens.forEach(i => { if (i.aprovacao === 'aprovado') i.garantia = { inicio: agora.toISOString().slice(0, 10), fim: fim.toISOString().slice(0, 10) }; });
+    }, { tipo: 'entrega', titulo: 'Pagamento confirmado', desc: opts.desc || `Pix ${brl(valor)} · NF emitida · garantia ativada`, ator: opts.ator || 'Sistema' });
+    return getOS(numero);
+  }
   function chatCliente(numero, texto) {
     const o = getOS(numero);
     return o ? chatSend(numero, o.cliente, texto) : null;
@@ -639,7 +659,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     staffEditar: async () => ({ ok: false, erro: 'Gestão de equipe disponível apenas no modo nuvem.' }),
     staffRemover: async () => ({ ok: false, erro: 'Gestão de equipe disponível apenas no modo nuvem.' }),
     mudarMinhaSenha: async () => ({ ok: false, erro: 'Disponível apenas no modo nuvem.' }),
-    aprovarOrcamento, chatCliente, avaliarNps,
+    aprovarOrcamento, registrarPagamento, chatCliente, avaliarNps,
     KEYS, STATUS, statusIdx, CATEGORIAS, ETK, SUPPLIERS, AW_TABLE,
     validateVIN, decodeVIN, fixVIN, checkRecalls,
     motorDePecas, itemPreco, totalOS, custoOS,
