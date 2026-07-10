@@ -1045,9 +1045,12 @@
       '<div class="wk-panel"><p style="color:var(--txt-3)">Carregando a equipe…</p></div>';
     const r = await WERK.staffListar();
     if (!r.ok) {
+      // dica do upgrade SÓ quando as RPCs staff_* não existem — não em acesso negado/rede
+      const dica = r.faltaMigracao
+        ? `<br><span style="color:var(--txt-3)">A página 👥 Equipe precisa do último passo no banco: cole <b>supabase/EQUIPE-UPGRADE.sql</b> no SQL Editor do projeto (uma única vez) e recarregue.</span>`
+        : '';
       main.innerHTML = head('Equipe', 'Acessos do WERK OS — sem SQL, sem dashboard.') + `
-        <div class="wk-panel"><p class="hintline err" style="display:block">${escHtml(r.erro)}<br>
-        <span style="color:var(--txt-3)">Se a página 👥 Equipe acabou de chegar, cole <b>supabase/EQUIPE-UPGRADE.sql</b> no SQL Editor do projeto (uma única vez) e recarregue.</span></p></div>`;
+        <div class="wk-panel"><p class="hintline err" style="display:block">${escHtml(r.erro)}${dica}</p></div>`;
       return;
     }
 

@@ -794,14 +794,21 @@
      do servidor; aqui só transportamos e traduzimos erros p/ UI.
      ============================================================ */
   const staffMsg = (e) => (e && (e.message || e.error_description || e.msg)) || 'Falha de conexão — tente de novo.';
+  /* erro que indica que as RPCs staff_* ainda não existem no banco (falta rodar
+     o EQUIPE-UPGRADE.sql) — distinto de "acesso negado" (é staff mas sem papel) */
+  const faltaMigracaoEquipe = (e) => {
+    if (!e) return false;
+    if (e.code === 'PGRST202') return true; // PostgREST: função não encontrada
+    return /could not find the function|function [^ ]*staff_[^ ]* .*does not exist|permission denied for function/i.test(String(e.message || e.hint || ''));
+  };
 
   const staffListar = async () => {
     try {
       const { data, error } = await sb.rpc('staff_listar');
-      if (error) { falha('staff_listar', error); return { ok: false, erro: staffMsg(error), lista: [] }; }
+      if (error) { falha('staff_listar', error); return { ok: false, erro: staffMsg(error), faltaMigracao: faltaMigracaoEquipe(error), lista: [] }; }
       setOnline(true);
       return { ok: true, lista: data || [] };
-    } catch (e) { falha('staff_listar', e); return { ok: false, erro: staffMsg(e), lista: [] }; }
+    } catch (e) { falha('staff_listar', e); return { ok: false, erro: staffMsg(e), faltaMigracao: faltaMigracaoEquipe(e), lista: [] }; }
   };
 
   const staffEditar = async ({ email, nome, papel }) => {
