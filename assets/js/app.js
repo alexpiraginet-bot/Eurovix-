@@ -555,6 +555,10 @@
     });
     const pay = $('#payPix', view);
     if (pay) pay.addEventListener('click', () => {
+      if (pay.disabled) return;
+      pay.disabled = true; // idempotência: bloqueia duplo clique antes do re-render
+      const live = WERK.getOS(o.numero);
+      if (live && live.pagamento) { renderOSDetail(view); return; } // já pago
       // DEMO: confirma o pagamento na hora. Em produção, o gateway (Mercado
       // Pago / Stone) confirma por webhook e dispara este mesmo efeito.
       const cfgG = WERK.getConfig().garantiaMeses;
