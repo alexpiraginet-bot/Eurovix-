@@ -4,15 +4,14 @@
 
 ## 🌐 Publicação
 
-**Vercel (definitivo):** importe este repositório em [vercel.com/new](https://vercel.com/new) → *Import Git Repository* → `https://github.com/alexpiraginet-bot/Eurovix-` → framework **Other** → Deploy. Zero configuração (site estático na raiz); todo push na `main` publica automaticamente, com preview por PR e domínio próprio. Alternativa sem repo linkado: publicar os 3 arquivos de `deploy/vercel-mirror/` (service worker que espelha a `main`).
+**Produção (Vercel, auto-deploy a cada push na `main`):**
+- **Site:** https://eurovix.vercel.app
+- **Painel Mestre (todos os acessos):** https://eurovix.vercel.app/painel.html
+- **App do cliente:** https://eurovix.vercel.app/app.html
+- **WERK OS (painel da oficina):** https://eurovix.vercel.app/werkos.html
+- **Agendamento:** https://eurovix.vercel.app/agendamento.html
 
-**Demo imediata (CDN público sobre a main):**
-- **Painel Mestre:** https://raw.githack.com/alexpiraginet-bot/Eurovix-/main/painel.html
-- **Site:** https://raw.githack.com/alexpiraginet-bot/Eurovix-/main/index.html
-- **App do cliente:** https://raw.githack.com/alexpiraginet-bot/Eurovix-/main/app.html
-- **WERK OS:** https://raw.githack.com/alexpiraginet-bot/Eurovix-/main/werkos.html
-
-GitHub Pages (`alexpiraginet-bot.github.io/Eurovix-/`) também fica a um toque: **Settings → Pages → Source: GitHub Actions** e rodar o workflow manual `Deploy GitHub Pages`.
+Espelho CDN da `main` (raw.githack) segue funcionando como contingência; GitHub Pages disponível via workflow manual `Deploy GitHub Pages` após habilitar em Settings → Pages.
 
 Este repositório evoluiu em duas camadas:
 
