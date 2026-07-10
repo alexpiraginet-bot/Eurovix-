@@ -6,7 +6,9 @@
    Mercado Pago/Stone, NFS-e) mantendo esta mesma interface.
    ============================================================ */
 
-const WERK = (() => {
+var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este global quando EVX_ENV está preenchido
+
+  const CLOUD = typeof window !== 'undefined' && !!(window.EVX_ENV && window.EVX_ENV.SUPABASE_URL && window.EVX_ENV.SUPABASE_ANON_KEY);
 
   const KEYS = {
     os: 'evx.werk.os',
@@ -591,10 +593,46 @@ const WERK = (() => {
   const fdt = (iso) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
   const fd = (iso) => new Date(iso).toLocaleDateString('pt-BR');
 
-  seed();
-  ensureClients();
+  /* ---------- Ações do cliente no app (mesma via nos dois modos) ---------- */
+  function aprovarOrcamento(numero, decisoes, aceite) {
+    const alvo = getOS(numero);
+    if (!alvo) return null;
+    const lista = Object.values(decisoes || {});
+    const aprovadosN = lista.filter(d => d.aprovado).length;
+    const recusadosN = lista.length - aprovadosN;
+    updateOS(numero, o => {
+      o.itens.forEach(i => {
+        if (i.severidade === 'ok') return;
+        const d = decisoes[i.id];
+        if (!d) return;
+        i.nivelEscolhido = d.nivel || 'original';
+        i.aprovacao = d.aprovado ? 'aprovado' : 'recusado';
+      });
+      o.aceite = aceite;
+      o.aprovadoEm = aceite.ts;
+    }, { tipo: 'aceite', titulo: 'Orçamento aprovado pelo app', desc: `${aprovadosN} aprovado(s), ${recusadosN} adiado(s) — assinatura digital registrada.`, ator: alvo.cliente });
+    if (aprovadosN) setStatus(numero, 'execucao', 'Sistema', 'Itens aprovados liberados para o box.');
+    return getOS(numero);
+  }
+  function chatCliente(numero, texto) {
+    const o = getOS(numero);
+    return o ? chatSend(numero, o.cliente, texto) : null;
+  }
+  function avaliarNps(numero, nota) {
+    const o = getOS(numero);
+    if (!o) return null;
+    return updateOS(numero, os => { os.nps = +nota; }, { tipo: 'update', titulo: `NPS ${nota}/10`, desc: 'Avaliação do cliente registrada.', ator: o.cliente });
+  }
+
+  if (!CLOUD) { // na nuvem o banco é a verdade: sem seeds/migração local
+    seed();
+    ensureClients();
+  }
 
   return {
+    ready: Promise.resolve(), cloud: false, online: true,
+    authUser: () => null, loginStaff: async () => null, logoutAuth: () => {},
+    aprovarOrcamento, chatCliente, avaliarNps,
     KEYS, STATUS, statusIdx, CATEGORIAS, ETK, SUPPLIERS, AW_TABLE,
     validateVIN, decodeVIN, fixVIN, checkRecalls,
     motorDePecas, itemPreco, totalOS, custoOS,

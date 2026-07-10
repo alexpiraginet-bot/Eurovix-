@@ -10,7 +10,7 @@
   const q = new URLSearchParams(location.search);
   const tipo = q.get('tipo') || 'os';
   const box = document.getElementById('doc');
-  const cfg = WERK.getConfig();
+  let cfg = WERK.getConfig();
   const sev = { critico: 'CRÍTICO', preventivo: 'PREVENTIVO', ok: 'OK' };
 
   const header = (titulo, sub) => `
@@ -220,22 +220,25 @@
     },
   };
 
-  const os = WERK.getOS(q.get('os'));
-  if (tipo === 'prontuario') {
-    box.innerHTML = render.prontuario();
-    document.title = `Prontuário ${q.get('vin')} — EUROVIX`;
-  } else if (os && render[tipo]) {
-    box.innerHTML = render[tipo](os);
-    document.title = `${tipo.toUpperCase()} OS #${os.numero} — EUROVIX`;
-  } else {
-    box.innerHTML = header('Documento não encontrado', 'verifique o número da OS') + footer();
-  }
+  WERK.ready.then(() => { // na nuvem, espera a hidratação (e a sessão auth) antes de renderizar
+    cfg = WERK.getConfig();
+    const os = WERK.getOS(q.get('os'));
+    if (tipo === 'prontuario') {
+      box.innerHTML = render.prontuario();
+      document.title = `Prontuário ${q.get('vin')} — EUROVIX`;
+    } else if (os && render[tipo]) {
+      box.innerHTML = render[tipo](os);
+      document.title = `${tipo.toUpperCase()} OS #${os.numero} — EUROVIX`;
+    } else {
+      box.innerHTML = header('Documento não encontrado', WERK.cloud ? 'verifique o número da OS — e se você está logado (painel ou app)' : 'verifique o número da OS') + footer();
+    }
 
-  const qrEl = document.getElementById('docQr');
-  if (qrEl && typeof qrcode === 'function') {
-    const qr = qrcode(0, 'M');
-    qr.addData(qrEl.dataset.url);
-    qr.make();
-    qrEl.innerHTML = `<div style="display:inline-block;background:#fff;padding:6px;border:1px solid #DDD;border-radius:6px">${qr.createSvgTag(3, 0)}</div>`;
-  }
+    const qrEl = document.getElementById('docQr');
+    if (qrEl && typeof qrcode === 'function') {
+      const qr = qrcode(0, 'M');
+      qr.addData(qrEl.dataset.url);
+      qr.make();
+      qrEl.innerHTML = `<div style="display:inline-block;background:#fff;padding:6px;border:1px solid #DDD;border-radius:6px">${qr.createSvgTag(3, 0)}</div>`;
+    }
+  });
 })();

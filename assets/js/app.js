@@ -27,16 +27,18 @@
   const conviteView = $('#conviteView');
   const CONVITE = new URLSearchParams(location.search).get('convite');
 
-  setTimeout(() => {
+  Promise.all([WERK.ready, new Promise(r => setTimeout(r, 1400))]).then(() => {
     splash.classList.add('hide');
+    if (WERK.cloud) $('#loginForm .login-demo').style.display = 'none'; // produção: sem conta demo
     if (CONVITE) { handleConvite(CONVITE); return; }
     const session = EVX.getSession();
-    if (session && session.telefone) enter(session);
+    const autentico = !WERK.cloud || !!WERK.authUser(); // nuvem exige sessão auth válida
+    if (session && session.telefone && autentico) enter(session);
     else {
-      if (session) EVX.clearSession(); // sessão antiga (e-mail) → acesso agora é por telefone
+      if (session) EVX.clearSession(); // sessão antiga/expirada → login por telefone
       loginView.classList.remove('hide');
     }
-  }, 1400);
+  });
 
   /* ============================================================
      Login por telefone + senha · convite do check-in
@@ -47,8 +49,8 @@
     el.classList.add('show');
   }
 
-  function handleConvite(tok) {
-    const c = WERK.clientePorConvite(tok);
+  async function handleConvite(tok) {
+    const c = await WERK.clientePorConvite(tok);
     if (!c) {
       loginView.classList.remove('hide');
       loginInfo('Convite não encontrado neste aparelho. Peça um novo link no balcão da EUROVIX ou entre com telefone e senha.');
@@ -83,13 +85,13 @@
     toast('Recuperação de acesso', 'Peça um novo link de acesso no balcão ou pelo WhatsApp da EUROVIX — você cria a senha de novo na hora.', 'ok');
   });
 
-  $('#conviteForm').addEventListener('submit', (e) => {
+  $('#conviteForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const err = $('#convErr');
     const s1 = $('#c-senha').value, s2 = $('#c-senha2').value;
     if (s1.length < 4 || s1 !== s2) { err.classList.add('show'); return; }
     err.classList.remove('show');
-    const c = WERK.ativarCliente(CONVITE, s1);
+    const c = await WERK.ativarCliente(CONVITE, s1);
     if (!c) { err.textContent = 'Convite inválido — peça um novo link no balcão.'; err.classList.add('show'); return; }
     const session = { nome: c.nome, telefone: c.telefone, desde: c.desde };
     EVX.setSession(session);
@@ -105,13 +107,13 @@
     loginView.classList.remove('hide');
   });
 
-  function doLogin(tel, senha) {
+  async function doLogin(tel, senha) {
     const err = $('#loginErr');
-    const c = WERK.loginCliente(tel, senha);
+    const c = await WERK.loginCliente(tel, senha);
     if (!c) { err.classList.add('show'); return; }
     err.classList.remove('show');
     const session = { nome: c.nome, telefone: c.telefone, desde: c.desde };
-    if ($('#l-lembrar').checked) EVX.setSession(session);
+    if ($('#l-lembrar').checked || WERK.cloud) EVX.setSession(session);
     enter(session);
   }
 
@@ -132,7 +134,7 @@
     renderAll();
   }
 
-  function logout() { EVX.clearSession(); location.reload(); }
+  async function logout() { await WERK.logoutAuth(); EVX.clearSession(); location.reload(); }
 
   /* ============================================================
      Helpers
@@ -421,7 +423,7 @@
     if (send) send.addEventListener('click', () => {
       const t = $('#chatInput').value.trim();
       if (!t) return;
-      WERK.chatSend(o.numero, o.cliente, t);
+      WERK.chatCliente(o.numero, t);
       renderOSDetail(view);
     });
     bindAprovacao(o, view);
@@ -521,21 +523,17 @@
 
     $('#apConfirm', box).addEventListener('click', () => {
       if (empty) { toast('Assine para confirmar', 'O aceite precisa da sua assinatura.'); return; }
-      let aprovadosN = 0, recusadosN = 0;
-      WERK.updateOS(o.numero, os => {
-        os.itens.forEach(i => {
-          if (i.severidade === 'ok') return;
-          const cb = $(`.ap-check[data-id="${i.id}"]`, box);
-          const nv = ($(`input[name="nv-${i.id}"]:checked`, box) || {}).value || 'original';
-          i.nivelEscolhido = nv;
-          i.aprovacao = cb && cb.checked ? 'aprovado' : 'recusado';
-          i.aprovacao === 'aprovado' ? aprovadosN++ : recusadosN++;
-        });
-        const hash = (s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(16); })(JSON.stringify(os.itens.map(i => [i.id, i.aprovacao, i.nivelEscolhido])));
-        os.aceite = { assinatura: true, ip: '187.36.170.42 (app)', hash: `${hash}…${os.numero}`, ts: new Date().toISOString() };
-        os.aprovadoEm = os.aceite.ts;
-      }, { tipo: 'aceite', titulo: 'Orçamento aprovado pelo app', desc: `${aprovadosN} aprovado(s), ${recusadosN} adiado(s) — assinatura digital registrada.`, ator: o.cliente });
-      WERK.setStatus(o.numero, 'execucao', 'Sistema', 'Itens aprovados liberados para o box.');
+      const decisoes = {};
+      o.itens.filter(i => i.severidade !== 'ok').forEach(i => {
+        const cb = $(`.ap-check[data-id="${i.id}"]`, box);
+        const nv = ($(`input[name="nv-${i.id}"]:checked`, box) || {}).value || 'original';
+        decisoes[i.id] = { aprovado: !!(cb && cb.checked), nivel: nv };
+      });
+      const lista = Object.values(decisoes);
+      const aprovadosN = lista.filter(d => d.aprovado).length;
+      const recusadosN = lista.length - aprovadosN;
+      const hash = (s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(16); })(JSON.stringify(Object.entries(decisoes)));
+      WERK.aprovarOrcamento(o.numero, decisoes, { assinatura: true, ip: '187.36.170.42 (app)', hash: `${hash}…${o.numero}`, ts: new Date().toISOString() });
       toast('Aceite registrado ✓', recusadosN ? `${aprovadosN} itens aprovados. Os adiados viraram pendências com lembrete.` : 'Todos os itens aprovados — seu BMW já entra no box.', 'ok');
       renderAll();
     });
@@ -556,7 +554,7 @@
     const box = $('#npsBox', view);
     if (!box) return;
     $$('.nps-n', box).forEach(b => b.addEventListener('click', () => {
-      WERK.updateOS(o.numero, os => { os.nps = +b.dataset.n; }, { tipo: 'update', titulo: `NPS ${b.dataset.n}/10`, desc: 'Avaliação do cliente registrada.', ator: o.cliente });
+      WERK.avaliarNps(o.numero, +b.dataset.n);
       toast('Obrigado! 🏁', 'Sua avaliação ajuda a manter o padrão EUROVIX.', 'ok');
       renderOS();
     }));
@@ -732,10 +730,12 @@
   window.addEventListener('storage', (e) => {
     if (e.key && e.key.startsWith('evx.')) renderAll();
   });
+  window.addEventListener('evx:sync', () => renderAll()); // realtime da nuvem
 
-  /* Demonstração viva: micro-update do box a cada 40s na OS em execução */
+  /* Demonstração viva: micro-update do box a cada 40s na OS em execução (só no modo demo) */
   let beats = 0;
   setInterval(() => {
+    if (WERK.cloud) return;
     if (!state.user || beats >= 2) return;
     const emExec = myOS().find(o => o.status === 'execucao');
     if (!emExec) return;
