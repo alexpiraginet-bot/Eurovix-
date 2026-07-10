@@ -5,37 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>EUROVIX App — Seu BMW na palma da mão</title>
 <meta name="description" content="App do cliente EUROVIX: dashboard do veículo, ordens de serviço em tempo real, agendamento e histórico completo.">
-<link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+<link rel="icon" type="image/png" href="assets/img/brand/favicon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#060709">
+<meta name="theme-color" content="#FFFFFF">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/app.css">
 </head>
-<body class="app-body">
+<body class="app-body theme-bmw">
 
 <div class="app-shell" id="shell">
 
   <!-- Splash -->
   <div class="splash" id="splash">
-    <img src="assets/img/logo-simbolo.svg" alt="">
-    <div style="text-align:center">
-      <span class="wordmark">EUROVI<span class="x">X</span></span><br>
-      <small>Oficina Especializada BMW</small>
-    </div>
+    <img class="splash-icon" src="assets/img/brand/app-icon-dark.png" alt="">
+    <img class="splash-logo logo-on-light" src="assets/img/brand/logo-light.png" alt="EUROVIX — Oficina Especializada BMW">
     <div class="loadbar"><i></i></div>
   </div>
 
   <!-- Login -->
   <div class="login-view hide" id="loginView">
     <div class="login-brand">
-      <img src="assets/img/logo-simbolo.svg" alt="">
-      <div>
-        <span class="wordmark">EUROVI<span class="x">X</span></span><br>
-        <small>Oficina Especializada BMW</small>
-      </div>
+      <img class="login-icon" src="assets/img/brand/app-icon-dark.png" alt="">
+      <img class="login-logo logo-on-light" src="assets/img/brand/logo-light.png" alt="EUROVIX — Oficina Especializada BMW">
     </div>
     <form class="login-form" id="loginForm" novalidate>
       <div class="login-err" id="loginErr">E-mail ou senha inválidos. Dica: use a conta demo abaixo.</div>

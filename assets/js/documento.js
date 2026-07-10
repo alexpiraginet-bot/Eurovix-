@@ -16,7 +16,7 @@
   const header = (titulo, sub) => `
     <div class="doc-head">
       <div>
-        <span class="wm">EUROVI<span class="x">X</span></span>
+        <img src="assets/img/brand/logo-light.png" alt="EUROVIX" style="height:52px;width:auto;mix-blend-mode:multiply">
         <small>Oficina Especializada BMW · WERK OS</small>
       </div>
       <div class="dtitle"><b>${titulo}</b><span>${sub}</span></div>

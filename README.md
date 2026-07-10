@@ -80,9 +80,12 @@ assets/js/
 - **Regras duras implementadas**: item 🔴/🟡 sem mídia não entra no DVI; sem aprovação não há execução; sem QC duplo-assinado não há checkout.
 - Pix: payload **BR Code EMV com CRC16-CCITT real** (copia-e-cola válido); QR ilustrativo na demo.
 
-## 🎨 Identidade
+## 🎨 Identidade & tema visual
 
-Paleta oficial (`#E63928` · `#1E4FA0` · `#A9A9A9` · `#222428` · `#0A0A0A` · `#0D1117`), Montserrat para display (DIN Next licenciada → Barlow como stand-in web), símbolo recriado em SVG (`assets/img/logo-simbolo.svg`), ativos do brand board em `assets/img/brand/`.
+- **Superfícies do cliente** (site, agendamento, app, painel mestre) seguem a **linguagem visual do bmw.com.br**: fundo branco, texto grafite `#262626`, **azul BMW `#1C69D4`** como única cor de ação, cantos quase retos, hairlines `#E6E6E6`, teasers escuros de campanha e tipografia neo-grotesca (**Inter** como stand-in web do BMW Type Next). Tema aplicado via `body.theme-bmw` em `tokens.css`.
+- **WERK OS** (ferramenta interna da oficina) permanece no tema escuro técnico.
+- **Logos**: somente arte oficial da marca — recortes em alta do brand board em `assets/img/brand/` (`logo-principal-dark.png`, `logo-light.png`, `app-icon-dark.png`, `favicon.png`). Nenhum logo renderizado por código. O vermelho EUROVIX vive dentro da arte do logo; a UI usa o azul BMW.
+- BMW e MINI são marcas registradas de BMW AG — a EUROVIX é oficina independente (disclaimer no rodapé); a semelhança é de linguagem de design, sem uso do roundel ou de ativos da fabricante.
 
 ## 🗺 Fases (da spec)
 
