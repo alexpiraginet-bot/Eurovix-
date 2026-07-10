@@ -199,9 +199,16 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
   padding:14px;box-shadow:none;
 }
 /* --- Nossa História: narrativa + retratos da engenharia BMW --- */
-.story-lead{font-size:clamp(16px,1.95vw,19.5px);line-height:1.6;color:var(--ink);font-weight:500;margin:0 0 14px}
 .story p{color:var(--txt-2);line-height:1.75;font-size:15px;margin:0 0 13px}
 .story p:last-of-type{margin-bottom:0}
+/* lead precisa vencer .story p (0,1,1) → seletor mais específico */
+.story p.story-lead{font-size:clamp(16px,1.95vw,19.5px);line-height:1.6;color:var(--ink);font-weight:500;margin:0 0 14px}
+/* painel dos números (antes usava a classe .frame, que só existe dentro de
+   .about-visual — classe dedicada evita depender de estilo inline) */
+.stats-panel{
+  background:var(--stage-2);border:1px solid var(--line);border-radius:var(--radius-lg);
+  padding:clamp(18px,3vw,28px);margin-top:clamp(28px,4vw,44px);
+}
 .story-sign{display:flex;align-items:center;gap:12px;margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}
 .story-sign .seal{
   width:40px;height:40px;border-radius:50%;flex:none;
