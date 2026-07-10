@@ -18,5 +18,5 @@
    ============================================================ */
 window.EVX_ENV = {
   SUPABASE_URL: 'https://txdxtwmvehrzwharvgda.supabase.co',
-  SUPABASE_ANON_KEY: '',
+  SUPABASE_ANON_KEY: 'sb_publishable_2GhJjTqPP8r5p8-zJNr0uQ_I7zyjdOs',
 };
