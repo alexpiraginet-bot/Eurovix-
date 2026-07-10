@@ -861,6 +861,21 @@
     } catch (e) { falha('mudarMinhaSenha', e); return { ok: false, erro: staffMsg(e) }; }
   };
 
+  // Pagamento no modo nuvem: escrita otimista via updateOS do adaptador (espelho
+  // + push async, igual ao checkout do painel antes) reusando a regra pura
+  // local.aplicarPagamento — mesma NF/garantia do modo local, sem divergir.
+  const registrarPagamento = (numero, opts) => {
+    opts = opts || {};
+    const alvo = getOS(numero);
+    if (!alvo || alvo.pagamento) return alvo || null;
+    const cfgG = getConfig().garantiaMeses;
+    const agora = new Date();
+    const valor = opts.valor != null ? opts.valor : local.totalOS(alvo, true);
+    updateOS(numero, (o) => local.aplicarPagamento(o, { metodo: opts.metodo, valor, retirada: opts.retirada }, agora, cfgG),
+      { tipo: 'entrega', titulo: 'Pagamento confirmado', desc: opts.desc || `Pix ${local.brl(valor)} · NF emitida · garantia ativada`, ator: opts.ator || 'Sistema' });
+    return getOS(numero);
+  };
+
   /* ============================================================
      12 · Montagem do adaptador + boot
      ============================================================ */
@@ -878,7 +893,7 @@
     getAllOS, getOS, getVehicles, getClientes, getConfig,
     clientePorTelefone, garagemDe, pendencias,
     /* — escritas otimistas (espelho + push assíncrono) — */
-    updateOS, setStatus, chatSend, upsertVehicle, upsertCliente, saveConfig, saveAllOS,
+    updateOS, setStatus, chatSend, upsertVehicle, upsertCliente, saveConfig, saveAllOS, registrarPagamento,
     /* — await-áveis — */
     novaOS, loginCliente, ativarCliente, clientePorConvite, loginStaff, logoutAuth,
     /* — app do cliente (RPCs com validação server-side) — */
