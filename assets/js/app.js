@@ -579,8 +579,9 @@
       pay.disabled = true; // bloqueia duplo clique antes do re-render
       // DEMO/local: confirma na hora (ilustrativo). Em produção o gateway
       // (Mercado Pago / Stone) confirma por webhook e dispara este mesmo efeito.
-      WERK.registrarPagamento(o.numero, { valor: total, desc: `Pix ${WERK.brl(total)} · NF emitida · garantia ativada`, ator: 'Cliente (app)' });
-      toast('Pagamento confirmado ✓', 'Nota fiscal e garantia liberadas. Recibo em Documentos.');
+      const paga = WERK.registrarPagamento(o.numero, { valor: total, desc: `Pix ${WERK.brl(total)} · NF emitida · garantia ativada`, ator: 'Cliente (app)' });
+      if (paga) toast('Pagamento confirmado ✓', 'Nota fiscal e garantia liberadas. Recibo em Documentos.');
+      else toast('Esta OS já está paga', 'A nota fiscal e a garantia já foram liberadas.'); // UI stale
       renderOSDetail(view);
     });
   }

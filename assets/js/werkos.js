@@ -855,9 +855,12 @@
     $('#payOk').addEventListener('click', () => {
       const retirada = $('#retirada').value;
       // mesmo registro de pagamento/NF/garantia do app do cliente (contrato WERK)
-      WERK.registrarPagamento(os.numero, { valor: total, retirada, ator: 'Financeiro', desc: `Pix ${WERK.brl(total)} · NF emitida automaticamente · garantia por item ativada.` });
-      if (typeof EVX !== 'undefined') EVX.pushNotification({ titulo: `OS #${os.numero} — pagamento confirmado`, texto: `Recibo e NF disponíveis no app. Retirada: ${retirada}.`, quando: Date.now(), tipo: 'ok' });
-      closeModal(); toast('Pagamento registrado', 'NF emitida e garantias ativadas.');
+      const paga = WERK.registrarPagamento(os.numero, { valor: total, retirada, ator: 'Financeiro', desc: `Pix ${WERK.brl(total)} · NF emitida automaticamente · garantia por item ativada.` });
+      // só notifica/toast de sucesso quando registrou de fato (evita push/feedback
+      // duplicado se o checkout for reaberto ou houver concorrência).
+      if (paga && typeof EVX !== 'undefined') EVX.pushNotification({ titulo: `OS #${os.numero} — pagamento confirmado`, texto: `Recibo e NF disponíveis no app. Retirada: ${retirada}.`, quando: Date.now(), tipo: 'ok' });
+      closeModal();
+      toast(paga ? 'Pagamento registrado' : 'OS já estava paga', paga ? 'NF emitida e garantias ativadas.' : 'NF e garantias já haviam sido liberadas.');
       views.os(os.numero);
     });
   }

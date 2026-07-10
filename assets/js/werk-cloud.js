@@ -869,12 +869,12 @@
   const registrarPagamento = (numero, opts) => {
     opts = opts || {};
     const alvo = getOS(numero);
-    if (!alvo || alvo.pagamento) return alvo || null;
+    if (!alvo || alvo.pagamento) return null; // já pago/inexistente: no-op → o chamador ajusta a mensagem
     const cfgG = getConfig().garantiaMeses;
     const agora = new Date();
     const valor = opts.valor != null ? opts.valor : local.totalOS(alvo, true);
     updateOS(numero, (o) => local._aplicarPagamento(o, { metodo: opts.metodo, valor, retirada: opts.retirada, desc: opts.desc, ator: opts.ator }, agora, cfgG));
-    return getOS(numero);
+    return getOS(numero); // OS atualizada = pagamento recém-registrado
   };
 
   /* ============================================================
