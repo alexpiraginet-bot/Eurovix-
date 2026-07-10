@@ -220,3 +220,44 @@ body.theme-bmw .bmw-link::after{content:"›";font-size:18px;line-height:1;margi
 
 /* Reveal mais sóbrio no claro */
 body.theme-bmw .reveal{transform:translateY(16px)}
+
+/* ============================================================
+   TEMA ESCURO para as superfícies do cliente
+   (html[data-theme="dark"] + body.theme-bmw)
+   As bandas escuras de campanha (hero, performance, footer)
+   permanecem idênticas — como no bmw.com.
+   ============================================================ */
+html[data-theme="dark"] body.theme-bmw{
+  --bmw:#4A94F0;
+  --bmw-dark:#2F6FD0;
+  --bmw-soft:rgba(74,148,240,.14);
+  --ink:#ECEEF2;
+  --ink-2:#A8B0BB;
+  --ink-3:#79818C;
+  --paper:#12151B;
+  --stage:#1A1F27;
+  --stage-2:#0D1014;
+  --line:rgba(255,255,255,.09);
+  --line-strong:rgba(255,255,255,.2);
+  --ok:#3ECF77;
+  --ok-soft:rgba(62,207,119,.13);
+  --warn:#E8B031;
+  --warn-soft:rgba(232,176,49,.12);
+  --danger:#FF6B5E;
+  --danger-soft:rgba(255,107,94,.12);
+  --shadow:0 14px 40px rgba(0,0,0,.5);
+  --shadow-sm:0 6px 20px rgba(0,0,0,.4);
+  background:var(--stage-2);
+  color:var(--ink);
+}
+html[data-theme="dark"] body.theme-bmw .btn-secondary{color:var(--ink);border-color:var(--ink-2)}
+html[data-theme="dark"] body.theme-bmw .btn-secondary:hover{border-color:var(--bmw);color:var(--bmw)}
+
+/* Botão de tema (todas as superfícies) */
+.theme-btn{
+  width:40px;height:40px;border-radius:6px;flex:none;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:transparent;border:1px solid var(--line-strong);
+  cursor:pointer;font-size:16px;line-height:1;transition:border-color .2s;
+}
+.theme-btn:hover{border-color:var(--bmw,#1C69D4)}

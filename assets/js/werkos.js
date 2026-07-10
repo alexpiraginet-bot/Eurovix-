@@ -106,6 +106,18 @@
   window.addEventListener('hashchange', route);
   $$('.wk-nav button').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
 
+  /* Navegação mobile: burger + backdrop */
+  const burger = $('#wkBurger'), backdrop = $('#wkBackdrop'), side = $('#wkSide');
+  function closeSide() { side.classList.remove('open'); backdrop.classList.remove('show'); }
+  if (burger) {
+    burger.addEventListener('click', () => {
+      side.classList.toggle('open');
+      backdrop.classList.toggle('show', side.classList.contains('open'));
+    });
+    backdrop.addEventListener('click', closeSide);
+    $$('.wk-nav button').forEach(b => b.addEventListener('click', closeSide));
+  }
+
   const sevIcon = { critico: '🔴', preventivo: '🟡', ok: '🟢' };
   const head = (t, sub, actions) => `
     <div class="wk-head">
@@ -116,32 +128,113 @@
   /* ============================================================
      VIEW · KANBAN
      ============================================================ */
+  const VIEWKEY = 'evx.werk.view';
+  let boardMode = null;
+  let boardQ = '';
+  function getBoardMode() {
+    if (boardMode) return boardMode;
+    try { boardMode = localStorage.getItem(VIEWKEY); } catch (e) {}
+    if (!boardMode) boardMode = window.innerWidth < 880 ? 'lista' : 'kanban';
+    return boardMode;
+  }
+  function setBoardMode(m) {
+    boardMode = m;
+    try { localStorage.setItem(VIEWKEY, m); } catch (e) {}
+    $$('#boardSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+    renderBoardBody();
+  }
+  const modeloCurto = (o) => (o.veiculo || '').replace('BMW ', '').split(' (')[0];
+  function boardData() {
+    const all = WERK.getAllOS().filter(o => o.status !== 'entregue');
+    const q = boardQ.trim().toLowerCase();
+    if (!q) return all;
+    return all.filter(o => `#${o.numero} ${o.placa} ${o.cliente} ${o.veiculo}`.toLowerCase().includes(q));
+  }
+  const sevPills = (o) => `<div class="sev-pills">${o.itens.map(i => `<span class="sev ${i.severidade}"></span>`).join('')}</div>`;
+
+  function listaHTML(data) {
+    const groups = WERK.STATUS.map(st => {
+      const rows = data.filter(o => o.status === st.id);
+      if (!rows.length) return '';
+      return `
+        <div class="bl-group" style="--st:${st.cor}">
+          <div class="bl-head"><span class="bl-dot"></span>${st.nome}<span class="bl-count">${rows.length}</span></div>
+          ${rows.map(o => `
+            <div class="bl-row" data-os="${o.numero}">
+              <b>#${o.numero} · ${o.placa || '—'}</b>
+              <span class="bl-sub">${o.cliente.split(' ')[0]} · ${modeloCurto(o)}</span>
+              <span class="bl-val">${WERK.brl(WERK.totalOS(o, !!o.aceite))}</span>
+              <span class="bl-chev">›</span>
+            </div>`).join('')}
+        </div>`;
+    }).join('');
+    return groups || `<div class="board-empty">Nenhuma OS encontrada${boardQ ? ' para "' + boardQ + '"' : ''}.</div>`;
+  }
+
+  function gradeHTML(data) {
+    const orden = [...data].sort((a, b) => WERK.statusIdx(a.status) - WERK.statusIdx(b.status));
+    if (!orden.length) return `<div class="board-empty">Nenhuma OS encontrada${boardQ ? ' para "' + boardQ + '"' : ''}.</div>`;
+    return `<div class="bg-grid">${orden.map(o => {
+      const st = WERK.STATUS[WERK.statusIdx(o.status)];
+      return `
+        <div class="bg-tile" data-os="${o.numero}" style="--st:${st.cor}">
+          <div class="bg-status">${st.nome}</div>
+          <b>${o.placa || '#' + o.numero}</b>
+          <span class="bg-mod">${modeloCurto(o)}</span>
+          <span class="bg-cli">${o.cliente}</span>
+          <div class="bg-foot">${sevPills(o)}<span class="bg-num">#${o.numero}</span></div>
+        </div>`;
+    }).join('')}</div>`;
+  }
+
+  function kanbanHTML(data) {
+    return `<div class="kanban">${WERK.STATUS.map(st => {
+      const cards = data.filter(o => o.status === st.id);
+      return `
+        <div class="kcol" style="--st:${st.cor}">
+          <div class="kcol-head"><span>${st.nome}</span><span class="count">${cards.length}</span></div>
+          <div class="kcol-body">
+            ${cards.map(o => `
+              <div class="kcard" data-os="${o.numero}">
+                <b>#${o.numero} · ${o.placa || o.cliente.split(' ')[0]}</b>
+                <div class="kv">${o.cliente.split(' ')[0]} · ${modeloCurto(o)}</div>
+                <div class="kfoot">${sevPills(o)}<span class="ktec">${WERK.brl(WERK.totalOS(o, !!o.aceite))}</span></div>
+              </div>`).join('') || '<div style="font-size:11px;color:var(--txt-3);padding:8px">vazio</div>'}
+          </div>
+        </div>`;
+    }).join('')}</div>`;
+  }
+
+  function renderBoardBody() {
+    const el = $('#boardBody');
+    if (!el) return;
+    const data = boardData();
+    const mode = getBoardMode();
+    el.innerHTML = mode === 'lista' ? listaHTML(data) : mode === 'grade' ? gradeHTML(data) : kanbanHTML(data);
+    $$('[data-os]', el).forEach(k => k.addEventListener('click', () => { location.hash = '#/os/' + k.dataset.os; }));
+  }
+
   views.kanban = () => {
     const all = WERK.getAllOS().filter(o => o.status !== 'entregue');
-    const hoje = WERK.getAllOS().filter(o => o.status === 'entregue');
-    main.innerHTML = head('Kanban da Oficina',
-      `${all.length} OS ativas · ${hoje.length} entregues no histórico`,
+    const done = WERK.getAllOS().filter(o => o.status === 'entregue');
+    main.innerHTML = head('Quadro da Oficina',
+      `${all.length} OS ativas · ${done.length} entregues no histórico`,
       `<button class="btn btn-primary" onclick="location.hash='#/checkin'">+ Novo check-in</button>`) + `
-      <div class="kanban">
-        ${WERK.STATUS.map(st => {
-          const cards = all.filter(o => o.status === st.id);
-          return `
-            <div class="kcol">
-              <div class="kcol-head"><span>${st.nome}</span><span class="count">${cards.length}</span></div>
-              <div class="kcol-body">
-                ${cards.map(o => `
-                  <div class="kcard" onclick="location.hash='#/os/${o.numero}'">
-                    <b>OS #${o.numero} · ${o.cliente.split(' ')[0]}</b>
-                    <div class="kv">${o.veiculo}<br>${o.placa} · ${o.tecnico || 'sem técnico'}</div>
-                    <div class="kfoot">
-                      <div class="sev-pills">${o.itens.map(i => `<span class="sev ${i.severidade}"></span>`).join('')}</div>
-                      <span class="ktec">${WERK.brl(WERK.totalOS(o, o.aceite ? true : false))}</span>
-                    </div>
-                  </div>`).join('') || '<div style="font-size:11px;color:var(--txt-3);padding:8px">vazio</div>'}
-              </div>
-            </div>`;
-        }).join('')}
-      </div>`;
+      <div class="board-tools">
+        <div class="seg" id="boardSeg">
+          <button data-m="lista">☰ Lista</button>
+          <button data-m="grade">▦ Grade</button>
+          <button data-m="kanban">⫴ Kanban</button>
+        </div>
+        <input id="boardQ" class="board-q" placeholder="Buscar placa, cliente, modelo, nº…" value="${boardQ.replace(/"/g, '&quot;')}">
+      </div>
+      <div id="boardBody"></div>`;
+    $$('#boardSeg button').forEach(b => {
+      b.classList.toggle('on', b.dataset.m === getBoardMode());
+      b.addEventListener('click', () => setBoardMode(b.dataset.m));
+    });
+    $('#boardQ').addEventListener('input', (e) => { boardQ = e.target.value; renderBoardBody(); });
+    renderBoardBody();
   };
 
   /* ============================================================
@@ -985,7 +1078,7 @@
         </div>
       </div>
       <div class="wk-actions" style="justify-content:space-between">
-        <button class="btn btn-secondary" id="cf-reset">↺ Resetar demo (limpa localStorage)</button>
+        <button class="btn btn-secondary" id="cf-seed15">🚗 Carga de teste: +15 OS</button>\n        <button class="btn btn-secondary" id="cf-reset">↺ Resetar demo (limpa localStorage)</button>
         <button class="btn btn-primary" id="cf-save">Salvar configurações</button>
       </div>`;
     $('#cf-save').addEventListener('click', () => {
@@ -998,6 +1091,49 @@
       WERK.saveConfig(c2);
       toast('Configurações salvas', 'Novos orçamentos usam os valores atualizados.');
     });
+    $('#cf-seed15').addEventListener('click', () => {
+      const modelos = [
+        ['WBA7A91000', 'BMW 320i M Sport (G20)'], ['WBA5U71000', 'BMW M135i xDrive (F40)'],
+        ['WBAJA51000', 'BMW X1 sDrive20i (F48)'], ['WBS8M91000', 'BMW M3 Competition (G80)'],
+        ['WBY7Z21000', 'BMW i4 eDrive40 (G26)'],
+      ];
+      const nomes = ['Carlos Souza', 'Fernanda Lima', 'João Pedro', 'Mariana Alves', 'Rafael Torres', 'Beatriz Melo', 'Gustavo Rocha', 'Larissa Prado', 'Eduardo Nunes', 'Camila Duarte'];
+      const cats = ['oleo', 'freio_d', 'disco_d', 'vela', 'amortecedor', 'bieleta', 'bomba_agua', 'correia'];
+      const cfg2 = WERK.getConfig();
+      const AL = 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789';
+      const rnd = (n) => Math.floor(Math.random() * n);
+      for (let i = 0; i < 15; i++) {
+        const [pref, nomeM] = modelos[rnd(modelos.length)];
+        let sufixo = '';
+        for (let j = 0; j < 7; j++) sufixo += AL[rnd(AL.length)];
+        const vin = WERK.fixVIN(pref + sufixo);
+        const placa = AL[rnd(24)] + AL[rnd(24)] + AL[rnd(24)] + '-' + rnd(10) + AL[rnd(24)] + rnd(10) + rnd(10);
+        const os = WERK.novaOS({
+          vin, veiculo: nomeM, placa,
+          cliente: nomes[rnd(nomes.length)], telefone: '',
+          sintoma: 'OS de carga de teste.',
+          tecnico: cfg2.tecnicos[rnd(cfg2.tecnicos.length)].nome,
+          checkin: { ts: new Date().toISOString(), odometro: 20000 + rnd(90000), combustivel: 25 + rnd(70), itens: {}, luzes: [], danos: [], fotos: 4, assinatura: true },
+          ator: 'Carga de teste',
+        });
+        const stIdx = rnd(WERK.STATUS.length);
+        WERK.updateOS(os.numero, (o) => {
+          const nItens = 1 + rnd(3);
+          for (let k = 0; k < nItens; k++) {
+            const sev = ['critico', 'preventivo', 'preventivo'][rnd(3)];
+            const it = WERK.novoItem(o, { titulo: 'Item de teste ' + (k + 1), severidade: sev, nota: '', midia: 'demo', categoria: cats[rnd(cats.length)] }, cfg2);
+            if (stIdx > 2) { it.aprovacao = 'aprovado'; it.nivelEscolhido = ['original', 'oem', 'aftermarket'][rnd(3)]; }
+            o.itens.push(it);
+          }
+          if (stIdx > 2) o.aceite = { assinatura: true, ip: 'teste', hash: 'carga-' + o.numero, ts: new Date().toISOString() };
+          o.status = WERK.STATUS[stIdx].id;
+        });
+      }
+      toast('Carga criada', '15 OS de teste espalhadas pelo quadro — veja o modo Grade.');
+      location.hash = '#/kanban';
+      route();
+    });
+
     $('#cf-reset').addEventListener('click', () => {
       if (!confirm('Limpar todos os dados da demo (OS, veículos, notificações)?')) return;
       Object.keys(localStorage).filter(k => k.startsWith('evx.')).forEach(k => localStorage.removeItem(k));

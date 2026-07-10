@@ -21,7 +21,7 @@
 /* ---------- Header branco ---------- */
 .site-header{
   position:sticky;top:0;z-index:100;
-  background:#fff;
+  background:var(--paper);
   border-bottom:1px solid var(--line);
   transition:box-shadow .3s ease;
 }
@@ -47,7 +47,7 @@
 .header-cta .btn{padding:12px 24px;font-size:13.5px}
 .menu-btn{
   display:none;width:44px;height:44px;border-radius:var(--radius-sm);
-  border:1px solid var(--line-strong);background:#fff;cursor:pointer;
+  border:1px solid var(--line-strong);background:var(--paper);cursor:pointer;
   flex-direction:column;align-items:center;justify-content:center;gap:5px;
 }
 .menu-btn span{width:18px;height:2px;background:var(--ink);border-radius:2px;transition:all .3s}
@@ -58,7 +58,7 @@
 @media (max-width:960px){
   .main-nav{
     position:fixed;inset:0;z-index:90;flex-direction:column;justify-content:center;gap:8px;
-    background:rgba(255,255,255,.98);backdrop-filter:blur(10px);
+    background:var(--paper);
     opacity:0;pointer-events:none;transition:opacity .3s;
   }
   .main-nav.open{opacity:1;pointer-events:auto}
@@ -124,7 +124,7 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
 }
 
 /* ---------- Pilares: régua branca com hairlines ---------- */
-.pillars{background:#fff;border-bottom:1px solid var(--line)}
+.pillars{background:var(--paper);border-bottom:1px solid var(--line)}
 .pillars .container{
   display:grid;grid-template-columns:repeat(5,1fr);
   padding-top:0;padding-bottom:0;
@@ -156,7 +156,7 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
 }
 
 /* ---------- Seções ---------- */
-.section{padding:clamp(56px,9vh,104px) 0;position:relative;background:#fff}
+.section{padding:clamp(56px,9vh,104px) 0;position:relative;background:var(--paper)}
 .section.alt{background:var(--stage-2)}
 .section-head{max-width:720px;margin-bottom:clamp(28px,5vh,48px)}
 .section-head h2{
@@ -171,7 +171,7 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
 /* ---------- Stats ---------- */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(12px,2vw,20px)}
 .stat{
-  background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
   padding:clamp(18px,2.4vw,26px);
 }
 .stat::after{display:none}
@@ -211,7 +211,7 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
 /* ---------- Serviços ---------- */
 .services-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(14px,2vw,20px)}
 .service-card{
-  background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
   padding:clamp(20px,2.4vw,26px);display:flex;flex-direction:column;gap:13px;
   transition:box-shadow .25s ease,border-color .25s ease;position:relative;overflow:hidden;
 }
@@ -282,7 +282,7 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
 .process{counter-reset:step}
 .process-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(14px,2vw,20px)}
 .step{
-  position:relative;background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  position:relative;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
   padding:26px 24px 22px;counter-increment:step;overflow:hidden;
   transition:box-shadow .25s,border-color .25s;
 }
@@ -328,10 +328,10 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
 .ps-head{padding:44px 18px 12px;display:flex;justify-content:space-between;align-items:center}
 .ps-head .hello{font-size:11px;color:var(--ink-3)}
 .ps-head .hello b{display:block;font-size:14.5px;color:var(--ink);font-weight:700}
-.ps-bell{width:32px;height:32px;border-radius:var(--radius-sm);background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink-2);position:relative}
+.ps-bell{width:32px;height:32px;border-radius:var(--radius-sm);background:var(--paper);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink-2);position:relative}
 .ps-bell::after{content:"";position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--bmw)}
 .ps-car{
-  margin:8px 14px;background:#fff;
+  margin:8px 14px;background:var(--paper);
   border:1px solid var(--line);border-radius:14px;padding:16px;
 }
 .ps-car .mod{font-weight:700;font-size:16px;color:var(--ink)}
@@ -344,7 +344,7 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
 .ps-next{font-size:9.8px;color:var(--ink-2);margin-top:7px}
 .ps-next b{color:var(--ink)}
 .ps-os{
-  margin:6px 14px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px 15px;
+  margin:6px 14px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:13px 15px;
   display:flex;align-items:center;gap:12px;
 }
 .ps-os .dot{width:9px;height:9px;border-radius:50%;background:var(--warn);flex:none}
@@ -355,7 +355,7 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
 .ps-os .st.ok{color:var(--ok)}
 .ps-tab{
   margin-top:auto;display:flex;justify-content:space-around;align-items:center;
-  border-top:1px solid var(--line);padding:12px 6px 16px;background:#fff;
+  border-top:1px solid var(--line);padding:12px 6px 16px;background:var(--paper);
 }
 .ps-tab .ti{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:8px;color:var(--ink-3)}
 .ps-tab .ti.on{color:var(--bmw)}
@@ -363,7 +363,7 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
 /* ---------- Depoimentos ---------- */
 .testimonials{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(14px,2vw,20px)}
 .tcard{
-  background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
   padding:clamp(20px,2.4vw,26px);display:flex;flex-direction:column;gap:14px;
 }
 .tcard .stars{display:flex;gap:3px;color:var(--bmw)}
@@ -422,7 +422,7 @@ body.theme-bmw .cta-band .btn-secondary:hover{border-color:var(--bmw);color:var(
 /* ---------- Contato ---------- */
 .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,3vw,36px)}
 .contact-card{
-  background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
   padding:clamp(22px,2.6vw,30px);display:grid;gap:18px;align-content:start;
 }
 .contact-line{display:flex;gap:14px;align-items:start}
@@ -500,7 +500,7 @@ body.theme-bmw .cta-band .btn-secondary:hover{border-color:var(--bmw);color:var(
   width:28px;height:28px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   font-weight:700;font-size:12px;
-  background:#fff;border:1px solid var(--line-strong);color:var(--ink-3);
+  background:var(--paper);border:1px solid var(--line-strong);color:var(--ink-3);
   transition:all .3s;
 }
 .pstep::after{
@@ -515,7 +515,7 @@ body.theme-bmw .cta-band .btn-secondary:hover{border-color:var(--bmw);color:var(
 .pstep.done::after{background:var(--ok)}
 
 .booking-card{
-  background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-lg);
   padding:clamp(24px,3.4vw,40px);box-shadow:var(--shadow-sm);
 }
 .booking-card h2{font-size:20px;font-weight:700;margin-bottom:6px;color:var(--ink)}
@@ -530,7 +530,7 @@ body.theme-bmw .cta-band .btn-secondary:hover{border-color:var(--bmw);color:var(
   letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin-bottom:8px;
 }
 .field input,.field select,.field textarea{
-  width:100%;background:#fff;border:1px solid var(--line-strong);border-radius:var(--radius-sm);
+  width:100%;background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius-sm);
   padding:13px 15px;font-size:14.5px;color:var(--ink);transition:border-color .2s;
 }
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--bmw);outline:none}
@@ -545,7 +545,7 @@ body.theme-bmw .cta-band .btn-secondary:hover{border-color:var(--bmw);color:var(
 @media (max-width:640px){.svc-options{grid-template-columns:1fr}}
 .svc-option{
   display:flex;gap:13px;align-items:center;cursor:pointer;
-  background:#fff;border:1px solid var(--line-strong);border-radius:var(--radius);
+  background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);
   padding:15px 16px;transition:all .2s;
 }
 .svc-option:hover{border-color:var(--ink-3)}
@@ -555,13 +555,13 @@ body.theme-bmw .cta-band .btn-secondary:hover{border-color:var(--bmw);color:var(
   display:flex;align-items:center;justify-content:center;
   background:var(--bmw-soft);color:var(--bmw);
 }
-.svc-option.sel .ico-wrap{background:#fff}
+.svc-option.sel .ico-wrap{background:var(--paper)}
 .svc-option b{font-size:14px;display:block;color:var(--ink);font-weight:600}
 .svc-option span{font-size:11.5px;color:var(--ink-2)}
 
 .date-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-bottom:22px}
 .date-cell{
-  background:#fff;border:1px solid var(--line-strong);border-radius:var(--radius);
+  background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);
   padding:12px 8px;text-align:center;cursor:pointer;transition:all .2s;
 }
 .date-cell:hover{border-color:var(--ink-3)}
@@ -571,7 +571,7 @@ body.theme-bmw .cta-band .btn-secondary:hover{border-color:var(--bmw);color:var(
 .date-cell .mon{font-size:10px;color:var(--ink-2)}
 .slot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:10px}
 .slot{
-  background:#fff;border:1px solid var(--line-strong);border-radius:var(--radius-sm);
+  background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius-sm);
   padding:11px 6px;text-align:center;cursor:pointer;
   font-weight:600;font-size:13.5px;color:var(--ink);transition:all .2s;
 }

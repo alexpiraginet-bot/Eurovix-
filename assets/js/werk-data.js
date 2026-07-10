@@ -21,14 +21,14 @@ const WERK = (() => {
      1 · CICLO DE VIDA — kanban de 8 estados (Etapa 5 da spec)
      ============================================================ */
   const STATUS = [
-    { id: 'fila',        nome: 'Fila',                  cliente: 'Veículo recebido',        icon: 'list' },
-    { id: 'diagnostico', nome: 'Diagnóstico',           cliente: 'Em diagnóstico',          icon: 'scan' },
-    { id: 'aprovacao',   nome: 'Aguardando aprovação',  cliente: 'Orçamento aguardando seu OK', icon: 'doc' },
-    { id: 'peca',        nome: 'Aguardando peça',       cliente: 'Aguardando peça',         icon: 'part' },
-    { id: 'execucao',    nome: 'Em execução',           cliente: 'Em execução no box',      icon: 'wrench' },
-    { id: 'qc',          nome: 'Controle de qualidade', cliente: 'Controle de qualidade',   icon: 'shield' },
-    { id: 'lavagem',     nome: 'Lavagem',               cliente: 'Lavagem e acabamento',    icon: 'car' },
-    { id: 'pronto',      nome: 'Pronto',                cliente: 'Pronto para retirada 🏁', icon: 'check' },
+    { id: 'fila',        nome: 'Fila',                  cliente: 'Veículo recebido',        icon: 'list',   cor: '#8E97A3' },
+    { id: 'diagnostico', nome: 'Diagnóstico',           cliente: 'Em diagnóstico',          icon: 'scan',   cor: '#4A7FD4' },
+    { id: 'aprovacao',   nome: 'Aguardando aprovação',  cliente: 'Orçamento aguardando seu OK', icon: 'doc', cor: '#E8B031' },
+    { id: 'peca',        nome: 'Aguardando peça',       cliente: 'Aguardando peça',         icon: 'part',   cor: '#9B6DD6' },
+    { id: 'execucao',    nome: 'Em execução',           cliente: 'Em execução no box',      icon: 'wrench', cor: '#1C8CD4' },
+    { id: 'qc',          nome: 'Controle de qualidade', cliente: 'Controle de qualidade',   icon: 'shield', cor: '#2AA7A0' },
+    { id: 'lavagem',     nome: 'Lavagem',               cliente: 'Lavagem e acabamento',    icon: 'car',    cor: '#56B4E9' },
+    { id: 'pronto',      nome: 'Pronto',                cliente: 'Pronto para retirada 🏁', icon: 'check',  cor: '#35C46B' },
   ];
   const statusIdx = (id) => STATUS.findIndex(s => s.id === id);
 
