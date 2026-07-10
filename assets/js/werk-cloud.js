@@ -861,9 +861,11 @@
     } catch (e) { falha('mudarMinhaSenha', e); return { ok: false, erro: staffMsg(e) }; }
   };
 
-  // Pagamento no modo nuvem: escrita otimista via updateOS do adaptador (espelho
-  // + push async, igual ao checkout do painel antes) reusando local.aplicarPagamento
-  // (a regra de NF/garantia, que muta a OS) — mesma lógica do modo local, sem divergir.
+  // Pagamento no modo nuvem: escrita otimista via updateOS do adaptador (espelho +
+  // push async) reusando local._aplicarPagamento. A guarda de idempotência e o
+  // evento ficam DENTRO do mutator (sem 3º param): se o pushOS reaplicar o mutator
+  // após um conflito de versão, ele é no-op quando a OS já foi paga no servidor —
+  // não sobrescreve o pagamento nem duplica o evento de "Pagamento confirmado".
   const registrarPagamento = (numero, opts) => {
     opts = opts || {};
     const alvo = getOS(numero);
@@ -871,8 +873,7 @@
     const cfgG = getConfig().garantiaMeses;
     const agora = new Date();
     const valor = opts.valor != null ? opts.valor : local.totalOS(alvo, true);
-    updateOS(numero, (o) => local._aplicarPagamento(o, { metodo: opts.metodo, valor, retirada: opts.retirada }, agora, cfgG),
-      { tipo: 'entrega', titulo: 'Pagamento confirmado', desc: opts.desc || `Pix ${local.brl(valor)} · NF emitida · garantia ativada`, ator: opts.ator || 'Sistema' });
+    updateOS(numero, (o) => local._aplicarPagamento(o, { metodo: opts.metodo, valor, retirada: opts.retirada, desc: opts.desc, ator: opts.ator }, agora, cfgG));
     return getOS(numero);
   };
 
