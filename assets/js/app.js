@@ -508,7 +508,6 @@
   // orçamento e ainda não pagou. QR real (payload EMV) + copia-e-cola + botão.
   function pagamentoHTML(o) {
     const total = WERK.totalOS(o, true);
-    const payload = WERK.pixPayload(total, 'EVX' + o.numero);
     return `
       <div class="sec-label">Pagamento</div>
       <div class="acard pay-card">
@@ -518,7 +517,7 @@
         </div>
         <div class="pay-qr" id="payQr" role="img" aria-label="QR Code Pix para pagamento"></div>
         <p class="pay-hint">Abra o app do seu banco, escaneie o QR — ou copie o código Pix abaixo.</p>
-        <div class="pay-code" id="payCode">${payload}</div>
+        <div class="pay-code" id="payCode"></div>
         <button type="button" class="btn btn-secondary pay-copy-btn" id="payCopyBtn">Copiar código Pix</button>
         <button type="button" class="btn-image" id="payPix"><img src="assets/img/ui/btn-pix.webp" alt="Pagar com Pix" width="1000" height="228"></button>
         <p class="pay-note">Ao confirmar, a nota fiscal e a garantia de cada item são liberadas na hora.</p>
@@ -529,27 +528,35 @@
     if (!qbox) return;
     const total = WERK.totalOS(o, true);
     const payload = WERK.pixPayload(total, 'EVX' + o.numero);
+    // código Pix como texto puro — a chave é configurável, então nunca interpolar em HTML
+    const codeEl = $('#payCode', view);
+    if (codeEl) codeEl.textContent = payload;
     try {
       if (typeof qrcode === 'function') {
         const qr = qrcode(0, 'M'); qr.addData(payload); qr.make();
         qbox.innerHTML = qr.createImgTag(4, 4);
+        const im = qbox.querySelector('img'); if (im) im.alt = ''; // decorativo: o container já tem aria-label
       } else { qbox.style.display = 'none'; } // sem lib: segue só o copia-e-cola
     } catch (e) { qbox.style.display = 'none'; }
     const copyBtn = $('#payCopyBtn', view);
     if (copyBtn) copyBtn.addEventListener('click', () => {
-      if (navigator.clipboard) navigator.clipboard.writeText(payload);
-      toast('Código Pix copiado', 'Cole no app do seu banco para pagar.');
+      const ok = () => toast('Código Pix copiado', 'Cole no app do seu banco para pagar.');
+      const falha = () => toast('Copie manualmente', 'Toque e segure o código acima para selecioná-lo.');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(payload).then(ok).catch(falha);
+      } else { falha(); }
     });
     const pay = $('#payPix', view);
     if (pay) pay.addEventListener('click', () => {
       // DEMO: confirma o pagamento na hora. Em produção, o gateway (Mercado
       // Pago / Stone) confirma por webhook e dispara este mesmo efeito.
       const cfgG = WERK.getConfig().garantiaMeses;
+      const agora = new Date();
       WERK.updateOS(o.numero, os => {
-        os.pagamento = { metodo: 'Pix', valor: total, ts: new Date().toISOString(), txid: 'EVX' + o.numero };
-        os.nf = { numero: `NFS-e 2026/${String(400 + o.numero % 100).padStart(6, '0')}`, ts: new Date().toISOString() };
-        const fim = new Date(); fim.setMonth(fim.getMonth() + (cfgG.peca || 12));
-        os.itens.forEach(i => { if (i.aprovacao === 'aprovado') i.garantia = { inicio: new Date().toISOString().slice(0, 10), fim: fim.toISOString().slice(0, 10) }; });
+        os.pagamento = { metodo: 'Pix', valor: total, ts: agora.toISOString(), txid: 'EVX' + o.numero };
+        os.nf = { numero: `NFS-e ${agora.getFullYear()}/${String(400 + o.numero % 100).padStart(6, '0')}`, ts: agora.toISOString() };
+        const fim = new Date(agora); fim.setMonth(fim.getMonth() + (cfgG.peca ?? 12));
+        os.itens.forEach(i => { if (i.aprovacao === 'aprovado') i.garantia = { inicio: agora.toISOString().slice(0, 10), fim: fim.toISOString().slice(0, 10) }; });
       }, { tipo: 'entrega', titulo: 'Pagamento confirmado', desc: `Pix ${WERK.brl(total)} · NF emitida · garantia ativada`, ator: 'Cliente (app)' });
       toast('Pagamento confirmado ✓', 'Nota fiscal e garantia liberadas. Recibo em Documentos.');
       renderOSDetail(view);
