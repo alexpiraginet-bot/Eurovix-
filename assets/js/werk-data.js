@@ -614,6 +614,40 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     if (aprovadosN) setStatus(numero, 'execucao', 'Sistema', 'Itens aprovados liberados para o box.');
     return getOS(numero);
   }
+  // Regra de negócio do pagamento — muta a OS `o` (formato da NF + garantias +
+  // evento de entrega) e devolve true/false. IDEMPOTENTE: se a OS já tem
+  // pagamento, é no-op e devolve false. Isso sobrevive ao refetch+reaplica do
+  // updateOS de nuvem num conflito de versão (não sobrescreve pagamento já
+  // confirmado no servidor nem duplica o evento). Fonte única, delegada pelo
+  // registrarPagamento local e pelo do adaptador de nuvem (werk-cloud.js).
+  function aplicarPagamento(o, opts, agora, cfgG) {
+    if (o.pagamento) return false;
+    o.pagamento = { metodo: opts.metodo || 'Pix', valor: opts.valor, ts: agora.toISOString(), txid: 'EVX' + o.numero };
+    if (opts.retirada) o.pagamento.retirada = opts.retirada;
+    o.nf = { numero: `NFS-e ${agora.getFullYear()}/${String(400 + o.numero % 100).padStart(6, '0')}`, ts: agora.toISOString() };
+    const fim = new Date(agora); fim.setMonth(fim.getMonth() + (cfgG.peca ?? 12));
+    o.itens.forEach(i => { if (i.aprovacao === 'aprovado') i.garantia = { inicio: agora.toISOString().slice(0, 10), fim: fim.toISOString().slice(0, 10) }; });
+    o.eventos.push({ ts: agora.toISOString(), tipo: 'entrega', titulo: 'Pagamento confirmado', desc: opts.desc || `Pix ${brl(opts.valor)} · NF emitida · garantia ativada`, ator: opts.ator || 'Sistema' });
+    return true;
+  }
+  // Registra pagamento + NF + garantias de uma OS num único ponto — usado tanto
+  // pelo checkout do painel quanto pelo pagamento no app do cliente, para não
+  // divergir o formato da NF nem as regras de garantia. A idempotência real está
+  // dentro de aplicarPagamento (no mutator); o retorno rápido aqui é só um atalho.
+  // opts: { valor, metodo, retirada, ator, desc }.
+  function registrarPagamento(numero, opts) {
+    opts = opts || {};
+    const alvo = getOS(numero);
+    if (!alvo || alvo.pagamento) return null; // já pago/inexistente: no-op → o chamador ajusta a mensagem
+    const cfgG = getConfig().garantiaMeses;
+    const agora = new Date();
+    const valor = opts.valor != null ? opts.valor : totalOS(alvo, true);
+    // guarda + evento DENTRO do mutator (sem 3º param); captura se aplicou de fato
+    // — se em concorrência o mutator virar no-op, devolve null (chamador não duplica)
+    let aplicado = false;
+    updateOS(numero, o => { aplicado = aplicarPagamento(o, { metodo: opts.metodo, valor, retirada: opts.retirada, desc: opts.desc, ator: opts.ator }, agora, cfgG); });
+    return aplicado ? getOS(numero) : null;
+  }
   function chatCliente(numero, texto) {
     const o = getOS(numero);
     return o ? chatSend(numero, o.cliente, texto) : null;
@@ -639,7 +673,8 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     staffEditar: async () => ({ ok: false, erro: 'Gestão de equipe disponível apenas no modo nuvem.' }),
     staffRemover: async () => ({ ok: false, erro: 'Gestão de equipe disponível apenas no modo nuvem.' }),
     mudarMinhaSenha: async () => ({ ok: false, erro: 'Disponível apenas no modo nuvem.' }),
-    aprovarOrcamento, chatCliente, avaliarNps,
+    aprovarOrcamento, registrarPagamento, chatCliente, avaliarNps,
+    _aplicarPagamento: aplicarPagamento, // interno: só o registrarPagamento (local e do adaptador) deve usar
     KEYS, STATUS, statusIdx, CATEGORIAS, ETK, SUPPLIERS, AW_TABLE,
     validateVIN, decodeVIN, fixVIN, checkRecalls,
     motorDePecas, itemPreco, totalOS, custoOS,

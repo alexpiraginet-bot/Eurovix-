@@ -853,15 +853,14 @@
       toast('Pix copia-e-cola copiado', 'Payload EMV com CRC16 válido.');
     });
     $('#payOk').addEventListener('click', () => {
-      const cfgG = WERK.getConfig().garantiaMeses;
-      WERK.updateOS(os.numero, o => {
-        o.pagamento = { metodo: 'Pix', valor: total, ts: new Date().toISOString(), txid: 'EVX' + o.numero, retirada: $('#retirada').value };
-        o.nf = { numero: `NFS-e 2026/${String(400 + o.numero % 100).padStart(6, '0')}`, ts: new Date().toISOString() };
-        const fim = new Date(); fim.setMonth(fim.getMonth() + cfgG.peca);
-        o.itens.forEach(i => { if (i.aprovacao === 'aprovado') i.garantia = { inicio: new Date().toISOString().slice(0, 10), fim: fim.toISOString().slice(0, 10) }; });
-      }, { tipo: 'entrega', titulo: 'Pagamento confirmado', desc: `Pix ${WERK.brl(total)} · NF emitida automaticamente · garantia por item ativada.`, ator: 'Financeiro' });
-      if (typeof EVX !== 'undefined') EVX.pushNotification({ titulo: `OS #${os.numero} — pagamento confirmado`, texto: `Recibo e NF disponíveis no app. Retirada: ${$('#retirada').value}.`, quando: Date.now(), tipo: 'ok' });
-      closeModal(); toast('Pagamento registrado', 'NF emitida e garantias ativadas.');
+      const retirada = $('#retirada').value;
+      // mesmo registro de pagamento/NF/garantia do app do cliente (contrato WERK)
+      const paga = WERK.registrarPagamento(os.numero, { valor: total, retirada, ator: 'Financeiro', desc: `Pix ${WERK.brl(total)} · NF emitida automaticamente · garantia por item ativada.` });
+      // só notifica/toast de sucesso quando registrou de fato (evita push/feedback
+      // duplicado se o checkout for reaberto ou houver concorrência).
+      if (paga && typeof EVX !== 'undefined') EVX.pushNotification({ titulo: `OS #${os.numero} — pagamento confirmado`, texto: `Recibo e NF disponíveis no app. Retirada: ${retirada}.`, quando: Date.now(), tipo: 'ok' });
+      closeModal();
+      toast(paga ? 'Pagamento registrado' : 'OS já estava paga', paga ? 'NF emitida e garantias ativadas.' : 'NF e garantias já haviam sido liberadas.');
       views.os(os.numero);
     });
   }

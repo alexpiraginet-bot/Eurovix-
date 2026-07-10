@@ -861,6 +861,24 @@
     } catch (e) { falha('mudarMinhaSenha', e); return { ok: false, erro: staffMsg(e) }; }
   };
 
+  // Pagamento no modo nuvem: escrita otimista via updateOS do adaptador (espelho +
+  // push async) reusando local._aplicarPagamento. A guarda de idempotência e o
+  // evento ficam DENTRO do mutator (sem 3º param): se o pushOS reaplicar o mutator
+  // após um conflito de versão, ele é no-op quando a OS já foi paga no servidor —
+  // não sobrescreve o pagamento nem duplica o evento de "Pagamento confirmado".
+  const registrarPagamento = (numero, opts) => {
+    opts = opts || {};
+    const alvo = getOS(numero);
+    if (!alvo || alvo.pagamento) return null; // já pago/inexistente: no-op → o chamador ajusta a mensagem
+    const cfgG = getConfig().garantiaMeses;
+    const agora = new Date();
+    const valor = opts.valor != null ? opts.valor : local.totalOS(alvo, true);
+    // captura o resultado do mutator otimista: null se virou no-op em concorrência
+    let aplicado = false;
+    updateOS(numero, (o) => { aplicado = local._aplicarPagamento(o, { metodo: opts.metodo, valor, retirada: opts.retirada, desc: opts.desc, ator: opts.ator }, agora, cfgG); });
+    return aplicado ? getOS(numero) : null;
+  };
+
   /* ============================================================
      12 · Montagem do adaptador + boot
      ============================================================ */
@@ -878,7 +896,7 @@
     getAllOS, getOS, getVehicles, getClientes, getConfig,
     clientePorTelefone, garagemDe, pendencias,
     /* — escritas otimistas (espelho + push assíncrono) — */
-    updateOS, setStatus, chatSend, upsertVehicle, upsertCliente, saveConfig, saveAllOS,
+    updateOS, setStatus, chatSend, upsertVehicle, upsertCliente, saveConfig, saveAllOS, registrarPagamento,
     /* — await-áveis — */
     novaOS, loginCliente, ativarCliente, clientePorConvite, loginStaff, logoutAuth,
     /* — app do cliente (RPCs com validação server-side) — */
