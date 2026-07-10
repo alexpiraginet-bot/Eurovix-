@@ -199,19 +199,19 @@ const WERK = (() => {
     margens: { original: 22, oem: 28, aftermarket: 35 },   // % por nível
     garantiaMeses: { peca: 12, mo: 12 },
     oficina: {
-      nome: 'EUROVIX — Oficina Especializada BMW',
-      cnpj: '12.345.678/0001-90',
-      endereco: 'Av. Nossa Senhora da Penha, 1240 — Enseada do Suá, Vitória/ES',
+      nome: 'EUROVIX REPARAÇÃO AUTOMOTIVA LTDA',
+      cnpj: '45.979.822/0001-02',
+      endereco: 'R. Maria de Lourdes Garcia, 303 — Monte Belo, Vitória/ES · CEP 29053-310',
       cidade: 'Vitória/ES',
-      fone: '(27) 3020-4890',
-      pixChave: 'financeiro@eurovix.com.br',
+      fone: '(27) 3344-5093',
+      pixChave: 'configure-sua-chave@pix (demo)',
     },
     tecnicos: [
       { id: 't1', nome: 'Régis Souza',  espec: 'Motor / Powertrain' },
       { id: 't2', nome: 'Paula Freitas', espec: 'Elétrica / Codificação' },
       { id: 't3', nome: 'Diego Ramos',  espec: 'Suspensão / Freios' },
     ],
-    consultores: [{ id: 'c1', nome: 'André Martins' }],
+    consultores: [{ id: 'c1', nome: 'Paulo Victor de Almeida' }],
   };
 
   /* ============================================================
@@ -282,7 +282,7 @@ const WERK = (() => {
       telefone: dados.telefone || '',
       sintoma: dados.sintoma || '',
       tecnico: dados.tecnico || '',
-      consultor: 'André Martins',
+      consultor: 'Paulo Victor de Almeida',
       checkin: dados.checkin || null,      // termo de entrada
       dtcs: [],
       itens: [],                            // itens de diagnóstico (com orçamento embutido)
@@ -392,7 +392,7 @@ const WERK = (() => {
         danos: [{ x: 22, y: 58, nota: 'Risco leve para-choque diant. esq.' }, { x: 70, y: 42, nota: 'Amassado porta tras. dir. (~2cm)' }],
         fotos: 8, assinatura: true,
       },
-      ator: 'André Martins',
+      ator: 'Paulo Victor de Almeida',
     });
     updateOS(os1.numero, o => {
       o.dtcs = ['480A2A — Chassis: bieleta/estabilizadora', 'CC-ID 281 — Service próximo'];
@@ -417,7 +417,7 @@ const WERK = (() => {
       sintoma: 'Luz de arrefecimento acendeu na serra. Perda de fluido visível.',
       tecnico: 'Régis Souza',
       checkin: { ts: new Date(Date.now() - 50 * 3600e3).toISOString(), odometro: 61200, combustivel: 35, itens: { documento: true, chaveReserva: true, triangulo: true, macaco: true, estepe: false }, luzes: ['Temperatura do motor'], danos: [], fotos: 9, assinatura: true },
-      ator: 'André Martins',
+      ator: 'Paulo Victor de Almeida',
     });
     updateOS(os2.numero, o => {
       o.dtcs = ['002E81 — Bomba de refrigerante: vazão abaixo do esperado'];
@@ -445,7 +445,7 @@ const WERK = (() => {
       sintoma: 'Troca de pastilhas e discos dianteiros.',
       tecnico: 'Diego Ramos',
       checkin: { ts: '2026-06-14T08:40:00', odometro: 46900, combustivel: 45, itens: { documento: true, chaveReserva: false, triangulo: true, macaco: true, estepe: true }, luzes: [], danos: [], fotos: 8, assinatura: true },
-      ator: 'André Martins',
+      ator: 'Paulo Victor de Almeida',
     });
     updateOS(os3.numero, o => {
       o.numero = 1240; // histórico
@@ -461,7 +461,7 @@ const WERK = (() => {
       o.pagamento = { metodo: 'Pix', valor: totalOS(o, true), ts: '2026-06-15T17:22:00', txid: 'EVX1240' };
       o.nf = { numero: 'NFS-e 2026/000412', ts: '2026-06-15T17:23:00' };
       o.nps = 10;
-      o.eventos.push({ ts: '2026-06-15T17:30:00', tipo: 'entrega', titulo: 'Veículo entregue', desc: 'Checkout concluído · NPS 10', ator: 'André Martins' });
+      o.eventos.push({ ts: '2026-06-15T17:30:00', tipo: 'entrega', titulo: 'Veículo entregue', desc: 'Checkout concluído · NPS 10', ator: 'Paulo Victor de Almeida' });
     });
 
     // seq segue do 1259

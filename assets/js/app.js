@@ -181,7 +181,7 @@
         <a class="qbtn" href="agendamento.html">${EVX.icon('calendar', 19)}Agendar</a>
         <button class="qbtn" data-goto="servicos">${EVX.icon('scan', 19)}Serviços</button>
         <button class="qbtn" data-goto="os">${EVX.icon('doc', 19)}Histórico</button>
-        <a class="qbtn" href="https://wa.me/${EVX.CONTACT.whatsapp}?text=${encodeURIComponent('Olá! Estou no app EUROVIX e preciso de ajuda.')}" target="_blank" rel="noopener">${EVX.icon('whats', 19)}Suporte</a>
+        <a class="qbtn" href="${EVX.CONTACT.dm}" target="_blank" rel="noopener">${EVX.icon('whats', 19)}Suporte</a>
       </div>
 
       ${live.length ? `<div class="sec-label">Em andamento <a data-goto="os">ver tudo</a></div>${live.map(osCardHTML).join('')}` : ''}
