@@ -2,14 +2,17 @@
 
 **Oficina Especializada BMW · Vitória/ES**
 
-## 🌐 Demo publicada (ao vivo)
+## 🌐 Publicação
 
-- **Painel Mestre (todos os acessos):** https://raw.githack.com/alexpiraginet-bot/Eurovix-/claude/html-scope-elaboration-jrxef5/painel.html
-- **Site:** https://raw.githack.com/alexpiraginet-bot/Eurovix-/claude/html-scope-elaboration-jrxef5/index.html
-- **App do cliente:** https://raw.githack.com/alexpiraginet-bot/Eurovix-/claude/html-scope-elaboration-jrxef5/app.html
-- **WERK OS (painel da oficina):** https://raw.githack.com/alexpiraginet-bot/Eurovix-/claude/html-scope-elaboration-jrxef5/werkos.html
+**Vercel (definitivo):** importe este repositório em [vercel.com/new](https://vercel.com/new) → *Import Git Repository* → `https://github.com/alexpiraginet-bot/Eurovix-` → framework **Other** → Deploy. Zero configuração (site estático na raiz); todo push na `main` publica automaticamente, com preview por PR e domínio próprio. Alternativa sem repo linkado: publicar os 3 arquivos de `deploy/vercel-mirror/` (service worker que espelha a `main`).
 
-Servido via githack (CDN sobre o GitHub, público) — os links do branch refletem cada push. Para URL definitiva (`alexpiraginet-bot.github.io/Eurovix-/`): habilitar **Settings → Pages → Source: GitHub Actions** uma vez e rodar o workflow `Deploy GitHub Pages` (manual — o token de CI não tem permissão para criar o site do Pages). Há também um mirror pronto para Vercel em `deploy/vercel-mirror/`.
+**Demo imediata (CDN público sobre a main):**
+- **Painel Mestre:** https://raw.githack.com/alexpiraginet-bot/Eurovix-/main/painel.html
+- **Site:** https://raw.githack.com/alexpiraginet-bot/Eurovix-/main/index.html
+- **App do cliente:** https://raw.githack.com/alexpiraginet-bot/Eurovix-/main/app.html
+- **WERK OS:** https://raw.githack.com/alexpiraginet-bot/Eurovix-/main/werkos.html
+
+GitHub Pages (`alexpiraginet-bot.github.io/Eurovix-/`) também fica a um toque: **Settings → Pages → Source: GitHub Actions** e rodar o workflow manual `Deploy GitHub Pages`.
 
 Este repositório evoluiu em duas camadas:
 

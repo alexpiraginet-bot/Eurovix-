@@ -6,7 +6,7 @@
    ============================================================ */
 
 const REPO = 'alexpiraginet-bot/Eurovix-';
-const REF = 'refs/heads/claude/html-scope-elaboration-jrxef5';
+const REF = 'refs/heads/main';
 const UPSTREAM = `https://raw.githubusercontent.com/${REPO}/${REF}`;
 const CACHE = 'evx-mirror-v1';
 
