@@ -203,7 +203,7 @@ const WERK = (() => {
       cnpj: '45.979.822/0001-02',
       endereco: 'R. Maria de Lourdes Garcia, 303 — Monte Belo, Vitória/ES · CEP 29053-310',
       cidade: 'Vitória/ES',
-      fone: '(27) 3344-5093',
+      fone: '(27) 99730-6440 (WhatsApp)',
       pixChave: 'configure-sua-chave@pix (demo)',
     },
     tecnicos: [

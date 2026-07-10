@@ -177,9 +177,11 @@ const EVX = (() => {
   const SLOTS = ['08:00', '09:00', '10:00', '11:00', '13:30', '14:30', '15:30', '16:30'];
 
   const CONTACT = {
-    // Dados públicos reais (CNPJ 45.979.822/0001-02 · registros e diretórios)
+    // Dados oficiais publicados pela empresa (bio/contato do @eurovix027 + CNPJ)
     endereco: 'R. Maria de Lourdes Garcia, 303 — Monte Belo, Vitória/ES · CEP 29053-310',
-    telefone: '(27) 3344-5093',
+    telefone: '(27) 99730-6440',
+    whatsapp: '5527997306440',
+    email: 'oficioficinaeurovix@gmail.com',
     instagram: '@eurovix027',
     instagramUrl: 'https://www.instagram.com/eurovix027',
     dm: 'https://ig.me/m/eurovix027',
