@@ -107,7 +107,7 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
   padding:clamp(18px,2.6vw,30px) clamp(22px,3vw,36px);
   box-shadow:0 24px 60px rgba(0,0,0,.45);
 }
-.hero-logo{width:min(400px,78vw);height:auto;display:block}
+.hero-logo{width:min(430px,80vw);height:auto;display:block;filter:drop-shadow(0 22px 48px rgba(0,0,0,.55))}
 .hero-chips{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .spec-card{
   display:flex;align-items:center;gap:10px;
@@ -463,11 +463,7 @@ body.theme-bmw .cta-band .btn-secondary:hover{border-color:var(--bmw);color:var(
 .footer-grid ul{list-style:none;display:grid;gap:10px}
 .footer-grid ul a{font-size:13.5px;color:#C9C9C9;transition:color .2s}
 .footer-grid ul a:hover{color:#fff}
-.footer-plate{
-  display:inline-block;background:#0B0D10;border:1px solid rgba(255,255,255,.14);
-  border-radius:var(--radius);padding:14px 18px;
-}
-.footer-plate img{width:190px;height:auto;display:block}
+.footer-logo{width:200px;height:auto;display:block}
 .footer-brand p{font-size:13px;color:#9E9E9E;line-height:1.7;margin-top:14px;max-width:34ch}
 .footer-bottom{
   margin-top:clamp(30px,5vh,44px);border-top:1px solid rgba(255,255,255,.12);

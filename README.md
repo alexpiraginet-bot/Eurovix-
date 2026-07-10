@@ -87,7 +87,7 @@ assets/js/
 
 - **Superfícies do cliente** (site, agendamento, app, painel mestre) seguem a **linguagem visual do bmw.com.br**: fundo branco, texto grafite `#262626`, **azul BMW `#1C69D4`** como única cor de ação, cantos quase retos, hairlines `#E6E6E6`, teasers escuros de campanha e tipografia neo-grotesca (**Inter** como stand-in web do BMW Type Next). Tema aplicado via `body.theme-bmw` em `tokens.css`.
 - **WERK OS** (ferramenta interna da oficina) permanece no tema escuro técnico.
-- **Logos**: somente arte oficial da marca — recortes em alta do brand board em `assets/img/brand/` (`logo-principal-dark.png`, `logo-light.png`, `app-icon-dark.png`, `favicon.png`). Nenhum logo renderizado por código. O vermelho EUROVIX vive dentro da arte do logo; a UI usa o azul BMW.
+- **Logos**: arte oficial vetorizada (Drive da marca) — `logo-oficial-branco.png` (fundos escuros) e `logo-oficial-preto.png` (fundos claros), ambos com transparência real em alta resolução; ícones de app/favicon do brand board. Nenhum logo renderizado por código. O vermelho EUROVIX vive dentro da arte do logo; a UI usa o azul BMW.
 - BMW e MINI são marcas registradas de BMW AG — a EUROVIX é oficina independente (disclaimer no rodapé); a semelhança é de linguagem de design, sem uso do roundel ou de ativos da fabricante.
 
 ## 🗺 Fases (da spec)
