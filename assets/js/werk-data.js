@@ -632,6 +632,13 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
   return {
     ready: Promise.resolve(), cloud: false, online: true,
     authUser: () => null, loginStaff: async () => null, logoutAuth: () => {},
+    /* equipe: no demo não há login — a view Equipe explica e desabilita */
+    staffPerfil: () => null,
+    staffListar: async () => ({ ok: true, lista: [] }),
+    staffCriar: async () => ({ ok: false, erro: 'Gestão de equipe disponível apenas no modo nuvem.' }),
+    staffEditar: async () => ({ ok: false, erro: 'Gestão de equipe disponível apenas no modo nuvem.' }),
+    staffRemover: async () => ({ ok: false, erro: 'Gestão de equipe disponível apenas no modo nuvem.' }),
+    mudarMinhaSenha: async () => ({ ok: false, erro: 'Disponível apenas no modo nuvem.' }),
     aprovarOrcamento, chatCliente, avaliarNps,
     KEYS, STATUS, statusIdx, CATEGORIAS, ETK, SUPPLIERS, AW_TABLE,
     validateVIN, decodeVIN, fixVIN, checkRecalls,

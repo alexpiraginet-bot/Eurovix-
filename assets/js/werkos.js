@@ -1017,6 +1017,133 @@
   };
 
   /* ============================================================
+     VIEW · EQUIPE (nuvem): colaboradores sem SQL — o login nasce
+     no próprio painel e as regras de papel valem no SERVIDOR
+     (RPCs staff_*): admin gerencia todos; gestor cria/edita só
+     mecânicos e consultores; os demais visualizam.
+     ============================================================ */
+  const PAPEIS = { mecanico: '🔧 Mecânico', consultor: '🎧 Consultor', gestor: '📋 Gestor', admin: '👑 Admin' };
+  const escHtml = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  views.equipe = async () => {
+    if (!WERK.cloud) {
+      main.innerHTML = head('Equipe', 'Acessos do WERK OS por papel: mecânico, consultor, gestor e admin.') + `
+        <div class="wk-panel" style="max-width:620px">
+          <h3>${I('user')} Disponível no modo nuvem</h3>
+          <p style="font-size:12.5px;color:var(--txt-2);line-height:1.6">Em produção, o admin cria, edita e remove os acessos
+          da equipe direto por aqui — sem SQL e sem abrir o Supabase. Nesta demonstração local não há login de equipe
+          para gerenciar; os nomes de técnico/consultor das OS vêm das Configurações.</p>
+        </div>`;
+      return;
+    }
+    const eu = WERK.authUser() || {};
+    const perfil = WERK.staffPerfil() || {};
+    const souAdmin = perfil.papel === 'admin';
+    const gerencio = souAdmin || perfil.papel === 'gestor';
+    const opcoes = souAdmin ? ['mecanico', 'consultor', 'gestor', 'admin'] : ['mecanico', 'consultor'];
+
+    main.innerHTML = head('Equipe', 'Acessos do WERK OS — sem SQL, sem dashboard.') +
+      '<div class="wk-panel"><p style="color:var(--txt-3)">Carregando a equipe…</p></div>';
+    const r = await WERK.staffListar();
+    if (!r.ok) {
+      // dica do upgrade SÓ quando as RPCs staff_* não existem — não em acesso negado/rede
+      const dica = r.faltaMigracao
+        ? `<br><span style="color:var(--txt-3)">A página 👥 Equipe precisa do último passo no banco: cole <b>supabase/EQUIPE-UPGRADE.sql</b> no SQL Editor do projeto (uma única vez) e recarregue.</span>`
+        : '';
+      main.innerHTML = head('Equipe', 'Acessos do WERK OS — sem SQL, sem dashboard.') + `
+        <div class="wk-panel"><p class="hintline err" style="display:block">${escHtml(r.erro)}${dica}</p></div>`;
+      return;
+    }
+
+    const linhas = r.lista.map(m => {
+      const souEu = m.auth_user === eu.id;
+      const alvoAlto = m.papel === 'gestor' || m.papel === 'admin';
+      const posso = souAdmin || (gerencio && !alvoAlto);
+      const sel = posso
+        ? `<select data-eq-papel="${m.auth_user}" data-eq-email="${escHtml(m.email || '')}">
+            ${opcoes.map(p => `<option value="${p}" ${p === m.papel ? 'selected' : ''}>${PAPEIS[p]}</option>`).join('')}
+            ${opcoes.includes(m.papel) ? '' : `<option value="${escHtml(m.papel)}" selected>${PAPEIS[m.papel] || escHtml(m.papel)}</option>`}
+          </select>`
+        : `<span class="ap-badge ${alvoAlto ? 'aprovado' : 'pendente'}">${PAPEIS[m.papel] || escHtml(m.papel)}</span>`;
+      return `
+        <tr>
+          <td><b>${escHtml(m.nome)}</b>${souEu ? ' <span style="color:var(--txt-3);font-size:10.5px">(você)</span>' : ''}</td>
+          <td style="font-size:12px">${escHtml(m.email || '—')}</td>
+          <td>${sel}</td>
+          <td style="font-size:11px;color:var(--txt-3)">${m.criado_em ? WERK.fd(m.criado_em) : '—'}</td>
+          <td style="white-space:nowrap">${posso && !souEu ? `<button class="quote-btn" data-eq-remover="${m.auth_user}" data-eq-nome="${escHtml(m.nome)}">remover</button>` : ''}</td>
+        </tr>`;
+    }).join('');
+
+    main.innerHTML = head('Equipe', gerencio
+      ? 'Crie o acesso e entregue e-mail + senha provisória — a pessoa já entra no WERK OS.'
+      : 'Sua conta visualiza a equipe; criar e editar é papel do gestor/admin.') + `
+      <div class="wk-panel">
+        <h3>${I('user')} Colaboradores (${r.lista.length})</h3>
+        <table class="wk-table">
+          <tr><th>Nome</th><th>E-mail (login)</th><th>Papel</th><th>Desde</th><th></th></tr>
+          ${linhas || '<tr><td colspan="5" style="color:var(--txt-3)">Ninguém ainda.</td></tr>'}
+        </table>
+        <p style="font-size:10.5px;color:var(--txt-3);margin-top:10px">Papéis: <b>admin</b> gerencia todo mundo · <b>gestor</b> cria e edita mecânicos e consultores · mudar o papel no seletor salva na hora. As regras valem no servidor — não é só visual.</p>
+      </div>
+      ${gerencio ? `
+      <div class="wk-panel">
+        <h3>＋ Novo colaborador</h3>
+        <div class="wk-grid2">
+          <div class="wfield"><label>Nome completo</label><input id="eq-nome" placeholder="Ex.: Paulo Ferreira"></div>
+          <div class="wfield"><label>E-mail (será o login)</label><input id="eq-email" type="email" placeholder="paulo@eurovix.com.br" autocomplete="off"></div>
+        </div>
+        <div class="wk-grid2" style="margin-top:12px">
+          <div class="wfield"><label>Senha provisória (mín. 6)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="eq-senha" type="password" autocomplete="new-password" placeholder="a pessoa troca depois em Configurações" style="flex:1">
+              <button type="button" class="quote-btn" id="eq-senha-ver" aria-label="Mostrar ou ocultar a senha">👁 ver</button>
+            </div>
+          </div>
+          <div class="wfield"><label>Papel</label><select id="eq-papel">${opcoes.map(p => `<option value="${p}">${PAPEIS[p]}</option>`).join('')}</select></div>
+        </div>
+        <div class="wk-actions"><button class="btn btn-primary" id="eq-criar">Criar acesso</button></div>
+        <p style="font-size:10.5px;color:var(--txt-3)">O login nasce aqui mesmo — nada de Supabase. ${souAdmin ? '' : 'Gestor cria mecânicos e consultores; gestores e admins, só o admin.'}</p>
+      </div>` : ''}`;
+
+    $$('[data-eq-papel]').forEach(s => s.addEventListener('change', async () => {
+      const linha = r.lista.find(m => m.auth_user === s.dataset.eqPapel);
+      const res = await WERK.staffEditar({ email: s.dataset.eqEmail, nome: (linha && linha.nome) || '?', papel: s.value });
+      if (res.ok) toast('Papel atualizado', `${(linha && linha.nome) || 'Colaborador'} agora é ${PAPEIS[s.value] || s.value}.`);
+      else toast('Não foi possível', res.erro);
+      views.equipe(); // re-render devolve a verdade do servidor (sucesso OU rollback visual)
+    }));
+    $$('[data-eq-remover]').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm(`Remover ${b.dataset.eqNome} da equipe? O login continua existindo, mas o WERK OS fecha para essa pessoa.`)) return;
+      const res = await WERK.staffRemover(b.dataset.eqRemover);
+      if (res.ok) toast('Removido da equipe', `${b.dataset.eqNome} não acessa mais o painel.`);
+      else toast('Não foi possível', res.erro);
+      views.equipe();
+    }));
+    const verSenha = $('#eq-senha-ver');
+    if (verSenha) verSenha.addEventListener('click', () => {
+      const inp = $('#eq-senha');
+      const mostrando = inp.type === 'text';
+      inp.type = mostrando ? 'password' : 'text';
+      verSenha.textContent = mostrando ? '👁 ver' : '🙈 ocultar';
+    });
+    const criar = $('#eq-criar');
+    if (criar) criar.addEventListener('click', async () => {
+      const nome = $('#eq-nome').value.trim(), email = $('#eq-email').value.trim();
+      const senha = $('#eq-senha').value, papel = $('#eq-papel').value;
+      if (!nome || !/.+@.+\..+/.test(email)) { toast('Confira os campos', 'Nome e um e-mail válido são obrigatórios.'); return; }
+      if ((senha || '').length < 6) { toast('Senha curta', 'A senha provisória precisa de pelo menos 6 caracteres.'); return; }
+      criar.disabled = true; criar.textContent = 'Criando…';
+      const res = await WERK.staffCriar({ nome, email, senha, papel });
+      if (res.ok) {
+        toast('Acesso criado', res.jaExistia
+          ? `${nome} já tinha um login — a senha antiga foi mantida e o papel, ajustado.`
+          : `Entregue a ${nome.split(' ')[0]}: ${email} + a senha provisória escolhida.`);
+        views.equipe();
+      } else { toast('Não foi possível criar', res.erro); criar.disabled = false; criar.textContent = 'Criar acesso'; }
+    });
+  };
+
+  /* ============================================================
      VIEW · MOTOR DE PEÇAS (playground das 4 camadas)
      ============================================================ */
   views.pecas = () => {
@@ -1174,7 +1301,11 @@
       ${WERK.cloud ? `
       <div class="wk-panel">
         <h3>${I('user')} Sessão da equipe (nuvem)</h3>
-        <p style="font-size:12px;color:var(--txt-2);margin-bottom:10px">Conectado como <b>${(WERK.authUser() || {}).email || '—'}</b> · dados servidos pelo Supabase com RLS.</p>
+        <p style="font-size:12px;color:var(--txt-2);margin-bottom:10px">Conectado como <b>${(WERK.authUser() || {}).email || '—'}</b>${(WERK.staffPerfil() || {}).papel ? ` · papel <b>${(WERK.staffPerfil() || {}).papel}</b>` : ''} · dados servidos pelo Supabase com RLS.</p>
+        <div class="wk-grid2" style="max-width:520px;margin-bottom:12px">
+          <div class="wfield"><label>Nova senha (mín. 6)</label><input id="cf-senha-nova" type="password" autocomplete="new-password"></div>
+          <div style="display:flex;align-items:flex-end"><button class="btn btn-secondary" id="cf-senha-trocar">🔑 Trocar minha senha</button></div>
+        </div>
         <button class="btn btn-secondary" id="cf-sair">Sair do WERK OS</button>
       </div>` : ''}
       <div class="wk-actions" style="justify-content:space-between">
@@ -1249,6 +1380,14 @@
     });
     const sair = $('#cf-sair');
     if (sair) sair.addEventListener('click', async () => { await WERK.logoutAuth(); location.reload(); });
+    const trocar = $('#cf-senha-trocar');
+    if (trocar) trocar.addEventListener('click', async () => {
+      const nova = $('#cf-senha-nova').value;
+      if ((nova || '').length < 6) { toast('Senha curta', 'Use pelo menos 6 caracteres.'); return; }
+      const res = await WERK.mudarMinhaSenha(nova);
+      if (res.ok) { $('#cf-senha-nova').value = ''; toast('Senha trocada', 'Use a nova senha no próximo login.'); }
+      else toast('Não foi possível', res.erro);
+    });
   };
 
   /* Tempo real entre abas: aprovações/mudanças feitas no app

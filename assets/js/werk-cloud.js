@@ -87,6 +87,7 @@
   };
   let user = null;        // usuário Supabase Auth atual (síncrono p/ a UI)
   let isStaff = false;    // detectado na hidratação (linhas visíveis em `staff`)
+  let meuPapel = null;    // papel do usuário atual na equipe (admin/gestor/…)
   let conviteBuf = null;  // resposta de convite_info p/ garagemDe na tela de cadastro
 
   const sortOS = () => mirror.os.sort((a, b) => new Date(b.criada) - new Date(a.criada)); // paridade com unshift local
@@ -244,7 +245,11 @@
     if (ordens) mirror.os = ordens.map(fromDbOrdem);
     if (veiculos) mirror.vehicles = veiculos.map(fromDbVeiculo);
     if (clientes) mirror.clients = clientes.map(fromDbCliente);
-    if (staff !== null) isStaff = staff.length > 0;
+    if (staff !== null) {
+      isStaff = staff.length > 0;
+      const propria = user ? staff.find((r) => r.auth_user === user.id) : null;
+      meuPapel = propria ? propria.papel || 'consultor' : null;
+    }
     if (cfg && cfg.length && cfg[0].data) mirror.config = cfg[0].data;
     else if (cfg && !cfg.length && isStaff) {
       // staff com tabela config ainda vazia: cache de demo NÃO pode virar config de produção (ex.: pixChave demo)
@@ -778,9 +783,82 @@
     hydEpoch++; // hidratações em curso (com o token antigo) são descartadas ao resolver
     try { await sb.auth.signOut(); } catch (e) { warn('logoutAuth', e); }
     mirror.os = []; mirror.vehicles = []; mirror.clients = []; mirror.config = null;
-    isStaff = false;
+    isStaff = false; meuPapel = null;
     try { [K.os, K.vehicles, K.clients, K.config].forEach((k) => localStorage.removeItem(k)); } catch (e) { /* noop */ }
     ping(); // nada de dado alheio fica no aparelho após sair
+  };
+
+  /* ============================================================
+     11b · Equipe — colaboradores gerenciados pelo próprio painel
+     (view 👥 Equipe). As regras de papel moram nas RPCs staff_*
+     do servidor; aqui só transportamos e traduzimos erros p/ UI.
+     ============================================================ */
+  const staffMsg = (e) => (e && (e.message || e.error_description || e.msg)) || 'Falha de conexão — tente de novo.';
+  /* erro que indica que as RPCs staff_* ainda não existem no banco (falta rodar
+     o EQUIPE-UPGRADE.sql) — distinto de "acesso negado" (é staff mas sem papel) */
+  const faltaMigracaoEquipe = (e) => {
+    if (!e) return false;
+    if (e.code === 'PGRST202') return true; // PostgREST: função não encontrada
+    return /could not find the function|function [^ ]*staff_[^ ]* .*does not exist|permission denied for function/i.test(String(e.message || e.hint || ''));
+  };
+
+  const staffListar = async () => {
+    try {
+      const { data, error } = await sb.rpc('staff_listar');
+      if (error) { falha('staff_listar', error); return { ok: false, erro: staffMsg(error), faltaMigracao: faltaMigracaoEquipe(error), lista: [] }; }
+      setOnline(true);
+      return { ok: true, lista: data || [] };
+    } catch (e) { falha('staff_listar', e); return { ok: false, erro: staffMsg(e), faltaMigracao: faltaMigracaoEquipe(e), lista: [] }; }
+  };
+
+  const staffEditar = async ({ email, nome, papel }) => {
+    try {
+      const { data, error } = await sb.rpc('staff_upsert', { p_email: String(email || '').trim(), p_nome: nome, p_papel: papel });
+      if (error) { if (isNetErr(error)) falha('staff_upsert', error); return { ok: false, erro: staffMsg(error) }; }
+      setOnline(true);
+      await hydrate(); // meu próprio papel pode ter mudado (ex.: admin se rebaixou)
+      return { ok: true, registro: data };
+    } catch (e) { falha('staff_upsert', e); return { ok: false, erro: staffMsg(e) }; }
+  };
+
+  /* Cria o LOGIN num cliente supabase PARALELO (persistSession:false → não
+     derruba a sessão de quem está operando) e vincula papel via RPC. E-mail
+     que já tem login não é erro: seguimos e só ajustamos o vínculo/papel. */
+  const staffCriar = async ({ nome, email, senha, papel }) => {
+    try {
+      const tmp = supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_ANON_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data, error } = await tmp.auth.signUp({ email: String(email || '').trim(), password: senha });
+      let jaExistia = false;
+      if (error) {
+        if (/already|registered|exists|cadastr/i.test(staffMsg(error))) jaExistia = true;
+        else { if (isNetErr(error)) falha('staffCriar signUp', error); return { ok: false, erro: staffMsg(error) }; }
+      } else if (data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        jaExistia = true; // resposta anti-enumeração do Supabase p/ e-mail já confirmado
+      }
+      try { await tmp.auth.signOut(); } catch (e2) { /* sessão temporária é descartável */ }
+      const up = await staffEditar({ email, nome, papel });
+      if (!up.ok) return up;
+      return { ok: true, jaExistia };
+    } catch (e) { falha('staffCriar', e); return { ok: false, erro: staffMsg(e) }; }
+  };
+
+  const staffRemover = async (authUserId) => {
+    try {
+      const { error } = await sb.rpc('staff_remover', { p_usuario: authUserId });
+      if (error) { if (isNetErr(error)) falha('staff_remover', error); return { ok: false, erro: staffMsg(error) }; }
+      setOnline(true);
+      return { ok: true };
+    } catch (e) { falha('staff_remover', e); return { ok: false, erro: staffMsg(e) }; }
+  };
+
+  const mudarMinhaSenha = async (nova) => {
+    try {
+      const { error } = await sb.auth.updateUser({ password: nova });
+      if (error) return { ok: false, erro: staffMsg(error) };
+      return { ok: true };
+    } catch (e) { falha('mudarMinhaSenha', e); return { ok: false, erro: staffMsg(e) }; }
   };
 
   /* ============================================================
@@ -805,6 +883,9 @@
     novaOS, loginCliente, ativarCliente, clientePorConvite, loginStaff, logoutAuth,
     /* — app do cliente (RPCs com validação server-side) — */
     aprovarOrcamento, chatCliente, avaliarNps,
+    /* — equipe (view 👥 Equipe; regras de papel no servidor) — */
+    staffPerfil: () => (isStaff ? { papel: meuPapel || 'consultor' } : null),
+    staffListar, staffCriar, staffEditar, staffRemover, mudarMinhaSenha,
     /* — estado — */
     authUser: () => user,
     cloud: true,
