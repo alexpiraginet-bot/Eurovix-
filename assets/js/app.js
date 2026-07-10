@@ -402,7 +402,7 @@
 
       ${precisaAprovar ? aprovacaoHTML(o) : orcamentoHTML(o)}
 
-      ${o.aceite && !o.pagamento ? pagamentoHTML(o) : ''}
+      ${o.aceite && !o.pagamento && WERK.totalOS(o, true) > 0 ? pagamentoHTML(o) : ''}
 
       <div class="sec-label">Documentos</div>
       <div class="acard" style="display:flex;gap:8px;flex-wrap:wrap">
@@ -516,7 +516,7 @@
           <span class="pay-badge">Pix · à vista</span>
         </div>
         <div class="pay-qr" id="payQr" role="img" aria-label="QR Code Pix para pagamento"></div>
-        <p class="pay-hint">Abra o app do seu banco, escaneie o QR — ou copie o código Pix abaixo.</p>
+        <p class="pay-hint" id="payHint">Abra o app do seu banco, escaneie o QR — ou copie o código Pix abaixo.</p>
         <div class="pay-code" id="payCode"></div>
         <button type="button" class="btn btn-secondary pay-copy-btn" id="payCopyBtn">Copiar código Pix</button>
         <button type="button" class="btn-image" id="payPix"><img src="assets/img/ui/btn-pix.webp" alt="Pagar com Pix" width="1000" height="228"></button>
@@ -531,13 +531,20 @@
     // código Pix como texto puro — a chave é configurável, então nunca interpolar em HTML
     const codeEl = $('#payCode', view);
     if (codeEl) codeEl.textContent = payload;
+    let qrOk = false;
     try {
       if (typeof qrcode === 'function') {
         const qr = qrcode(0, 'M'); qr.addData(payload); qr.make();
         qbox.innerHTML = qr.createImgTag(4, 4);
         const im = qbox.querySelector('img'); if (im) im.alt = ''; // decorativo: o container já tem aria-label
-      } else { qbox.style.display = 'none'; } // sem lib: segue só o copia-e-cola
-    } catch (e) { qbox.style.display = 'none'; }
+        qrOk = true;
+      }
+    } catch (e) { /* cai no fallback abaixo */ }
+    if (!qrOk) { // sem lib ou erro: oculta o QR e ajusta o texto para não citar "escaneie"
+      qbox.style.display = 'none';
+      const hint = $('#payHint', view);
+      if (hint) hint.textContent = 'Copie o código Pix abaixo e cole no app do seu banco para pagar.';
+    }
     const copyBtn = $('#payCopyBtn', view);
     if (copyBtn) copyBtn.addEventListener('click', () => {
       const ok = () => toast('Código Pix copiado', 'Cole no app do seu banco para pagar.');
