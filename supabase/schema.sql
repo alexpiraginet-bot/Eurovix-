@@ -857,6 +857,15 @@ $$;
 -- então o REVOKE explícito é obrigatório antes dos GRANTs.
 -- ----------------------------------------------------------------------------
 
+grant usage on schema public to anon, authenticated;
+
+grant select, insert, update on table public.clientes to authenticated;
+grant select, insert, update on table public.veiculos to authenticated;
+grant select, insert, update on table public.ordens   to authenticated;
+grant select, insert, update on table public.config   to authenticated;
+grant select on table public.eventos_log              to authenticated;
+grant select on table public.staff                    to authenticated;
+
 revoke all on function public.is_staff()                           from public, anon;
 revoke all on function public.meus_telefones()                     from public, anon;
 revoke all on function public.nova_os_numero()                     from public, anon;
