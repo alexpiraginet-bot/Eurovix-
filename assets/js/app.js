@@ -508,11 +508,12 @@
   // orçamento e ainda não pagou. QR real (payload EMV) + copia-e-cola + botão.
   function pagamentoHTML(o) {
     const total = WERK.totalOS(o, true);
-    // Na nuvem o cliente não lê a config (RLS staff-only) → pixChave cairia no
-    // placeholder de demo. Gerar QR/copia-e-cola com essa chave levaria o cliente
-    // a pagar o destinatário errado. Sem chave real, mostra só total + orientação.
-    const pixKey = (WERK.getConfig().oficina || {}).pixChave || '';
-    if (WERK.cloud && (!pixKey || /configure-sua-chave|\(demo\)/i.test(pixKey))) {
+    // Em nuvem, a config vem do cache local (RLS: o cliente não lê config) e a
+    // pixChave NÃO é confiável — pode ser placeholder de demo ou resquício de um
+    // login staff no mesmo device. Gerar QR/copia com ela levaria a pagar o
+    // destino errado. Só o modo demo/local (ou, no futuro, uma chave provida
+    // pelo servidor para a sessão) gera o Pix; na nuvem mostra total + orientação.
+    if (WERK.cloud) {
       return `
         <div class="sec-label">Pagamento</div>
         <div class="acard pay-card">
@@ -535,7 +536,7 @@
         <div class="pay-code" id="payCode"></div>
         <button type="button" class="btn btn-secondary pay-copy-btn" id="payCopyBtn">Copiar código Pix</button>
         <button type="button" class="btn-image" id="payPix"><img src="assets/img/ui/btn-pix.webp" alt="Pagar com Pix" width="1000" height="228"></button>
-        <p class="pay-note">${WERK.cloud ? 'Depois de pagar no app do seu banco, a confirmação do Pix chega em instantes e libera a nota fiscal e a garantia aqui automaticamente.' : 'Ao confirmar, a nota fiscal e a garantia de cada item são liberadas na hora.'}</p>
+        <p class="pay-note">Ao confirmar, a nota fiscal e a garantia de cada item são liberadas na hora.</p>
       </div>`;
   }
   function bindPagamento(o, view) {
@@ -570,20 +571,12 @@
         navigator.clipboard.writeText(payload).then(ok).catch(falha);
       } else { falha(); }
     });
+    // O botão só existe no modo demo/local (na nuvem a seção é o card "liberado
+    // pela oficina", sem QR nem botão) — aqui é sempre a confirmação demo.
     const pay = $('#payPix', view);
     if (pay) pay.addEventListener('click', () => {
-      if (WERK.cloud) {
-        // Na nuvem, quem confirma o Pix é o banco/gateway por webhook — o cliente
-        // não grava a OS (RLS é staff-only). Estado honesto de "aguardando", sem
-        // fingir a confirmação e sem desabilitar o botão (pode tocar de novo
-        // depois de pagar); a NF/garantia liberam quando o pagamento cair.
-        toast('Pagamento em processamento', 'Assim que o banco confirmar o Pix, a nota fiscal e a garantia são liberadas aqui.');
-        const note = $('.pay-note', view);
-        if (note) note.textContent = 'Aguardando a confirmação do banco/gateway — a nota fiscal e a garantia liberam automaticamente assim que o Pix cair.';
-        return;
-      }
       if (pay.disabled) return;
-      pay.disabled = true; // demo/local: bloqueia duplo clique antes do re-render
+      pay.disabled = true; // bloqueia duplo clique antes do re-render
       // DEMO/local: confirma na hora (ilustrativo). Em produção o gateway
       // (Mercado Pago / Stone) confirma por webhook e dispara este mesmo efeito.
       WERK.registrarPagamento(o.numero, { valor: total, desc: `Pix ${WERK.brl(total)} · NF emitida · garantia ativada`, ator: 'Cliente (app)' });
