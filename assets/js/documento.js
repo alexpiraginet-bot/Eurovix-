@@ -66,6 +66,22 @@
       ${os.eventos.map(e => `<tr><td>${WERK.fdt(e.ts)}</td><td><b>${e.titulo}</b></td><td>${e.desc || ''}</td><td>${e.ator}</td></tr>`).join('')}
     </table>`;
 
+  const acessoBloco = (os) => {
+    const cli = WERK.clientePorTelefone(os.telefone);
+    if (!cli) return '';
+    const url = WERK.conviteUrl(cli);
+    return `
+      <h2>Seu acesso ao app EUROVIX</h2>
+      <div class="grid">
+        <div class="kv"><b>Como entrar</b>${cli.senha
+          ? 'Acesso ativo — entre com seu telefone e a senha que você criou.'
+          : 'Abra o link (ou aponte a câmera para o QR), crie sua senha e pronto — seu login é o seu telefone.'}</div>
+        <div class="kv"><b>Link exclusivo</b><span class="hash" style="overflow-wrap:anywhere">${url}</span></div>
+      </div>
+      <div id="docQr" data-url="${url}" style="margin-top:8px"></div>
+      <p class="muted">Acompanhe esta OS em tempo real, aprove o orçamento item a item, fale com seu consultor e guarde garantias e documentos — tudo pelo app. A garagem segue o dono: o veículo aparece para o telefone registrado no último check-in.</p>`;
+  };
+
   /* ---------- documentos ---------- */
   const render = {
 
@@ -90,6 +106,7 @@
         </div>
         <h2>Danos preexistentes reconhecidos (${(c.danos || []).length})</h2>
         ${(c.danos || []).length ? `<table><tr><th>#</th><th>Descrição</th></tr>${c.danos.map((d, i) => `<tr><td>${i + 1}</td><td>${d.nota}</td></tr>`).join('')}</table>` : '<p class="muted">Nenhum dano preexistente registrado.</p>'}
+        ${acessoBloco(os)}
         <p class="muted" style="margin-top:14px">Declaro que acompanhei a inspeção de entrada e reconheço o estado do veículo acima descrito, registrado em fotos com carimbo de data/hora.</p>
         <div class="sig-row">
           <div class="sig">${typeof c.assinatura === 'string' && c.assinatura.startsWith('data:') ? `<img src="${c.assinatura}">` : ''}${os.cliente}<br>Cliente</div>
@@ -198,7 +215,7 @@
           ${historia.flatMap(o => o.itens.filter(i => i.garantia).map(i =>
             `<tr><td>${i.titulo}</td><td>#${o.numero}</td><td><b>${WERK.fd(i.garantia.fim)}</b></td></tr>`)).join('') || '<tr><td colspan="3" class="muted">—</td></tr>'}
         </table>
-        <p class="muted" style="margin-top:12px">Histórico documentado = valorização na revenda. Toda mídia (fotos/vídeos de cada OS) permanece arquivada e vinculada a este VIN — nunca deletada.</p>
+        <p class="muted" style="margin-top:12px">Histórico documentado = valorização na revenda. Este prontuário acompanha o chassi (VIN), não o proprietário — <b>na venda do veículo, entregue este documento ao comprador: o histórico completo é transferível</b>. Toda mídia (fotos/vídeos de cada OS) permanece arquivada e vinculada a este VIN — nunca deletada.</p>
         ` + footer('Prontuário vitalício indexado por VIN');
     },
   };
@@ -212,5 +229,13 @@
     document.title = `${tipo.toUpperCase()} OS #${os.numero} — EUROVIX`;
   } else {
     box.innerHTML = header('Documento não encontrado', 'verifique o número da OS') + footer();
+  }
+
+  const qrEl = document.getElementById('docQr');
+  if (qrEl && typeof qrcode === 'function') {
+    const qr = qrcode(0, 'M');
+    qr.addData(qrEl.dataset.url);
+    qr.make();
+    qrEl.innerHTML = `<div style="display:inline-block;background:#fff;padding:6px;border:1px solid #DDD;border-radius:6px">${qr.createSvgTag(3, 0)}</div>`;
   }
 })();
