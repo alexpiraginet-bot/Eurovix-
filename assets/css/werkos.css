@@ -3,7 +3,7 @@
    ============================================================ */
 
 body.werk-body{
-  background:#07090C;
+  background:var(--wk-bg,#07090C);
   display:grid;grid-template-columns:232px 1fr;
   min-height:100vh;
 }
@@ -51,7 +51,7 @@ body.werk-body{
 
 /* ---------- Kanban ---------- */
 .kanban{display:grid;grid-auto-flow:column;grid-auto-columns:236px;gap:12px;overflow-x:auto;padding-bottom:14px;align-items:start}
-.kcol{background:rgba(13,17,23,.7);border:1px solid var(--line);border-radius:14px;min-height:120px}
+.kcol{background:var(--card-2);border:1px solid var(--line);border-radius:14px;min-height:120px}
 .kcol-head{
   display:flex;align-items:center;justify-content:space-between;
   padding:11px 13px;border-bottom:1px solid var(--line);
@@ -235,7 +235,7 @@ body.werk-body{
 
 /* Toast do painel */
 .wk-toasts{position:fixed;top:16px;right:16px;z-index:300;display:grid;gap:8px;max-width:340px}
-.wk-toasts .toast{background:rgba(16,20,27,.97);border:1px solid var(--line-strong);border-radius:12px;padding:12px 15px;display:flex;gap:10px;align-items:center;animation:toastIn .3s ease}
+.wk-toasts .toast{background:var(--card);border:1px solid var(--line-strong);border-radius:12px;padding:12px 15px;display:flex;gap:10px;align-items:center;animation:toastIn .3s ease}
 @keyframes toastIn{from{transform:translateY(-12px);opacity:0}to{transform:none;opacity:1}}
 .wk-toasts b{font-family:var(--font-display);font-size:12px;display:block}
 .wk-toasts span{font-size:11px;color:var(--txt-2)}
@@ -250,4 +250,103 @@ body.werk-body{
 .wk-burger{
   display:none;width:42px;height:42px;border-radius:10px;border:1px solid var(--line-strong);
   background:var(--card);color:var(--txt);cursor:pointer;align-items:center;justify-content:center;
+}
+
+
+/* ============================================================
+   TEMA CLARO do WERK OS (html[data-theme="light"])
+   ============================================================ */
+html[data-theme="light"] body.werk-body{
+  --wk-bg:#EEF0F4;
+  --navy:#FFFFFF;
+  --card:#FFFFFF;
+  --card-2:#F4F6F9;
+  --line:#E4E7EC;
+  --line-strong:#CFD4DB;
+  --txt:#1B2129;
+  --txt-2:#49525E;
+  --txt-3:#8A93A0;
+  --graphite:#D7DBE1;
+  --red:#D6301F;
+  --red-soft:rgba(214,48,31,.08);
+  --red-border:rgba(214,48,31,.32);
+  --blue-light:#1C69D4;
+  --blue-soft:rgba(28,105,212,.08);
+  --blue-border:rgba(28,105,212,.32);
+  --ok:#1E8A47;--ok-soft:rgba(30,138,71,.1);
+  --warn:#B57500;--warn-soft:rgba(181,117,0,.1);
+  --shadow:0 14px 34px rgba(23,28,38,.12);
+  --shadow-sm:0 6px 18px rgba(23,28,38,.08);
+}
+html[data-theme="light"] .wk-side{box-shadow:0 0 24px rgba(23,28,38,.06)}
+html[data-theme="light"] .kcard:hover{border-color:var(--red-border)}
+
+/* ============================================================
+   QUADRO DA OFICINA — ferramentas + 3 modos
+   ============================================================ */
+.board-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.seg{display:flex;background:var(--card);border:1px solid var(--line-strong);border-radius:10px;overflow:hidden}
+.seg button{
+  background:none;border:none;padding:9px 15px;cursor:pointer;
+  font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:.05em;
+  color:var(--txt-2);transition:all .15s;
+}
+.seg button.on{background:var(--red);color:#fff}
+.board-q{
+  flex:1;min-width:170px;max-width:340px;
+  background:var(--card);border:1px solid var(--line-strong);border-radius:10px;
+  padding:10px 13px;font-size:12.5px;color:var(--txt);
+}
+.board-q:focus{border-color:var(--red);outline:none}
+.board-empty{padding:34px;text-align:center;color:var(--txt-3);font-size:13px;background:var(--card);border:1px dashed var(--line-strong);border-radius:12px}
+
+/* Modo LISTA (mobile-first) */
+.bl-group{margin-bottom:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.bl-head{
+  display:flex;align-items:center;gap:9px;padding:10px 14px;
+  font-family:var(--font-display);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--txt-2);background:var(--card-2);border-left:3px solid var(--st,#888);
+}
+.bl-dot{width:8px;height:8px;border-radius:50%;background:var(--st,#888);flex:none}
+.bl-count{margin-left:auto;background:var(--card);border:1px solid var(--line-strong);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--txt)}
+.bl-row{display:flex;align-items:center;gap:11px;padding:12px 14px;border-top:1px solid var(--line);cursor:pointer;transition:background .15s}
+.bl-row:hover{background:var(--card-2)}
+.bl-row b{font-family:var(--font-display);font-size:12.5px;font-weight:700;color:var(--txt);white-space:nowrap}
+.bl-sub{font-size:11px;color:var(--txt-2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl-val{font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--txt-2);white-space:nowrap}
+.bl-chev{color:var(--txt-3);flex:none}
+
+/* Modo GRADE (macro do pátio) */
+.bg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.bg-tile{
+  background:var(--card);border:1px solid var(--line);border-top:3px solid var(--st,#888);
+  border-radius:12px;padding:11px 12px 9px;cursor:pointer;
+  transition:transform .15s,border-color .2s,box-shadow .2s;
+}
+.bg-tile:hover{transform:translateY(-2px);border-color:var(--st,#888);box-shadow:var(--shadow-sm)}
+.bg-status{font-family:var(--font-display);font-size:8.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--st,#888);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bg-tile b{display:block;font-family:var(--font-display);font-size:15px;font-weight:800;letter-spacing:.02em;color:var(--txt)}
+.bg-mod{display:block;font-size:10.5px;color:var(--txt-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bg-cli{display:block;font-size:10px;color:var(--txt-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bg-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px}
+.bg-num{font-size:9px;color:var(--txt-3);font-family:var(--font-display);font-weight:700}
+
+/* Kanban compacto */
+.kanban{grid-auto-columns:206px}
+.kcol{border-top:3px solid var(--st,transparent)}
+.kcard{padding:9px 11px}
+.kcard b{font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.kcard .kv{font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kcard .kfoot{margin-top:7px}
+
+/* Burger + backdrop (mobile) */
+.wk-burger{position:fixed;top:12px;right:12px;z-index:170;font-size:18px}
+.wk-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:140}
+.wk-backdrop.show{display:block}
+@media (max-width:880px){
+  .wk-main{padding:14px 14px 90px}
+  .wk-head h1{font-size:18px}
+  .wk-head{margin-top:2px;padding-right:52px}
+  .kpis{gap:8px}
+  .board-q{max-width:none}
 }
