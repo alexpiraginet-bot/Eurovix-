@@ -185,12 +185,18 @@
     ativadoEm: r.ativado_em || null,
   });
 
-  /* token de convite p/ clientes criados no balcão (mesmo formato do local;
-     unicidade final garantida pelo UNIQUE do banco) */
+  /* token de convite p/ clientes criados no balcão — ALTA entropia (o token é
+     a credencial de ativação da conta); unicidade final pelo UNIQUE do banco */
   const novoToken = () => {
-    let t;
-    do { t = Math.random().toString(36).slice(2, 10); } while (mirror.clients.some((c) => c.convite === t));
-    return t;
+    try {
+      const b = new Uint8Array(16);
+      crypto.getRandomValues(b);
+      return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join(''); // 128 bits
+    } catch (e) {
+      let t = '';
+      while (t.length < 32) t += Math.random().toString(36).slice(2);
+      return t.slice(0, 32);
+    }
   };
 
   /* ============================================================
@@ -224,7 +230,9 @@
     } catch (e) { falha(`hidratação ${tabela}`, e); return null; }
   };
 
+  let hydEpoch = 0; // logout invalida hidratações em curso (nada de dado alheio reaparecer)
   const doHydrate = async () => {
+    const epoch = hydEpoch;
     const [ordens, veiculos, clientes, cfg, staff] = await Promise.all([
       sel('ordens', (q) => q.order('criada', { ascending: false })),
       sel('veiculos'),
@@ -232,11 +240,17 @@
       sel('config'),     // staff-only: cliente/anon recebem vazio — tolerado
       sel('staff'),      // detecção de papel: staff enxerga a própria tabela, cliente não
     ]);
+    if (epoch !== hydEpoch) return; // logout aconteceu no meio: descarta este resultado
     if (ordens) mirror.os = ordens.map(fromDbOrdem);
     if (veiculos) mirror.vehicles = veiculos.map(fromDbVeiculo);
     if (clientes) mirror.clients = clientes.map(fromDbCliente);
-    if (cfg && cfg.length && cfg[0].data) mirror.config = cfg[0].data;
     if (staff !== null) isStaff = staff.length > 0;
+    if (cfg && cfg.length && cfg[0].data) mirror.config = cfg[0].data;
+    else if (cfg && !cfg.length && isStaff) {
+      // staff com tabela config ainda vazia: cache de demo NÃO pode virar config de produção (ex.: pixChave demo)
+      mirror.config = null;
+      try { localStorage.removeItem(K.config); } catch (e) { /* noop */ }
+    }
     sortOS();
     emit();
   };
@@ -354,7 +368,14 @@
   const pushOS = (numero, mut, stamped, payload, versao) => enqueue(`os:${numero}`, async () => {
     const envia = async (body, guarda) => {
       const { data, error } = await sb.from('ordens').update(body).eq('numero', +numero).eq('versao', guarda).select();
-      if (error) { falha(`push OS ${numero}`, error); return null; }     // rede/RLS: espelho segue otimista
+      if (error) {
+        falha(`push OS ${numero}`, error);
+        if (!isNetErr(error)) {            // erro de DADOS (RLS/trigger/validação): otimismo é mentira → realinha
+          const verdade = await fetchOS(numero);
+          if (verdade) { replaceOS(verdade); emit(); }
+        }
+        return null;                       // erro de REDE: espelho segue otimista até a rede voltar
+      }
       setOnline(true);
       return (data && data.length) ? data[0] : false;                    // false = guarda de versão não casou
     };
@@ -393,7 +414,7 @@
     if (stamped) os.eventos.push(stamped);
     emit();
     pushOS(+numero, mut, stamped, clone(toDbUpdate(os)), os.versao || 0);
-    return os;
+    return clone(os); // cópia: mutar o retorno não pode corromper o espelho sem push
   };
 
   const setStatus = (numero, statusId, ator, extra) => {  // local + push de notificação EVX
@@ -412,7 +433,7 @@
   };
 
   const chatSend = (numero, de, texto) => {
-    if (user && !isStaff) { chatCliente(numero, texto); return findOS(numero) || null; } // cliente nunca escreve direto
+    if (user && !isStaff) { chatCliente(numero, texto); const cur = findOS(numero); return cur ? clone(cur) : null; } // cliente nunca escreve direto
     return updateOS(numero, (o) => o.chat.push({ ts: new Date().toISOString(), de, texto }),
       { tipo: 'chat', titulo: `Mensagem de ${de}`, desc: texto.slice(0, 80), ator: de });
   };
@@ -596,25 +617,36 @@
     const mapa = {};
     if (Array.isArray(decisoes)) decisoes.forEach((d) => { if (d && d.id != null) mapa[d.id] = d; });
     else if (decisoes && typeof decisoes === 'object') Object.keys(decisoes).forEach((id) => { mapa[id] = decisoes[id]; });
+    const decidir = (d) => (d.aprovado !== undefined ? !!d.aprovado : d.aprovacao === 'aprovado');
     const os = findOS(numero);
+    let aprovados = 0, avaliados = 0;
     if (os) {
-      let aprovados = 0, avaliados = 0;
       os.itens.forEach((i) => {
         const d = mapa[i.id];
         if (!d) return;
         avaliados++;
-        const ok = d.aprovado !== undefined ? !!d.aprovado : d.aprovacao === 'aprovado';
+        const ok = decidir(d);
         i.aprovacao = ok ? 'aprovado' : 'recusado';
         i.nivelEscolhido = d.nivel || d.nivelEscolhido || i.nivelEscolhido || 'original';
         if (ok) aprovados++;
       });
       os.aceite = aceite || os.aceite || null;
-      os.aprovadoEm = new Date().toISOString();
-      os.eventos.push({ ts: os.aprovadoEm, tipo: 'aceite', titulo: 'Orçamento aprovado', desc: `Cliente aprovou ${aprovados} de ${avaliados} itens`, ator: os.cliente || nomeCliente() });
-      if (aprovados > 0 && os.status === 'aprovacao') os.status = 'execucao';
+      os.aprovadoEm = (aceite && aceite.ts) || new Date().toISOString();
+      os.eventos.push({ ts: os.aprovadoEm, tipo: 'aceite', titulo: 'Orçamento aprovado pelo app', desc: `${aprovados} aprovado(s), ${avaliados - aprovados} adiado(s) — assinatura digital registrada.`, ator: os.cliente || nomeCliente() });
+      if (aprovados > 0 && os.status === 'aprovacao') {
+        os.status = 'execucao';
+        os.eventos.push({ ts: os.aprovadoEm, tipo: 'status', titulo: 'Em execução', desc: 'Itens aprovados liberados para o box.', ator: 'Sistema' });
+        if (typeof EVX !== 'undefined') EVX.pushNotification({ titulo: `OS #${numero} — Em execução no box`, texto: 'Itens aprovados liberados para o box.', quando: Date.now(), tipo: 'os' });
+      }
       emit();
     }
-    return rpcOS('aprovar_orcamento', { p_numero: +numero, p_decisoes: decisoes, p_aceite: aceite || null }, +numero);
+    // payload CANÔNICO da RPC: array de {id, aprovacao, nivelEscolhido} (a RPC rejeita objeto/mapa)
+    const p_decisoes = Object.keys(mapa).map((id) => {
+      const d = mapa[id] || {};
+      const ok = decidir(d);
+      return { id, aprovacao: ok ? 'aprovado' : 'recusado', nivelEscolhido: d.nivel || d.nivelEscolhido || 'original' };
+    });
+    return rpcOS('aprovar_orcamento', { p_numero: +numero, p_decisoes, p_aceite: aceite || null }, +numero);
   };
 
   const chatCliente = (numero, texto) => {
@@ -743,6 +775,7 @@
   };
 
   const logoutAuth = async () => {
+    hydEpoch++; // hidratações em curso (com o token antigo) são descartadas ao resolver
     try { await sb.auth.signOut(); } catch (e) { warn('logoutAuth', e); }
     mirror.os = []; mirror.vehicles = []; mirror.clients = []; mirror.config = null;
     isStaff = false;
@@ -792,7 +825,7 @@
     await hydrate();
     try {
       canal.subscribe((st) => {
-        if (st === 'SUBSCRIBED') setOnline(true);
+        if (st === 'SUBSCRIBED') { setOnline(true); hydrate(); } // cobre a janela select→subscribe E reconexões
         else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { warn(`realtime ${st}`); setOnline(false); }
       });
     } catch (e) { warn('realtime subscribe', e); }

@@ -183,6 +183,12 @@ begin
     raise exception 'ordens.eventos é append-only: o histórico da OS % não pode encolher (de % para % eventos)',
       old.numero, v_antes, jsonb_array_length(new.eventos);
   end if;
+  -- append-only de CONTEÚDO: eventos já gravados não podem ser reescritos in-place
+  for i in 0 .. v_antes - 1 loop
+    if (new.eventos -> i) is distinct from (old.eventos -> i) then
+      raise exception 'ordens.eventos é append-only: o evento % da OS % não pode ser alterado', i, old.numero;
+    end if;
+  end loop;
   new.versao := old.versao + 1;
   return new;
 end;
@@ -528,6 +534,9 @@ begin
   if jsonb_array_length(p_decisoes) = 0 then
     raise exception 'Decisões inválidas: o array está vazio';
   end if;
+  if jsonb_array_length(p_decisoes) > 200 then
+    raise exception 'Decisões inválidas: máximo de 200 itens por aprovação';
+  end if;
   if p_aceite is null or jsonb_typeof(p_aceite) <> 'object' then
     raise exception 'Aceite inválido: envie um objeto com os dados do aceite';
   end if;
@@ -641,6 +650,9 @@ begin
   if v_os.telefone_norm is null
      or v_os.telefone_norm not in (select public.meus_telefones()) then
     raise exception 'OS não encontrada ou acesso negado';
+  end if;
+  if jsonb_array_length(coalesce(v_os.chat, '[]'::jsonb)) >= 500 then
+    raise exception 'Limite de mensagens desta OS atingido — fale com a oficina pelo WhatsApp';
   end if;
 
   select nome into v_nome from public.clientes where auth_user = auth.uid() limit 1;
@@ -759,7 +771,7 @@ begin
            then p_veiculo -> 'dados' else '{}'::jsonb end,
       p_veiculo ->> 'placa',
       nullif(regexp_replace(upper(coalesce(p_veiculo ->> 'placa', '')), '[^A-Z0-9]', '', 'g'), ''),
-      coalesce(nullif(p_veiculo ->> 'km', '')::int, 0),
+      coalesce(nullif(regexp_replace(coalesce(p_veiculo ->> 'km', ''), '\D', '', 'g'), '')::int, 0),
       p_veiculo ->> 'cliente',
       nullif(regexp_replace(coalesce(p_veiculo ->> 'telefone_norm', p_veiculo ->> 'telefone', ''), '\D', '', 'g'), ''),
       case when jsonb_typeof(p_veiculo -> 'cofre') = 'array'
@@ -779,11 +791,16 @@ begin
   if p_cliente is not null and jsonb_typeof(p_cliente) = 'object' then
     v_tel_cli := nullif(regexp_replace(coalesce(p_cliente ->> 'telefone_norm', p_cliente ->> 'telefone', ''), '\D', '', 'g'), '');
     if v_tel_cli is not null then
-      -- token de convite: informado (staff) ou gerado, sempre único
+      -- token de convite: é a CREDENCIAL de ativação da conta do cliente —
+      -- gerado com 128 bits (enumeração/colisão inviáveis); se o staff
+      -- informar um, exigimos comprimento mínimo equivalente.
       v_token := nullif(btrim(coalesce(p_cliente ->> 'convite', '')), '');
+      if v_token is not null and length(v_token) < 20 then
+        raise exception 'Convite informado precisa ter no mínimo 20 caracteres';
+      end if;
       if v_token is null then
         loop
-          v_token := substr(md5(gen_random_uuid()::text), 1, 8);
+          v_token := encode(gen_random_bytes(16), 'hex');
           exit when not exists (select 1 from public.clientes where convite = v_token);
         end loop;
       end if;
@@ -792,7 +809,7 @@ begin
         v_tel_cli,
         coalesce(nullif(p_cliente ->> 'telefone', ''), v_tel_cli),
         coalesce(nullif(p_cliente ->> 'nome', ''), 'Cliente EUROVIX'),
-        coalesce(nullif(p_cliente ->> 'desde', '')::int, extract(year from now())::int),
+        coalesce(nullif(regexp_replace(coalesce(p_cliente ->> 'desde', ''), '\D', '', 'g'), '')::int, extract(year from now())::int),
         v_token
       )
       on conflict (telefone_norm) do update set
@@ -873,6 +890,10 @@ grant execute on function public.meus_telefones() to authenticated;
 -- 8 · Realtime — tabelas que o adaptador assina via postgres_changes
 -- Guardado contra re-execução (duplicate_object) e contra ambientes sem a
 -- publication supabase_realtime (undefined_object).
+-- Nota: DELETEs em postgres_changes transmitem apenas a PK do registro antigo
+-- (comportamento do Postgres/Supabase) — nenhuma tela apaga linhas hoje, e as
+-- PKs (numero/vin/uuid) não carregam dado sensível. `config` fica FORA da
+-- publication de propósito: é staff-only e o adaptador a busca na hidratação.
 -- ----------------------------------------------------------------------------
 do $$
 begin
@@ -888,9 +909,9 @@ begin
     alter publication supabase_realtime add table public.clientes;
   exception when duplicate_object or undefined_object then null;
   end;
-  begin
-    alter publication supabase_realtime add table public.config;
-  exception when duplicate_object or undefined_object then null;
+  begin -- idempotência: remove config da publication se uma versão anterior a adicionou
+    alter publication supabase_realtime drop table public.config;
+  exception when undefined_object or undefined_table then null;
   end;
 end;
 $$;

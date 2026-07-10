@@ -68,6 +68,22 @@ Conta demo do app: telefone `(27) 99900-0000` · senha `bmw2026` (ou o botão de
 | **Documentos** | ✅ 7 PDFs via print + **exports CSV** (DRE, ABC) | geração server-side |
 | **Extras** | ✅ comissão por AW, DRE por OS, **recall por VIN no check-in**, cofre digital, gestão margem | curva de risco por motor (dados próprios), cortesia/Uber |
 
+## ☁️ Nuvem (produção)
+
+Um código, dois modos — quem decide é `assets/js/env.js` (commitado de propósito; só contém valores públicos):
+
+- **Demo (padrão)** — `env.js` vazio: tudo roda no navegador com dados de exemplo em `localStorage`, sem nada externo.
+- **Nuvem** — `env.js` preenchido com a Project URL + anon key do Supabase: `assets/js/werk-cloud.js` envolve a **mesma interface `WERK`** de `werk-data.js` com um espelho em memória hidratado do banco — leituras seguem síncronas, escritas são otimistas (aplicam no espelho e empurram com guarda de versão) e o Supabase Realtime assume o papel do evento de `storage` na sincronização painel⇄app. A UI não muda uma linha; produção nasce vazia (sem seeds).
+
+Garantias aplicadas **no servidor**, todas em [`supabase/schema.sql`](supabase/schema.sql) (idempotente — re-executar é sempre seguro):
+
+- **RLS por telefone** — cliente autenticado só enxerga OS/veículos do próprio `telefone_norm`; a equipe (tabela `staff`) vê tudo; anônimo não vê nada.
+- **Escrita do cliente só por RPCs validadas** (`ativar_convite`, `aprovar_orcamento`, `chat_cliente`, `avaliar_nps`) — dono, status, níveis e limites conferidos no banco, nunca no navegador.
+- **Log imutável** — cada evento da OS é copiado por trigger para `eventos_log`, onde UPDATE/DELETE/TRUNCATE são bloqueados; `ordens.eventos` é append-only por comprimento **e por conteúdo**.
+- Token de convite gerado no servidor com **128 bits** de entropia; a anon key é pública por design; a `service_role` **nunca** entra no repositório.
+
+**Para colocar no ar (10–15 min, plano Free):** siga o [SETUP-NUVEM.md](SETUP-NUVEM.md) — projeto na região São Paulo (`sa-east-1`), colar o schema, desligar "Confirm email", criar o usuário staff e preencher o `env.js`. Decisões de arquitetura: [`supabase/ARQUITETURA.md`](supabase/ARQUITETURA.md).
+
 ## 🧱 Arquitetura
 
 ```

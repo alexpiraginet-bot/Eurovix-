@@ -100,9 +100,9 @@
     toast('Acesso criado ✓', 'Seu login é o seu telefone. Bem-vindo(a) ao app EUROVIX!', 'ok');
     enter(session);
   });
-  $('#convToLogin').addEventListener('click', () => {
-    const c = WERK.clientePorConvite(CONVITE);
-    if (c) $('#l-tel').value = c.telefone;
+  $('#convToLogin').addEventListener('click', async () => {
+    const c = await WERK.clientePorConvite(CONVITE);
+    if (c && c.telefone) $('#l-tel').value = c.telefone;
     conviteView.classList.add('hide');
     loginView.classList.remove('hide');
   });

@@ -244,8 +244,8 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
   const saveClientes = (l) => write(KEYS.clients, l);
   function novoToken(lista) {
     let t;
-    do { t = Math.random().toString(36).slice(2, 10); } while (lista.some(c => c.convite === t));
-    return t;
+    do { t = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10); } while (lista.some(c => c.convite === t));
+    return t; // ~16 chars: paridade com o token de alta entropia gerado no servidor
   }
   function upsertCliente(dados) {
     const tel = normTel(dados.telefone);
