@@ -213,6 +213,9 @@ body.app-body{
 .os-badge.live{background:var(--warn-soft);color:var(--warn)}
 .os-badge.approve{background:var(--bmw-soft);color:var(--bmw)}
 .os-badge.done{background:var(--ok-soft);color:var(--ok)}
+/* pílula-imagem do status atual (arte 3D por etapa) — banner no detalhe da OS */
+.status-pill{display:block;margin:14px 0 2px;max-width:340px}
+.status-pill img{width:100%;height:auto;display:block;border-radius:12px}
 
 /* Detalhe da OS */
 .os-detail-head{display:flex;align-items:center;gap:12px;margin:6px 0 16px}
