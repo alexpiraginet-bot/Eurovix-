@@ -9,12 +9,15 @@
 
    Como preencher (passo a passo completo em SETUP-NUVEM.md):
      1. supabase.com → seu projeto → Settings → API
-     2. Copie "Project URL"        → SUPABASE_URL
-     3. Copie a chave "anon public" → SUPABASE_ANON_KEY
+     2. Copie "Project URL"              → SUPABASE_URL
+     3. Copie a chave pública do projeto → SUPABASE_ANON_KEY
+        (vale a "anon public" eyJ… OU a "Publishable" sb_publishable_…;
+         as duas cumprem o mesmo papel — use a do MESMO projeto da URL)
      4. Commit + push (a Vercel publica sozinha)
 
-   Vazio (como está) = MODO DEMONSTRAÇÃO LOCAL: o site roda 100%
-   no navegador, com dados de exemplo em localStorage e sem nuvem.
+   Preenchido (como está) = MODO NUVEM: o site conversa com o Supabase.
+   Para voltar ao modo demonstração local (dados de exemplo no navegador,
+   sem nuvem), basta deixar os dois valores como '' de novo.
    ============================================================ */
 window.EVX_ENV = {
   SUPABASE_URL: 'https://olfqtvncorwhjrjjzmer.supabase.co',
