@@ -220,13 +220,17 @@ body.theme-bmw{background:var(--stage-2)}
   </div>
 </div>
 
+<script src="assets/js/env.js"></script>
 <script src="assets/js/theme.js"></script>
 <script src="assets/js/data.js"></script>
 <script src="assets/js/werk-data.js"></script>
+<script src="assets/vendor/supabase.js"></script>
+<script src="assets/js/werk-cloud.js"></script>
 <script>
 (function () {
   'use strict';
-  // Métricas vivas do store compartilhado
+  // Métricas vivas do store compartilhado (na nuvem, espera a hidratação)
+  WERK.ready.then(function () {
   var all = WERK.getAllOS();
   var ativas = all.filter(function (o) { return o.status !== 'entregue'; });
   var aprov = all.filter(function (o) {
@@ -241,7 +245,7 @@ body.theme-bmw{background:var(--stage-2)}
   document.getElementById('lv-fat').textContent = WERK.brl(fat);
   document.getElementById('lv-gar').textContent = gar;
 
-  // Links dinâmicos de documentos (acompanham o estado real da demo)
+  // Links dinâmicos de documentos (acompanham o estado real)
   var comAceite = all.find(function (o) { return o.aceite; }) || all[0];
   var concluida = all.find(function (o) { return o.pagamento; });
   if (comAceite) {
@@ -264,6 +268,7 @@ body.theme-bmw{background:var(--stage-2)}
       '<a class="lnk primary" href="documento.html?tipo=prontuario&vin=' + v.vin + '">Prontuário ' + (v.placa || v.vin.slice(-6)) + ' ›</a>' +
       '<a class="lnk" href="werkos.html#/veiculos">Outros veículos</a>';
   }
+  });
 
   // Copiar credencial demo
   document.querySelectorAll('[data-copy]').forEach(function (b) {
@@ -281,10 +286,11 @@ body.theme-bmw{background:var(--stage-2)}
     location.reload();
   });
 
-  // Tempo real: outra aba mudou o estado → atualiza métricas
+  // Tempo real: outra aba (ou a nuvem) mudou o estado → atualiza métricas
   window.addEventListener('storage', function (e) {
     if (e.key && e.key.indexOf('evx.') === 0) location.reload();
   });
+  window.addEventListener('evx:sync', function () { location.reload(); });
 })();
 </script>
 </body>

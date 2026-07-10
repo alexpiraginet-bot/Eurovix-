@@ -98,12 +98,31 @@
   const views = {};
   function go(route) { location.hash = '#/' + route; }
   function route() {
+    if (WERK.cloud && !WERK.authUser()) { renderStaffLock(); return; } // produção: painel só para a equipe
     const [v, param] = (location.hash.replace(/^#\//, '') || 'kanban').split('/');
     $$('.wk-nav button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
     (views[v] || views.kanban)(param);
     $('#wkSide').classList.remove('open');
   }
   window.addEventListener('hashchange', route);
+
+  function renderStaffLock() {
+    $$('.wk-nav button').forEach(b => b.classList.remove('on'));
+    main.innerHTML = head('WERK OS — acesso da equipe', 'Sistema em produção: entre com seu usuário staff (criado no Supabase).') + `
+      <div class="wk-panel" style="max-width:440px">
+        <div class="wfield"><label>E-mail</label><input id="st-email" type="email" placeholder="voce@eurovix.com.br" autocomplete="username"></div>
+        <div class="wfield" style="margin-top:10px"><label>Senha</label><input id="st-senha" type="password" autocomplete="current-password"></div>
+        <div class="hintline err" id="stErr" style="display:none;margin-top:8px">E-mail ou senha inválidos — ou o usuário ainda não foi cadastrado como staff (SETUP-NUVEM.md, passo 4).</div>
+        <button class="btn btn-primary" style="margin-top:14px;width:100%" id="stEntrar">Entrar no WERK OS</button>
+        <p style="font-size:10.5px;color:var(--txt-3);margin-top:10px">O app do cliente não usa esta tela — o acesso dele nasce no check-in.</p>
+      </div>`;
+    const entrar = async () => {
+      const u = await WERK.loginStaff($('#st-email').value.trim(), $('#st-senha').value);
+      if (u) route(); else $('#stErr').style.display = 'block';
+    };
+    $('#stEntrar').addEventListener('click', entrar);
+    $('#st-senha').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+  }
   $$('.wk-nav button').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
 
   /* Navegação mobile: burger + backdrop */
@@ -431,9 +450,9 @@
       const pad = sigPad($('#sigCli'));
       $('#sigClear').addEventListener('click', () => pad.clear());
       $('#ckBack3').addEventListener('click', () => { ck.step = 2; renderCheckin(); });
-      $('#ckFinish').addEventListener('click', () => {
+      $('#ckFinish').addEventListener('click', async () => {
         if (pad.isEmpty()) { toast('Assinatura obrigatória', 'O termo só é válido com o aceite do cliente.'); return; }
-        const os = WERK.novaOS({
+        const os = await WERK.novaOS({
           vin: ck.vin, veiculo: ck.decoded.modelo, placa: ck.placa, cliente: ck.cliente,
           telefone: ck.telefone, sintoma: ck.sintoma, tecnico: ck.tecnico,
           checkin: {
@@ -444,7 +463,7 @@
           ator: 'Recepção',
         });
         WERK.upsertVehicle({ vin: ck.vin, ...ck.decoded, placa: ck.placa, km: +ck.odometro, cliente: ck.cliente, telefone: ck.telefone });
-        ck.clienteRec = WERK.upsertCliente({ nome: ck.cliente, telefone: ck.telefone });
+        ck.clienteRec = await WERK.upsertCliente({ nome: ck.cliente, telefone: ck.telefone });
         ck.osNum = os.numero; ck.step = 4; renderCheckin();
       });
     }
@@ -1152,8 +1171,14 @@
           <div class="wfield"><label>CNPJ</label><input id="cf-cnpj" value="${c.oficina.cnpj}"></div>
         </div>
       </div>
+      ${WERK.cloud ? `
+      <div class="wk-panel">
+        <h3>${I('user')} Sessão da equipe (nuvem)</h3>
+        <p style="font-size:12px;color:var(--txt-2);margin-bottom:10px">Conectado como <b>${(WERK.authUser() || {}).email || '—'}</b> · dados servidos pelo Supabase com RLS.</p>
+        <button class="btn btn-secondary" id="cf-sair">Sair do WERK OS</button>
+      </div>` : ''}
       <div class="wk-actions" style="justify-content:space-between">
-        <button class="btn btn-secondary" id="cf-seed15">🚗 Carga de teste: +15 OS</button>\n        <button class="btn btn-secondary" id="cf-reset">↺ Resetar demo (limpa localStorage)</button>
+        <button class="btn btn-secondary" id="cf-seed15">🚗 Carga de teste: +15 OS</button>\n        <button class="btn btn-secondary" id="cf-reset">${WERK.cloud ? '↺ Limpar cache local' : '↺ Resetar demo (limpa localStorage)'}</button>
         <button class="btn btn-primary" id="cf-save">Salvar configurações</button>
       </div>`;
     $('#cf-save').addEventListener('click', () => {
@@ -1167,6 +1192,7 @@
       toast('Configurações salvas', 'Novos orçamentos usam os valores atualizados.');
     });
     $('#cf-seed15').addEventListener('click', () => {
+      if (WERK.cloud) { toast('Indisponível na nuvem', 'A carga de teste é exclusiva do modo demonstração — produção só recebe dados reais.'); return; }
       const modelos = [
         ['WBA7A91000', 'BMW 320i M Sport (G20)'], ['WBA5U71000', 'BMW M135i xDrive (F40)'],
         ['WBAJA51000', 'BMW X1 sDrive20i (F48)'], ['WBS8M91000', 'BMW M3 Competition (G80)'],
@@ -1215,10 +1241,14 @@
     });
 
     $('#cf-reset').addEventListener('click', () => {
-      if (!confirm('Limpar todos os dados da demo (OS, veículos, notificações)?')) return;
+      if (WERK.cloud) {
+        if (!confirm('Limpar apenas o CACHE local? Os dados reais continuam intactos no banco (nuvem).')) return;
+      } else if (!confirm('Limpar todos os dados da demo (OS, veículos, notificações)?')) return;
       Object.keys(localStorage).filter(k => k.startsWith('evx.')).forEach(k => localStorage.removeItem(k));
       location.reload();
     });
+    const sair = $('#cf-sair');
+    if (sair) sair.addEventListener('click', async () => { await WERK.logoutAuth(); location.reload(); });
   };
 
   /* Tempo real entre abas: aprovações/mudanças feitas no app
@@ -1226,6 +1256,9 @@
   window.addEventListener('storage', (e) => {
     if (e.key && e.key.startsWith('evx.') && !$('#wkModal').classList.contains('open')) route();
   });
+  window.addEventListener('evx:sync', () => { // realtime da nuvem
+    if (!$('#wkModal').classList.contains('open')) route();
+  });
 
-  route();
+  WERK.ready.then(route);
 })();
