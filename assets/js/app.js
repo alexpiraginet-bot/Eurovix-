@@ -555,17 +555,18 @@
     });
     const pay = $('#payPix', view);
     if (pay) pay.addEventListener('click', () => {
-      if (pay.disabled) return;
-      pay.disabled = true;
       if (WERK.cloud) {
         // Na nuvem, quem confirma o Pix é o banco/gateway por webhook — o cliente
         // não grava a OS (RLS é staff-only). Estado honesto de "aguardando", sem
-        // fingir a confirmação; a NF/garantia liberam quando o pagamento cair.
+        // fingir a confirmação e sem desabilitar o botão (pode tocar de novo
+        // depois de pagar); a NF/garantia liberam quando o pagamento cair.
         toast('Pagamento em processamento', 'Assim que o banco confirmar o Pix, a nota fiscal e a garantia são liberadas aqui.');
         const note = $('.pay-note', view);
         if (note) note.textContent = 'Aguardando a confirmação do banco/gateway — a nota fiscal e a garantia liberam automaticamente assim que o Pix cair.';
         return;
       }
+      if (pay.disabled) return;
+      pay.disabled = true; // demo/local: bloqueia duplo clique antes do re-render
       // DEMO/local: confirma na hora (ilustrativo). Em produção o gateway
       // (Mercado Pago / Stone) confirma por webhook e dispara este mesmo efeito.
       WERK.registrarPagamento(o.numero, { valor: total, desc: `Pix ${WERK.brl(total)} · NF emitida · garantia ativada`, ator: 'Cliente (app)' });
