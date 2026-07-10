@@ -508,6 +508,21 @@
   // orçamento e ainda não pagou. QR real (payload EMV) + copia-e-cola + botão.
   function pagamentoHTML(o) {
     const total = WERK.totalOS(o, true);
+    // Na nuvem o cliente não lê a config (RLS staff-only) → pixChave cairia no
+    // placeholder de demo. Gerar QR/copia-e-cola com essa chave levaria o cliente
+    // a pagar o destinatário errado. Sem chave real, mostra só total + orientação.
+    const pixKey = (WERK.getConfig().oficina || {}).pixChave || '';
+    if (WERK.cloud && (!pixKey || /configure-sua-chave|\(demo\)/i.test(pixKey))) {
+      return `
+        <div class="sec-label">Pagamento</div>
+        <div class="acard pay-card">
+          <div class="pay-head">
+            <div><span>Total a pagar</span><b>${WERK.brl(total)}</b></div>
+            <span class="pay-badge">Pix</span>
+          </div>
+          <p class="pay-hint" style="margin-bottom:2px">O Pix desta OS é liberado pela oficina. Assim que estiver pronto, o QR aparece aqui — ou finalize com seu consultor pelo chat ou no balcão.</p>
+        </div>`;
+    }
     return `
       <div class="sec-label">Pagamento</div>
       <div class="acard pay-card">
