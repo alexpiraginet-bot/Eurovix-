@@ -1,76 +1,87 @@
-# EUROVIX — Ecossistema Digital
+# EUROVIX — Ecossistema Digital + WERK OS
 
 **Oficina Especializada BMW · Vitória/ES**
 
-Este repositório materializa o escopo aprovado na apresentação de identidade & ecossistema digital da EUROVIX — e o elabora além do conceito: em vez de mockups estáticos, aqui estão o **site premium**, o **fluxo de agendamento online** e o **app do cliente** como produtos navegáveis, construídos sobre a identidade oficial da marca.
+Este repositório evoluiu em duas camadas:
+
+1. **Camada cliente/marketing** — site premium, agendamento online e app do cliente (do brand board original).
+2. **WERK OS** — o sistema operacional completo da oficina: check-in digital com blindagem jurídica, DVI em 3 cores, motor de peças por chassi, orçamento por AW, aprovação item a item com validade jurídica, kanban de 8 etapas, QC com dupla assinatura, checkout com Pix, documentos em PDF e gestão (DRE/comissão/ABC).
+
+Tudo em HTML/CSS/JS puro sobre `localStorage` — **demo funcional da Fase 1** com as interfaces desenhadas para receber as integrações reais (Supabase, PartsLink24, TecDoc, Mercado Pago/Stone, NFS-e) sem retrabalho de UI.
 
 ## 🚀 Como rodar
 
-Não há build nem dependências — é HTML/CSS/JS puro.
-
 ```bash
-# Opção 1: abrir direto
-abra index.html no navegador
-
-# Opção 2: servidor local (recomendado)
-npx serve .
-# ou
-python3 -m http.server 8080
+python3 -m http.server 8080    # ou npx serve .
 ```
 
-Hospedagem: qualquer estático (GitHub Pages, Netlify, Vercel).
+**Roteiro de demonstração (5 min):**
+1. Abra `werkos.html` (painel) e `app.html` (cliente demo) **lado a lado em duas abas**.
+2. No app: entre com a conta demo → aba **OS** → OS #1258 → aprove o orçamento **item a item** (escolha níveis, desmarque as pastilhas, assine).
+3. Veja o painel refletir na hora (evento de storage = realtime da demo). Avance a OS: micro-update → QC (dupla assinatura) → lavagem → pronto → **checkout Pix** → entrega.
+4. De volta ao app: NPS pós-entrega, garantias com contagem regressiva no perfil e a pastilha adiada virando **pendência futura** no início.
+5. No painel: **Novo Check-in** (VIN com dígito verificador validado em tempo real), fotos, mapa de danos, assinatura → **Termo de Entrada em PDF**.
 
-## 📄 Páginas
+## 📄 Superfícies
 
 | Página | O que é |
 |---|---|
-| `index.html` | **Site premium** — hero, 5 pilares, sobre, 6 linhas de serviço, performance (stages), processo em 6 etapas, seção do app com mockup, depoimentos, FAQ, CTA de frotas e contato. |
-| `agendamento.html` | **Agendamento online** em 4 passos (veículo → serviço → data/hora → confirmação), com validação, protocolo `EVX-XXXXXX` e confirmação via WhatsApp. Aceita pré-seleção via `?servico=id`. |
-| `app.html` | **App do cliente** (demo navegável) — splash, login, dashboard do veículo, saúde dos itens, serviços, **ordens de serviço ao vivo** com linha do tempo e **aprovação de orçamento**, agenda integrada, notificações e perfil. |
-| `apresentacao.html` | O deck original de 9 slides que definiu o escopo (preservado). |
+| `index.html` | Site premium (hero, pilares, 6 serviços, performance, processo, depoimentos, FAQ, contato). |
+| `agendamento.html` | Agendamento em 4 passos com protocolo e WhatsApp (Etapa 0 — pré-chegada). |
+| `app.html` | App do cliente: dashboard, rastreamento estilo encomenda, **aprovação item a item com 3 níveis + assinatura + hash/IP/timestamp**, chat com consultor, pendências, garantia por item com contagem, NPS, cofre digital. |
+| `werkos.html` | **Painel da oficina**: kanban 8 etapas, check-in digital, DVI, motor de peças, orçamento AW, QC, checkout Pix/NF, veículos & prontuário por VIN, gestão (DRE, comissão por AW, curva ABC, exports CSV), configurações. |
+| `documento.html` | Gerador de documentos: Termo de Entrada, DVI, Orçamento, OS, Fatura, Certificado de Garantia, **Prontuário vitalício por VIN** — todos imprimíveis (`?tipo=…&os=…` / `?tipo=prontuario&vin=…`). |
+| `apresentacao.html` | Deck original de 9 slides do escopo. |
 
-## 🧪 Conta demo do app
+Conta demo do app: `demo@eurovix.com.br` · `bmw2026` (ou o botão de conta demo). Reset da demo: **Configurações → Resetar demo** no painel.
 
-- **E-mail:** `demo@eurovix.com.br` · **Senha:** `bmw2026` (ou o botão "entrar com a conta demo")
-- Qualquer e-mail válido + senha de 4+ caracteres também entra (modo demonstração).
-- A **OS #1257 evolui em tempo real** enquanto o app está aberto (1 etapa a cada ~20s). Na etapa *Aguardando aprovação*, o fluxo só continua depois que você toca em **Aprovar orçamento** — o mesmo mecanismo do produto final.
-- Agendamentos feitos em `agendamento.html` aparecem na aba **Agenda** do app (localStorage compartilhado, chaves `evx.*`). Para resetar a demo: limpe o localStorage do navegador.
+## 🔩 WERK OS — cobertura da especificação
+
+| Módulo da spec | Status na demo | O que falta p/ produção |
+|---|---|---|
+| **Etapa 0** Pré-chegada | ✅ agendamento + sintoma texto | áudio/vídeo do sintoma; reserva automática de box |
+| **Etapa 1** Check-in digital | ✅ VIN ISO 3779 validado, checklist, fotos 360°, mapa de danos, assinatura, **Termo PDF** | OCR real de placa/painel (Claude API — Fase 3) |
+| **Etapa 2** Diagnóstico DVI | ✅ 3 cores, DTC import, **mídia obrigatória (regra dura)** | import direto ISTA/Autel |
+| **Etapa 3** Orçamento | ✅ item→linha automático, **AW × valor-hora**, margem por nível, **3 níveis por item** | tabela AW oficial completa |
+| **Etapa 4** Aprovação | ✅ item a item no app, níveis selecionáveis, **assinatura + IP + timestamp + hash**, recusados → pendências com régua | push/WhatsApp reais |
+| **Etapa 5** Execução | ✅ kanban 8 colunas, timeline de encomenda, micro-updates, status "aguardando peça" com tracking, **chat in-app** | fotos/vídeos reais do box (storage) |
+| **Etapa 6** QC | ✅ checklist obrigatório + test-drive km + **dupla assinatura — sem QC não há checkout** | — |
+| **Etapa 7** Checkout | ✅ fatura, **Pix BR Code EMV com CRC16 real**, parcelamento, NF automática (simulada), janela de retirada | Orders API MP/Stone + NFS-e municipal |
+| **Etapa 8** Pós-serviço | ✅ relatório PDF, **garantia digital por item com countdown**, NPS 24h (na entrega), pendências reapresentadas | régua de e-mail/push agendada |
+| **Motor de Peças** | ✅ 4 camadas simuladas com interface fiel: VIN→ETK→part number→cross-ref (Lemförder/Sachs/Mahle/Brembo…)→cotação 5 fornecedores (preço × prazo) | assinaturas PartsLink24 + TecDoc + conectores B2B |
+| **Banco de dados** | ✅ entidades espelhadas em `localStorage`: VEICULO (VIN pk), OS→ITEM_DIAG→ITEM_ORC, GARANTIA, MIDIA (thumb), **EVENTO_TIMELINE imutável**, PAGAMENTO | Postgres/Supabase (schema já desenhado pelas entidades) |
+| **Nuvem & mídia** | ⚠ thumbnails em localStorage (limite do navegador) | S3/R2 com lifecycle, indexação por VIN, LGPD |
+| **Documentos** | ✅ 7 PDFs via print + **exports CSV** (DRE, ABC) | geração server-side |
+| **Extras** | ✅ comissão por AW, DRE por OS, **recall por VIN no check-in**, cofre digital, gestão margem | curva de risco por motor (dados próprios), cortesia/Uber |
+
+## 🧱 Arquitetura
+
+```
+assets/js/
+├── data.js        # marca, catálogo de serviços, notificações, sessão (camada cliente)
+├── werk-data.js   # WERK OS: modelo de dados, VIN, motor de peças, Pix EMV, seeds, event log
+├── site.js · agendamento.js
+├── app.js         # app do cliente — consome o MESMO store do painel
+├── werkos.js      # painel da oficina (kanban, check-in, OS, gestão…)
+└── documento.js   # renderizador dos 7 documentos
+```
+
+- **Um único store** (`evx.werk.*`): o app e o painel leem/escrevem as mesmas OS — eventos de `storage` fazem o realtime entre abas (em produção: Supabase Realtime no mesmo papel).
+- **Log imutável**: todo evento (status, aceite, QC, pagamento) é append-only em `EVENTO_TIMELINE` com ator e timestamp — a auditoria da spec.
+- **Regras duras implementadas**: item 🔴/🟡 sem mídia não entra no DVI; sem aprovação não há execução; sem QC duplo-assinado não há checkout.
+- Pix: payload **BR Code EMV com CRC16-CCITT real** (copia-e-cola válido); QR ilustrativo na demo.
 
 ## 🎨 Identidade
 
-Extraída do brand board oficial (`assets/img/brand/brandboard.png`):
+Paleta oficial (`#E63928` · `#1E4FA0` · `#A9A9A9` · `#222428` · `#0A0A0A` · `#0D1117`), Montserrat para display (DIN Next licenciada → Barlow como stand-in web), símbolo recriado em SVG (`assets/img/logo-simbolo.svg`), ativos do brand board em `assets/img/brand/`.
 
-| Token | Valor | Uso |
-|---|---|---|
-| Vermelho competição | `#E63928` | Ação, destaque, assinatura do "X" |
-| Azul BMW | `#1E4FA0` (claro `#4A7FD4`) | Contraponto técnico |
-| Cinza | `#A9A9A9` | Apoio |
-| Grafite | `#222428` | Superfícies |
-| Preto profundo | `#0A0A0A` | Fundo base |
-| Azul-noite | `#0D1117` | Fundo alternativo |
+## 🗺 Fases (da spec)
 
-- **Tipografia:** Montserrat (títulos/destaques). O board especifica **DIN Next** para texto — fonte licenciada; na web usamos **Barlow** como stand-in até a licença ser adquirida.
-- **Símbolo:** engrenagem vermelha + arco de velocímetro azul + "X" com agulha, recriado em vetor (`assets/img/logo-simbolo.svg`, `assets/img/favicon.svg`).
-- Tokens centralizados em `assets/css/tokens.css`; ícones do kit de UI como sprite SVG inline.
-
-## 🗂 Estrutura
-
-```
-├── index.html · agendamento.html · app.html · apresentacao.html
-├── manifest.webmanifest          # PWA (app instalável)
-└── assets/
-    ├── css/  tokens.css · site.css · app.css
-    ├── js/   data.js (catálogo/OS/persistência) · site.js · agendamento.js · app.js
-    └── img/  logo-simbolo.svg · favicon.svg · brand/ (ativos do board)
-```
-
-## 🗺 Roadmap (fases do escopo)
-
-1. **Fase 1 — Identidade** ✅ aplicada em código (tokens, símbolo vetorial, wordmark).
-2. **Fase 2 — Site no ar** ✅ landing + agendamento prontos para publicar; próximo passo: domínio, analytics e integração do agendamento com backend/CRM.
-3. **Fase 3 — App em produção** 🔜 este demo define UX e regras (aprovação de orçamento, timeline de OS); próximo passo: backend real (OS, push notifications) e publicação nas lojas.
+- **Fase 1 (60–90 dias)** — check-in fotográfico + OS + orçamento com aprovação por link + kanban + tracking + PDFs → **é exatamente o que esta demo cobre de ponta a ponta**; falta plugar Supabase (auth/realtime/storage) por trás das interfaces já prontas.
+- **Fase 2** — motor de peças real (PartsLink24 + TecDoc + cotação B2B), pagamento in-app (Orders API), NF automática.
+- **Fase 3** — IA de visão (OCR placa/painel/danos via Claude API), preditivo por dados próprios, comissionamento avançado, cortesia/Uber.
 
 ## ⚠️ Notas
 
-- Dados de contato, endereço, depoimentos e métricas são **placeholders realistas** para validação — substituir pelos oficiais antes do go-live.
-- BMW e MINI são marcas registradas de BMW AG; a EUROVIX é oficina independente (disclaimer presente no rodapé).
+- Part numbers, preços, fornecedores, contatos e depoimentos são **placeholders realistas** para validação de UX — os reais entram com as integrações.
+- BMW e MINI são marcas registradas de BMW AG; a EUROVIX é oficina independente.
