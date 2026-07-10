@@ -88,7 +88,7 @@ assets/js/
 ## 🎨 Identidade & tema visual
 
 - **Superfícies do cliente** (site, agendamento, app, painel mestre) seguem a **linguagem visual do bmw.com.br**: fundo branco, texto grafite `#262626`, **azul BMW `#1C69D4`** como única cor de ação, cantos quase retos, hairlines `#E6E6E6`, teasers escuros de campanha e tipografia neo-grotesca (**Inter** como stand-in web do BMW Type Next). Tema aplicado via `body.theme-bmw` em `tokens.css`.
-- **WERK OS** (ferramenta interna da oficina) permanece no tema escuro técnico.
+- **Tema claro é o padrão em todo o sistema** (WERK OS incluso); o escuro é opcional. O alternador vive num **push flutuante** (canto inferior direito) presente em site, agendamento, app, WERK OS e painel mestre — junto de um botão de **horário de funcionamento** com status aberto/fechado ao vivo.
 - **Logos**: arte oficial vetorizada (Drive da marca) — `logo-oficial-branco.png` (fundos escuros) e `logo-oficial-preto.png` (fundos claros), ambos com transparência real em alta resolução; ícones de app/favicon do brand board. Nenhum logo renderizado por código. O vermelho EUROVIX vive dentro da arte do logo; a UI usa o azul BMW.
 - BMW e MINI são marcas registradas de BMW AG — a EUROVIX é oficina independente (disclaimer no rodapé); a semelhança é de linguagem de design, sem uso do roundel ou de ativos da fabricante.
 
@@ -100,5 +100,6 @@ assets/js/
 
 ## ⚠️ Notas
 
-- Part numbers, preços, fornecedores, contatos e depoimentos são **placeholders realistas** para validação de UX — os reais entram com as integrações.
+- Part numbers, preços, fornecedores e depoimentos são **placeholders realistas** para validação de UX — os reais entram com as integrações.
+- **Dados reais da empresa** (fontes públicas): WhatsApp (27) 99730-6440 e e-mail da bio do @eurovix027; **horário Seg–Sex 9h–18h · Sáb 9h–13h** e **endereço da oficina R. Hermes Curry Carneiro, 421 — Ilha de Santa Maria, Vitória/ES** conforme o perfil da empresa no Google (espelhado em BenditoGuia) e o Waze; **sede fiscal do CNPJ 45.979.822/0001-02: R. Maria de Lourdes Garcia, 303 — Monte Belo** (mantida nos documentos fiscais/PDF).
 - BMW e MINI são marcas registradas de BMW AG; a EUROVIX é oficina independente.

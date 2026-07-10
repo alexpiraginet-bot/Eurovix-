@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<script>(function(){try{var t=localStorage.getItem("evx.theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem("evx.theme");document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light")}catch(e){document.documentElement.setAttribute("data-theme","light")}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel Mestre — EUROVIX · Todos os acessos</title>
 <meta name="description" content="Hub central do ecossistema EUROVIX: site, agendamento, app do cliente, WERK OS, documentos e repositório.">
@@ -93,7 +93,6 @@ body.theme-bmw{background:var(--stage-2)}
 <div class="hub">
 
   <div class="hub-head">
-    <button class="theme-btn" data-theme-toggle style="position:absolute;top:18px;right:18px">🌙</button>
     <img class="hub-logo" src="assets/img/brand/logo-oficial-preto.png" alt="EUROVIX — Oficina Especializada BMW">
     <div>
       <h1>Painel <span class="r">Mestre</span> — todos os acessos</h1>
@@ -216,7 +215,7 @@ body.theme-bmw{background:var(--stage-2)}
   </div>
 
   <div class="hub-foot">
-    <span>© 2026 EUROVIX Reparação Automotiva LTDA · CNPJ 45.979.822/0001-02 · R. Maria de Lourdes Garcia, 303 — Monte Belo, Vitória/ES · <a href="https://www.instagram.com/eurovix027" target="_blank" rel="noopener" style="color:var(--bmw)">@eurovix027</a> · BMW e MINI são marcas de BMW AG; oficina independente.</span>
+    <span>© 2026 EUROVIX Reparação Automotiva LTDA · CNPJ 45.979.822/0001-02 · Oficina: R. Hermes Curry Carneiro, 421 — Ilha de Santa Maria, Vitória/ES (sede fiscal: R. Maria de Lourdes Garcia, 303) · <a href="https://www.instagram.com/eurovix027" target="_blank" rel="noopener" style="color:var(--bmw)">@eurovix027</a> · BMW e MINI são marcas de BMW AG; oficina independente.</span>
     <span><a href="index.html">Site</a> · <a href="app.html">App</a> · <a href="werkos.html">WERK OS</a> · <a href="https://github.com/alexpiraginet-bot/Eurovix-/pull/1" target="_blank" rel="noopener">PR</a></span>
   </div>
 </div>

@@ -261,3 +261,40 @@ html[data-theme="dark"] body.theme-bmw .btn-secondary:hover{border-color:var(--b
   cursor:pointer;font-size:16px;line-height:1;transition:border-color .2s;
 }
 .theme-btn:hover{border-color:var(--bmw,#1C69D4)}
+
+/* ============================================================
+   Push flutuante — horário de funcionamento + alternador de tema
+   (montado pelo theme.js em todas as superfícies)
+   ============================================================ */
+.evx-fab{
+  position:fixed;right:16px;bottom:16px;z-index:1300;
+  display:flex;flex-direction:column;align-items:flex-end;gap:10px;
+}
+.app-shell .evx-fab{position:absolute;right:14px;bottom:80px;z-index:45}
+.evx-fab-btn{
+  width:46px;height:46px;border-radius:50%;border:1px solid #E3E5E8;background:#FFFFFF;color:#262626;
+  font-size:19px;line-height:1;cursor:pointer;box-shadow:0 8px 26px rgba(20,24,31,.18);
+  display:flex;align-items:center;justify-content:center;position:relative;transition:transform .15s ease;
+}
+.evx-fab-btn:hover{transform:translateY(-2px)}
+html[data-theme="dark"] .evx-fab-btn{background:#171C23;color:#ECEEF2;border-color:rgba(255,255,255,.16);box-shadow:0 8px 26px rgba(0,0,0,.5)}
+.evx-fab-dot{position:absolute;top:1px;right:1px;width:12px;height:12px;border-radius:50%;background:#9AA3AF;border:2px solid #FFFFFF}
+html[data-theme="dark"] .evx-fab-dot{border-color:#171C23}
+.evx-fab-dot.open{background:#1FA05A}
+.evx-fab-dot.closed{background:#C74440}
+.evx-hours-pop{
+  width:min(320px,calc(100vw - 48px));background:#FFFFFF;border:1px solid #E3E5E8;border-radius:12px;
+  box-shadow:0 20px 48px rgba(20,24,31,.22);padding:15px 17px;font-size:12.5px;color:#4C5560;text-align:left;
+}
+.evx-hours-pop>b{display:block;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#262626;margin-bottom:9px}
+html[data-theme="dark"] .evx-hours-pop{background:#171C23;border-color:rgba(255,255,255,.14);color:#B7BEC9}
+html[data-theme="dark"] .evx-hours-pop>b{color:#ECEEF2}
+.ehp-status{font-weight:700;border-radius:8px;padding:7px 11px;margin-bottom:9px;font-size:12px}
+.ehp-status.open{background:rgba(31,160,90,.13);color:#1FA05A}
+.ehp-status.closed{background:rgba(199,68,64,.13);color:#C74440}
+.ehp-row{display:flex;justify-content:space-between;gap:14px;padding:5px 0;border-bottom:1px dashed #E9EBEE}
+html[data-theme="dark"] .ehp-row{border-bottom-color:rgba(255,255,255,.09)}
+.ehp-row b{color:#262626;font-variant-numeric:tabular-nums;font-weight:600}
+html[data-theme="dark"] .ehp-row b{color:#ECEEF2}
+.ehp-foot{margin-top:10px;font-size:11px;line-height:1.65;color:#8A929C}
+.ehp-foot a{color:#1C69D4;font-weight:600}

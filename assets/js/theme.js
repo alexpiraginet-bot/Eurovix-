@@ -1,34 +1,28 @@
 /* ============================================================
-   EUROVIX · Temas claro/escuro para todo o sistema
-   - Persistência em localStorage (evx.theme) e sync entre abas
-   - Padrão por família: páginas do cliente = claro;
-     WERK OS = escuro. O toggle explícito vale para tudo.
-   - Botões: qualquer elemento com [data-theme-toggle]
+   EUROVIX · Temas + push flutuante (tema & horário)
+   - CLARO é o padrão em todo o sistema (WERK OS incluso);
+     o escuro é opcional e persiste em localStorage (evx.theme)
+   - Toggle: qualquer elemento com [data-theme-toggle] —
+     o push flutuante montado aqui já inclui um
+   - Horário oficial (Google Business da EUROVIX):
+     Seg–Sex 9h–18h · Sáb 9h–13h · Dom fechado
    ============================================================ */
 
 window.EVXTheme = (function () {
   'use strict';
   const KEY = 'evx.theme';
 
-  function pageDefault() {
-    return document.body && document.body.classList.contains('werk-body') ? 'dark' : 'light';
-  }
   function current() {
     let t = null;
     try { t = localStorage.getItem(KEY); } catch (e) {}
-    return t || pageDefault();
+    return t === 'dark' ? 'dark' : 'light'; // claro é o padrão
   }
   function apply() {
-    let stored = null;
-    try { stored = localStorage.getItem(KEY); } catch (e) {}
-    if (stored) document.documentElement.setAttribute('data-theme', stored);
-    else document.documentElement.removeAttribute('data-theme');
-
     const t = current();
-    // ícone dos botões e cor da barra do navegador
+    document.documentElement.setAttribute('data-theme', t);
     document.querySelectorAll('[data-theme-toggle]').forEach(b => {
       b.textContent = t === 'dark' ? '☀️' : '🌙';
-      b.setAttribute('aria-label', t === 'dark' ? 'Tema claro' : 'Tema escuro');
+      b.setAttribute('aria-label', t === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro');
       b.title = b.getAttribute('aria-label');
     });
     const meta = document.querySelector('meta[name="theme-color"]');
@@ -40,13 +34,75 @@ window.EVXTheme = (function () {
   }
   function toggle() { set(current() === 'dark' ? 'light' : 'dark'); }
 
+  /* ---------- Horário de funcionamento (fonte: Google Business) ---------- */
+  const HOURS = [
+    { dias: [1, 2, 3, 4, 5], rotulo: 'Segunda a sexta', abre: 9 * 60, fecha: 18 * 60 },
+    { dias: [6], rotulo: 'Sábado', abre: 9 * 60, fecha: 13 * 60 },
+    { dias: [0], rotulo: 'Domingo' }, // fechado
+  ];
+  const fmt = (m) => Math.floor(m / 60) + 'h' + (m % 60 ? String(m % 60).padStart(2, '0') : '');
+  function hoursStatus(now) {
+    const d = now.getDay(), min = now.getHours() * 60 + now.getMinutes();
+    const hoje = HOURS.find(h => h.dias.includes(d));
+    if (hoje && hoje.abre != null && min >= hoje.abre && min < hoje.fecha) {
+      return { aberto: true, texto: 'Aberto agora · fecha às ' + fmt(hoje.fecha) };
+    }
+    if (hoje && hoje.abre != null && min < hoje.abre) {
+      return { aberto: false, texto: 'Fechado · abre hoje às ' + fmt(hoje.abre) };
+    }
+    const nomes = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+    for (let i = 1; i <= 7; i++) {
+      const nd = (d + i) % 7;
+      const r = HOURS.find(h => h.dias.includes(nd));
+      if (r && r.abre != null) {
+        return { aberto: false, texto: 'Fechado · abre ' + (i === 1 ? 'amanhã' : nomes[nd]) + ' às ' + fmt(r.abre) };
+      }
+    }
+    return { aberto: false, texto: 'Fechado' };
+  }
+
+  /* ---------- Push flutuante: horário + alternador de tema ---------- */
+  function mountFab() {
+    if (document.getElementById('evxFab')) return;
+    const el = document.createElement('div');
+    el.className = 'evx-fab';
+    el.id = 'evxFab';
+    el.innerHTML = `
+      <div class="evx-hours-pop" id="evxHoursPop" hidden>
+        <b>EUROVIX · horário de funcionamento</b>
+        <div class="ehp-status" id="ehpStatus"></div>
+        ${HOURS.map(h => `<div class="ehp-row"><span>${h.rotulo}</span><b>${h.abre != null ? fmt(h.abre) + ' – ' + fmt(h.fecha) : 'Fechado'}</b></div>`).join('')}
+        <div class="ehp-foot">R. Hermes Curry Carneiro, 421 · Ilha de Santa Maria, Vitória/ES<br>
+          <a href="https://wa.me/5527997306440?text=${encodeURIComponent('Olá! Vim pelo site da EUROVIX.')}" target="_blank" rel="noopener">WhatsApp (27) 99730-6440</a>
+        </div>
+      </div>
+      <button class="evx-fab-btn" id="evxHoursBtn" type="button" aria-label="Horário de funcionamento" title="Horário de funcionamento">🕐<span class="evx-fab-dot" id="evxHoursDot"></span></button>
+      <button class="evx-fab-btn" type="button" data-theme-toggle aria-label="Tema">🌙</button>`;
+    (document.getElementById('shell') || document.body).appendChild(el);
+
+    const pop = el.querySelector('#evxHoursPop');
+    const refresh = () => {
+      const st = hoursStatus(new Date());
+      const box = el.querySelector('#ehpStatus');
+      box.textContent = st.texto;
+      box.className = 'ehp-status ' + (st.aberto ? 'open' : 'closed');
+      el.querySelector('#evxHoursDot').className = 'evx-fab-dot ' + (st.aberto ? 'open' : 'closed');
+    };
+    refresh();
+    setInterval(refresh, 60000);
+    el.querySelector('#evxHoursBtn').addEventListener('click', () => { pop.hidden = !pop.hidden; });
+    document.addEventListener('click', (e) => { if (!el.contains(e.target)) pop.hidden = true; });
+    apply(); // ícone do toggle recém-montado
+  }
+
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-theme-toggle]');
     if (b) { e.preventDefault(); toggle(); }
   });
   window.addEventListener('storage', (e) => { if (e.key === KEY) apply(); });
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply);
-  else apply();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => { apply(); mountFab(); });
+  } else { apply(); mountFab(); }
 
-  return { get: current, set, toggle, apply };
+  return { get: current, set, toggle, apply, HOURS, hoursStatus };
 })();

@@ -177,15 +177,16 @@ const EVX = (() => {
   const SLOTS = ['08:00', '09:00', '10:00', '11:00', '13:30', '14:30', '15:30', '16:30'];
 
   const CONTACT = {
-    // Dados oficiais publicados pela empresa (bio/contato do @eurovix027 + CNPJ)
-    endereco: 'R. Maria de Lourdes Garcia, 303 — Monte Belo, Vitória/ES · CEP 29053-310',
+    // Dados oficiais publicados pela empresa (bio/contato do @eurovix027 + Google Business/Waze)
+    endereco: 'R. Hermes Curry Carneiro, 421 — Ilha de Santa Maria, Vitória/ES · CEP 29051-210',
+    enderecoFiscal: 'R. Maria de Lourdes Garcia, 303 — Monte Belo, Vitória/ES · CEP 29053-310', // sede no CNPJ
     telefone: '(27) 99730-6440',
     whatsapp: '5527997306440',
     email: 'oficioficinaeurovix@gmail.com',
     instagram: '@eurovix027',
     instagramUrl: 'https://www.instagram.com/eurovix027',
     dm: 'https://ig.me/m/eurovix027',
-    horario: 'Seg – Sex · horário comercial',
+    horario: 'Seg–Sex 9h–18h · Sáb 9h–13h',
   };
 
   /* ---------- Helpers de persistência ---------- */
