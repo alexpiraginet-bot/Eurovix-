@@ -871,7 +871,7 @@
     const cfgG = getConfig().garantiaMeses;
     const agora = new Date();
     const valor = opts.valor != null ? opts.valor : local.totalOS(alvo, true);
-    updateOS(numero, (o) => local.aplicarPagamento(o, { metodo: opts.metodo, valor, retirada: opts.retirada }, agora, cfgG),
+    updateOS(numero, (o) => local._aplicarPagamento(o, { metodo: opts.metodo, valor, retirada: opts.retirada }, agora, cfgG),
       { tipo: 'entrega', titulo: 'Pagamento confirmado', desc: opts.desc || `Pix ${local.brl(valor)} · NF emitida · garantia ativada`, ator: opts.ator || 'Sistema' });
     return getOS(numero);
   };

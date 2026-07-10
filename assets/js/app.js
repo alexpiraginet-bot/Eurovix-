@@ -535,8 +535,10 @@
     try {
       if (typeof qrcode === 'function') {
         const qr = qrcode(0, 'M'); qr.addData(payload); qr.make();
-        qbox.innerHTML = qr.createImgTag(4, 4);
-        const im = qbox.querySelector('img'); if (im) im.alt = ''; // decorativo: o container já tem aria-label
+        const img = document.createElement('img'); // via DOM, sem innerHTML (mantém o padrão do resto do código)
+        img.src = qr.createDataURL(4, 4);
+        img.alt = ''; // decorativo: o container já tem role="img" + aria-label
+        qbox.appendChild(img);
         qrOk = true;
       }
     } catch (e) { /* cai no fallback abaixo */ }
