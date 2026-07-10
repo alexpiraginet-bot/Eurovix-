@@ -17,6 +17,6 @@
    no navegador, com dados de exemplo em localStorage e sem nuvem.
    ============================================================ */
 window.EVX_ENV = {
-  SUPABASE_URL: '',
+  SUPABASE_URL: 'https://txdxtwmvehrzwharvgda.supabase.co',
   SUPABASE_ANON_KEY: '',
 };
