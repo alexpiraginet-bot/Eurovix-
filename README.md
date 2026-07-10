@@ -81,6 +81,7 @@ Garantias aplicadas **no servidor**, todas em [`supabase/schema.sql`](supabase/s
 - **Escrita do cliente só por RPCs validadas** (`ativar_convite`, `aprovar_orcamento`, `chat_cliente`, `avaliar_nps`) — dono, status, níveis e limites conferidos no banco, nunca no navegador.
 - **Log imutável** — cada evento da OS é copiado por trigger para `eventos_log`, onde UPDATE/DELETE/TRUNCATE são bloqueados; `ordens.eventos` é append-only por comprimento **e por conteúdo**.
 - Token de convite gerado no servidor com **128 bits** de entropia; a anon key é pública por design; a `service_role` **nunca** entra no repositório.
+- **Equipe gerenciada no próprio painel** — a view **👥 Equipe** do WERK OS cria, edita e remove colaboradores (mecânico · consultor · gestor · admin) sem SQL: o login nasce por cadastro público num cliente paralelo e as RPCs `staff_*` aplicam as regras de papel no servidor (gestor não toca em gestores/admins; o último admin é indestrutível).
 
 **Para colocar no ar (10–15 min, plano Free):** siga o [SETUP-NUVEM.md](SETUP-NUVEM.md) — projeto na região São Paulo (`sa-east-1`), colar o schema, desligar "Confirm email", criar o usuário staff e preencher o `env.js`. Decisões de arquitetura: [`supabase/ARQUITETURA.md`](supabase/ARQUITETURA.md).
 

@@ -112,6 +112,11 @@ instalou dentro do banco.
 
 ## 4. Criar o seu usuário da equipe (staff)
 
+> **Este caminho manual é só para o PRIMEIRO usuário** (o admin). Depois que você
+> estiver dentro do WERK OS, os demais colaboradores — mecânicos, consultores,
+> gestores e outros admins — são criados e editados na página **👥 Equipe** do
+> próprio painel, sem SQL e sem abrir o Supabase.
+
 São duas partes: **criar o login** e **marcar esse login como equipe**. Sem a segunda
 parte, a pessoa até loga, mas o sistema não mostra nada a ela (de propósito).
 
@@ -133,12 +138,13 @@ parte, a pessoa até loga, mas o sistema não mostra nada a ela (de propósito).
    e o nome:
 
    ```sql
-   insert into public.staff (auth_user, nome)
+   insert into public.staff (auth_user, nome, papel)
    values (
      (select id from auth.users where email = 'voce@exemplo.com.br'),
-     'Seu Nome Completo'
+     'Seu Nome Completo',
+     'admin'
    )
-   on conflict (auth_user) do update set nome = excluded.nome;
+   on conflict (auth_user) do update set nome = excluded.nome, papel = excluded.papel;
    ```
 
 3. Clique em **Run**. Deve aparecer "Success".
@@ -155,8 +161,14 @@ select s.nome, u.email
   join auth.users u on u.id = s.auth_user;
 ```
 
-**Mais pessoas na equipe?** Repita 4a e 4b para cada uma, cada qual com o próprio
-e-mail e senha.
+**Mais pessoas na equipe?** Não repita nada disso: entre no WERK OS e use a página
+**👥 Equipe** — nela você cria o acesso (nome, e-mail, senha provisória e papel),
+edita papéis e remove colaboradores. As regras valem no servidor: admin gerencia
+todo mundo; gestor cria e edita apenas mecânicos e consultores.
+
+**Banco criado antes da página 👥 Equipe existir?** Cole o arquivo
+`supabase/EQUIPE-UPGRADE.sql` no SQL Editor e rode **uma vez** (re-rodar é seguro).
+Ele instala as funções da página e promove o primeiro usuário a **admin** sozinho.
 
 ---
 
