@@ -402,6 +402,8 @@
 
       ${precisaAprovar ? aprovacaoHTML(o) : orcamentoHTML(o)}
 
+      ${o.aceite && !o.pagamento ? pagamentoHTML(o) : ''}
+
       <div class="sec-label">Documentos</div>
       <div class="acard" style="display:flex;gap:8px;flex-wrap:wrap">
         <a class="btn btn-secondary" style="padding:9px 13px;font-size:11px" href="documento.html?tipo=termo&os=${o.numero}" target="_blank">📄 Termo de Entrada</a>
@@ -438,6 +440,7 @@
       renderOSDetail(view);
     });
     bindAprovacao(o, view);
+    bindPagamento(o, view);
     bindNps(o, view);
     const cb = $('#chatBox'); if (cb) cb.scrollTop = cb.scrollHeight;
   }
@@ -499,6 +502,58 @@
         <div class="sig-pad" style="background:#F5F6F8;border-radius:12px"><canvas id="apSig" style="width:100%;height:110px;touch-action:none;display:block;border-radius:12px"></canvas></div>
         <button class="btn-image" type="button" style="margin-top:12px" id="apConfirm"><img src="assets/img/ui/btn-aprovar-sel.webp" alt="Aprovar selecionados" width="1000" height="227"></button>
       </div>`;
+  }
+
+  // Pagamento Pix pelo próprio app — aparece quando o cliente já aprovou o
+  // orçamento e ainda não pagou. QR real (payload EMV) + copia-e-cola + botão.
+  function pagamentoHTML(o) {
+    const total = WERK.totalOS(o, true);
+    const payload = WERK.pixPayload(total, 'EVX' + o.numero);
+    return `
+      <div class="sec-label">Pagamento</div>
+      <div class="acard pay-card">
+        <div class="pay-head">
+          <div><span>Total a pagar</span><b>${WERK.brl(total)}</b></div>
+          <span class="pay-badge">Pix · à vista</span>
+        </div>
+        <div class="pay-qr" id="payQr" role="img" aria-label="QR Code Pix para pagamento"></div>
+        <p class="pay-hint">Abra o app do seu banco, escaneie o QR — ou copie o código Pix abaixo.</p>
+        <div class="pay-code" id="payCode">${payload}</div>
+        <button type="button" class="btn btn-secondary pay-copy-btn" id="payCopyBtn">Copiar código Pix</button>
+        <button type="button" class="btn-image" id="payPix"><img src="assets/img/ui/btn-pix.webp" alt="Pagar com Pix" width="1000" height="228"></button>
+        <p class="pay-note">Ao confirmar, a nota fiscal e a garantia de cada item são liberadas na hora.</p>
+      </div>`;
+  }
+  function bindPagamento(o, view) {
+    const qbox = $('#payQr', view);
+    if (!qbox) return;
+    const total = WERK.totalOS(o, true);
+    const payload = WERK.pixPayload(total, 'EVX' + o.numero);
+    try {
+      if (typeof qrcode === 'function') {
+        const qr = qrcode(0, 'M'); qr.addData(payload); qr.make();
+        qbox.innerHTML = qr.createImgTag(4, 4);
+      } else { qbox.style.display = 'none'; } // sem lib: segue só o copia-e-cola
+    } catch (e) { qbox.style.display = 'none'; }
+    const copyBtn = $('#payCopyBtn', view);
+    if (copyBtn) copyBtn.addEventListener('click', () => {
+      if (navigator.clipboard) navigator.clipboard.writeText(payload);
+      toast('Código Pix copiado', 'Cole no app do seu banco para pagar.');
+    });
+    const pay = $('#payPix', view);
+    if (pay) pay.addEventListener('click', () => {
+      // DEMO: confirma o pagamento na hora. Em produção, o gateway (Mercado
+      // Pago / Stone) confirma por webhook e dispara este mesmo efeito.
+      const cfgG = WERK.getConfig().garantiaMeses;
+      WERK.updateOS(o.numero, os => {
+        os.pagamento = { metodo: 'Pix', valor: total, ts: new Date().toISOString(), txid: 'EVX' + o.numero };
+        os.nf = { numero: `NFS-e 2026/${String(400 + o.numero % 100).padStart(6, '0')}`, ts: new Date().toISOString() };
+        const fim = new Date(); fim.setMonth(fim.getMonth() + (cfgG.peca || 12));
+        os.itens.forEach(i => { if (i.aprovacao === 'aprovado') i.garantia = { inicio: new Date().toISOString().slice(0, 10), fim: fim.toISOString().slice(0, 10) }; });
+      }, { tipo: 'entrega', titulo: 'Pagamento confirmado', desc: `Pix ${WERK.brl(total)} · NF emitida · garantia ativada`, ator: 'Cliente (app)' });
+      toast('Pagamento confirmado ✓', 'Nota fiscal e garantia liberadas. Recibo em Documentos.');
+      renderOSDetail(view);
+    });
   }
 
   function bindAprovacao(o, view) {
