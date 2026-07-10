@@ -404,6 +404,23 @@ body.app-body{
 .sig-pad{background:var(--paper);border:1px solid var(--line-strong);border-radius:10px}
 
 /* ============================================================
+   Botão-IMAGEM — a arte gerada (IA/3D) É o botão. O <button>
+   mantém semântica, foco e teclado; o texto vive na imagem, então
+   o rótulo acessível vem do aria-label. Imagem otimizada (WebP).
+   Reutilizável em qualquer arte: basta trocar o src e o aria-label.
+   ============================================================ */
+.btn-image{
+  display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;
+  border-radius:14px;overflow:hidden;line-height:0;-webkit-tap-highlight-color:transparent;
+  transition:filter .2s ease, transform .08s ease, box-shadow .2s ease;
+}
+.btn-image img{width:100%;height:auto;display:block;pointer-events:none;user-select:none}
+.btn-image:hover{filter:brightness(1.09) saturate(1.06)}
+.btn-image:active{transform:translateY(1px) scale(.997)}
+.btn-image:focus-visible{outline:2px solid #7ab0ff;outline-offset:3px}
+.btn-image[disabled],.btn-image[aria-disabled="true"]{opacity:.55;cursor:default;filter:none}
+
+/* ============================================================
    Botão LASER — remete aos faróis Laser azuis da BMW.
    Botão real (texto/foco/acessível), não imagem. Fundo escuro
    próprio: fica idêntico nos temas claro e escuro.
