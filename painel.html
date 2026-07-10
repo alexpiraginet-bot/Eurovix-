@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Mestre — EUROVIX · Todos os acessos</title>
+<meta name="description" content="Hub central do ecossistema EUROVIX: site, agendamento, app do cliente, WERK OS, documentos e repositório.">
+<link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<style>
+body{
+  background:
+    radial-gradient(1000px 520px at 82% -8%, rgba(30,79,160,.16), transparent 60%),
+    radial-gradient(760px 480px at -6% 106%, rgba(230,57,40,.10), transparent 56%),
+    linear-gradient(165deg,#0A0A0A,#0D1117 70%,#0A0A0A);
+  min-height:100vh;padding-bottom:70px;
+}
+.hub{max-width:1180px;margin:0 auto;padding:clamp(26px,5vh,52px) clamp(18px,4vw,40px)}
+.hub-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.hub-head img{width:56px;height:56px}
+.hub-head h1{font-family:var(--font-display);font-size:clamp(22px,3vw,32px);font-weight:800;line-height:1.1}
+.hub-head h1 .r{color:var(--red)}
+.hub-head .sub{font-size:13px;color:var(--txt-2);margin-top:4px}
+.live-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:22px 0 26px}
+.live{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;position:relative;overflow:hidden}
+.live::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--red),var(--blue-light))}
+.live .n{font-family:var(--font-display);font-size:22px;font-weight:800}
+.live .n em{font-style:normal;color:var(--red)}
+.live .t{font-size:11px;color:var(--txt-2);margin-top:2px}
+@media (max-width:860px){.live-strip{grid-template-columns:repeat(2,1fr)}}
+.sec-title{
+  font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--red);margin:26px 2px 12px;display:flex;align-items:center;gap:10px;
+}
+.sec-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media (max-width:980px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.cards{grid-template-columns:1fr}}
+.acc{
+  background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;
+  display:flex;flex-direction:column;gap:10px;transition:all .25s;position:relative;overflow:hidden;
+}
+.acc:hover{transform:translateY(-4px);border-color:var(--line-strong);box-shadow:var(--shadow)}
+.acc .top{display:flex;align-items:center;gap:12px}
+.acc .ico-wrap{
+  width:46px;height:46px;border-radius:13px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:var(--red-soft);border:1px solid var(--red-border);color:var(--red);font-size:20px;
+}
+.acc:nth-child(even) .ico-wrap{background:var(--blue-soft);border-color:var(--blue-border);color:var(--blue-light)}
+.acc h3{font-family:var(--font-display);font-size:15.5px;font-weight:800}
+.acc .tag{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-3);font-family:var(--font-display)}
+.acc p{font-size:12.5px;color:var(--txt-2);line-height:1.6;flex:1}
+.acc .links{display:flex;gap:8px;flex-wrap:wrap}
+.lnk{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--font-display);font-size:11.5px;font-weight:700;
+  background:var(--navy);border:1px solid var(--line-strong);border-radius:9px;
+  padding:8px 13px;color:var(--txt);transition:all .2s;
+}
+.lnk:hover{border-color:var(--red);color:var(--red)}
+.lnk.primary{background:var(--red);border-color:var(--red);color:#fff}
+.lnk.primary:hover{background:var(--red-dark);color:#fff}
+.cred{
+  background:var(--navy);border:1px dashed var(--line-strong);border-radius:10px;
+  padding:9px 12px;font-size:11.5px;color:var(--txt-2);display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.cred code{color:var(--blue-light);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:11px}
+.cred button{
+  margin-left:auto;background:none;border:1px solid var(--line-strong);color:var(--txt-2);
+  border-radius:7px;font-size:10px;padding:4px 9px;cursor:pointer;font-family:var(--font-display);font-weight:700;
+}
+.cred button:hover{border-color:var(--red);color:var(--red)}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;counter-reset:fs}
+@media (max-width:980px){.flow{grid-template-columns:repeat(2,1fr)}}
+.fstep{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 15px;
+  counter-increment:fs;position:relative;
+}
+.fstep::before{
+  content:"0" counter(fs);font-family:var(--font-display);font-weight:900;font-style:italic;
+  font-size:26px;color:rgba(255,255,255,.07);position:absolute;top:8px;right:12px;
+}
+.fstep b{font-family:var(--font-display);font-size:12.5px;display:block;margin-bottom:5px}
+.fstep p{font-size:11px;color:var(--txt-2);line-height:1.55}
+.fstep a{color:var(--red);font-weight:600}
+.hub-foot{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--txt-3);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hub-foot a{color:var(--txt-2)}
+.hub-foot a:hover{color:var(--red)}
+.pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok);animation:pl 1.8s ease infinite;margin-right:6px}
+@keyframes pl{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+<div class="hub">
+
+  <div class="hub-head">
+    <img src="assets/img/logo-simbolo.svg" alt="EUROVIX">
+    <div>
+      <h1>Painel <span class="r">Mestre</span> — todos os acessos</h1>
+      <div class="sub"><span class="pulse"></span>Ecossistema digital EUROVIX + WERK OS · demo funcional Fase 1 · dados vivos deste navegador</div>
+    </div>
+  </div>
+
+  <div class="live-strip" id="liveStrip">
+    <div class="live"><div class="n" id="lv-os">—</div><div class="t">OS ativas na oficina</div></div>
+    <div class="live"><div class="n" id="lv-ap">—</div><div class="t">aguardando aprovação do cliente</div></div>
+    <div class="live"><div class="n" id="lv-fat">—</div><div class="t">faturamento registrado (demo)</div></div>
+    <div class="live"><div class="n" id="lv-gar">—</div><div class="t">garantias ativas por item</div></div>
+  </div>
+
+  <div class="sec-title">Camada do cliente</div>
+  <div class="cards">
+    <div class="acc">
+      <div class="top"><div class="ico-wrap">🌐</div><div><h3>Site Premium</h3><span class="tag">público · vitrine & conversão</span></div></div>
+      <p>Hero, 5 pilares, 6 linhas de serviço, performance por stages, processo, depoimentos, FAQ e contato.</p>
+      <div class="links"><a class="lnk primary" href="index.html">Abrir site →</a></div>
+    </div>
+    <div class="acc">
+      <div class="top"><div class="ico-wrap">📅</div><div><h3>Agendamento Online</h3><span class="tag">Etapa 0 · pré-chegada</span></div></div>
+      <p>4 passos: veículo → serviço → data/hora → confirmação. Protocolo EVX + confirmação via WhatsApp.</p>
+      <div class="links">
+        <a class="lnk primary" href="agendamento.html">Agendar →</a>
+        <a class="lnk" href="agendamento.html?servico=performance">c/ serviço pré-selecionado</a>
+      </div>
+    </div>
+    <div class="acc">
+      <div class="top"><div class="ico-wrap">📱</div><div><h3>App do Cliente</h3><span class="tag">rastreamento · aprovação · garantias</span></div></div>
+      <p>Dashboard do veículo, OS ao vivo, aprovação item a item com assinatura, chat, pendências, NPS e cofre digital.</p>
+      <div class="cred">demo: <code>demo@eurovix.com.br</code> · <code>bmw2026</code><button data-copy="demo@eurovix.com.br">copiar login</button></div>
+      <div class="links"><a class="lnk primary" href="app.html">Abrir app →</a></div>
+    </div>
+  </div>
+
+  <div class="sec-title">Camada da oficina — WERK OS</div>
+  <div class="cards">
+    <div class="acc">
+      <div class="top"><div class="ico-wrap">🛠</div><div><h3>WERK OS · Painel</h3><span class="tag">kanban 8 etapas · operação completa</span></div></div>
+      <p>Fila → diagnóstico → aprovação → peça → execução → QC → lavagem → pronto. Abra lado a lado com o app para ver o tempo real.</p>
+      <div class="links">
+        <a class="lnk primary" href="werkos.html#/kanban">Kanban →</a>
+        <a class="lnk" href="werkos.html#/checkin">Novo check-in</a>
+        <a class="lnk" href="werkos.html#/veiculos">Veículos</a>
+      </div>
+    </div>
+    <div class="acc">
+      <div class="top"><div class="ico-wrap">⚙️</div><div><h3>Motor de Peças</h3><span class="tag">VIN → ETK → TecDoc → cotação</span></div></div>
+      <p>Resolva qualquer peça por chassi: part number exato, 3 níveis (Original/OEM/Aftermarket) e comparativo de 5 fornecedores.</p>
+      <div class="links">
+        <a class="lnk primary" href="werkos.html#/pecas">Testar o motor →</a>
+        <a class="lnk" href="werkos.html#/config">Margens & valor-hora</a>
+      </div>
+    </div>
+    <div class="acc">
+      <div class="top"><div class="ico-wrap">📊</div><div><h3>Gestão & DRE</h3><span class="tag">margem · comissão AW · curva ABC</span></div></div>
+      <p>DRE por OS, produção por técnico em AW, curva ABC de peças e exports CSV — dados vivos do sistema.</p>
+      <div class="links"><a class="lnk primary" href="werkos.html#/gestao">Abrir gestão →</a></div>
+    </div>
+  </div>
+
+  <div class="sec-title">Documentos (PDF com um toque)</div>
+  <div class="cards">
+    <div class="acc">
+      <div class="top"><div class="ico-wrap">📄</div><div><h3>Documentos da OS demo</h3><span class="tag" id="docTag">OS #1258 · Ricardo</span></div></div>
+      <p>Termo de Entrada, DVI 3 cores, Orçamento com aceite (hash/IP) e OS completa com log de auditoria.</p>
+      <div class="links" id="docLinks1">
+        <a class="lnk" href="documento.html?tipo=termo&os=1258">Termo</a>
+        <a class="lnk" href="documento.html?tipo=dvi&os=1258">DVI</a>
+        <a class="lnk" href="documento.html?tipo=orcamento&os=1258">Orçamento</a>
+        <a class="lnk" href="documento.html?tipo=os&os=1258">OS completa</a>
+      </div>
+    </div>
+    <div class="acc">
+      <div class="top"><div class="ico-wrap">🧾</div><div><h3>Pós-venda & fiscal</h3><span class="tag" id="docTag2">OS #1240 · concluída</span></div></div>
+      <p>Fatura/recibo com NF e transação, e Certificado de Garantia por item com vencimentos.</p>
+      <div class="links" id="docLinks2">
+        <a class="lnk" href="documento.html?tipo=fatura&os=1240">Fatura</a>
+        <a class="lnk" href="documento.html?tipo=garantia&os=1240">Garantia</a>
+      </div>
+    </div>
+    <div class="acc">
+      <div class="top"><div class="ico-wrap">🗂</div><div><h3>Prontuário vitalício</h3><span class="tag">indexado por VIN</span></div></div>
+      <p>A vida inteira do carro em um documento: OS, valores, garantias e mídia — o ativo que valoriza a revenda.</p>
+      <div class="links" id="docLinks3"><a class="lnk primary" href="werkos.html#/veiculos">Escolher veículo →</a></div>
+    </div>
+  </div>
+
+  <div class="sec-title">Roteiro de demonstração — 5 minutos</div>
+  <div class="flow">
+    <div class="fstep"><b>Abra os dois lados</b><p><a href="werkos.html" target="_blank">WERK OS</a> e <a href="app.html" target="_blank">app</a> em abas lado a lado.</p></div>
+    <div class="fstep"><b>Aprove no app</b><p>OS #1258 → escolha níveis, adie um item, assine. O painel reflete na hora.</p></div>
+    <div class="fstep"><b>Opere no painel</b><p>Micro-update → QC (dupla assinatura) → lavagem → pronto.</p></div>
+    <div class="fstep"><b>Checkout Pix</b><p>QR + copia-e-cola EMV real → NF automática → garantias ativadas.</p></div>
+    <div class="fstep"><b>Feche o ciclo</b><p>Entrega → NPS no app → pendência adiada vira lembrete no dashboard.</p></div>
+  </div>
+
+  <div class="sec-title">Projeto & código</div>
+  <div class="cards">
+    <div class="acc">
+      <div class="top"><div class="ico-wrap">🐙</div><div><h3>Repositório GitHub</h3><span class="tag">código-fonte completo</span></div></div>
+      <p>HTML/CSS/JS puro, sem build. README com arquitetura, roteiro e tabela de cobertura da especificação.</p>
+      <div class="links">
+        <a class="lnk primary" href="https://github.com/alexpiraginet-bot/Eurovix-/tree/claude/html-scope-elaboration-jrxef5" target="_blank" rel="noopener">Repositório →</a>
+        <a class="lnk" href="https://github.com/alexpiraginet-bot/Eurovix-/pull/1" target="_blank" rel="noopener">Pull Request #1</a>
+      </div>
+    </div>
+    <div class="acc">
+      <div class="top"><div class="ico-wrap">🎨</div><div><h3>Apresentação da marca</h3><span class="tag">deck original · 9 slides</span></div></div>
+      <p>O escopo que deu origem a tudo: identidade, conceito do símbolo, app e site premium.</p>
+      <div class="links"><a class="lnk primary" href="apresentacao.html">Abrir deck →</a></div>
+    </div>
+    <div class="acc">
+      <div class="top"><div class="ico-wrap">♻️</div><div><h3>Resetar demonstração</h3><span class="tag">volta ao estado inicial</span></div></div>
+      <p>Limpa OS, aprovações e notificações deste navegador e re-semeia os dados de demonstração.</p>
+      <div class="links"><button class="lnk" id="resetBtn" style="cursor:pointer">↺ Resetar dados da demo</button></div>
+    </div>
+  </div>
+
+  <div class="hub-foot">
+    <span>© 2026 EUROVIX — Oficina Especializada BMW · WERK OS demo Fase 1</span>
+    <span><a href="index.html">Site</a> · <a href="app.html">App</a> · <a href="werkos.html">WERK OS</a> · <a href="https://github.com/alexpiraginet-bot/Eurovix-/pull/1" target="_blank" rel="noopener">PR</a></span>
+  </div>
+</div>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/werk-data.js"></script>
+<script>
+(function () {
+  'use strict';
+  // Métricas vivas do store compartilhado
+  var all = WERK.getAllOS();
+  var ativas = all.filter(function (o) { return o.status !== 'entregue'; });
+  var aprov = all.filter(function (o) {
+    return o.status === 'aprovacao' && o.itens.some(function (i) { return i.aprovacao === 'pendente'; });
+  });
+  var fat = all.reduce(function (s, o) { return s + (o.pagamento ? o.pagamento.valor : 0); }, 0);
+  var gar = all.reduce(function (s, o) {
+    return s + o.itens.filter(function (i) { return i.garantia; }).length;
+  }, 0);
+  document.getElementById('lv-os').textContent = ativas.length;
+  document.getElementById('lv-ap').innerHTML = aprov.length + (aprov.length ? ' <em>⚠</em>' : '');
+  document.getElementById('lv-fat').textContent = WERK.brl(fat);
+  document.getElementById('lv-gar').textContent = gar;
+
+  // Links dinâmicos de documentos (acompanham o estado real da demo)
+  var comAceite = all.find(function (o) { return o.aceite; }) || all[0];
+  var concluida = all.find(function (o) { return o.pagamento; });
+  if (comAceite) {
+    document.getElementById('docTag').textContent = 'OS #' + comAceite.numero + ' · ' + comAceite.cliente.split(' ')[0];
+    document.getElementById('docLinks1').innerHTML =
+      ['termo', 'dvi', 'orcamento', 'os'].map(function (t) {
+        var label = { termo: 'Termo', dvi: 'DVI', orcamento: 'Orçamento', os: 'OS completa' }[t];
+        return '<a class="lnk" href="documento.html?tipo=' + t + '&os=' + comAceite.numero + '">' + label + '</a>';
+      }).join('');
+  }
+  if (concluida) {
+    document.getElementById('docTag2').textContent = 'OS #' + concluida.numero + ' · concluída';
+    document.getElementById('docLinks2').innerHTML =
+      '<a class="lnk" href="documento.html?tipo=fatura&os=' + concluida.numero + '">Fatura</a>' +
+      '<a class="lnk" href="documento.html?tipo=garantia&os=' + concluida.numero + '">Garantia</a>';
+  }
+  var v = WERK.getVehicles()[0];
+  if (v) {
+    document.getElementById('docLinks3').innerHTML =
+      '<a class="lnk primary" href="documento.html?tipo=prontuario&vin=' + v.vin + '">Prontuário ' + (v.placa || v.vin.slice(-6)) + ' →</a>' +
+      '<a class="lnk" href="werkos.html#/veiculos">Outros veículos</a>';
+  }
+
+  // Copiar credencial demo
+  document.querySelectorAll('[data-copy]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.copy + ' / bmw2026');
+      b.textContent = 'copiado ✓';
+      setTimeout(function () { b.textContent = 'copiar login'; }, 1800);
+    });
+  });
+
+  // Reset da demo
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    if (!confirm('Limpar todos os dados da demo deste navegador (OS, aprovações, notificações)?')) return;
+    Object.keys(localStorage).forEach(function (k) { if (k.indexOf('evx.') === 0) localStorage.removeItem(k); });
+    location.reload();
+  });
+
+  // Tempo real: outra aba mudou o estado → atualiza métricas
+  window.addEventListener('storage', function (e) {
+    if (e.key && e.key.indexOf('evx.') === 0) location.reload();
+  });
+})();
+</script>
+</body>
+</html>
