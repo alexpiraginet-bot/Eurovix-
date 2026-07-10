@@ -419,7 +419,7 @@ body.app-body{
 .btn-image:active{transform:translateY(1px) scale(.997)}
 /* foco pela cor de acento do tema (consistente com :focus-visible global), só o offset maior */
 .btn-image:focus-visible{outline:2px solid var(--bmw);outline-offset:3px}
-.btn-image[disabled],.btn-image[aria-disabled="true"]{opacity:.55;cursor:default;filter:none}
+.btn-image[disabled]{opacity:.55;cursor:default;filter:none}
 @media (prefers-reduced-motion:reduce){
   .btn-image{transition:none}
   .btn-image:hover{filter:none}
