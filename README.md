@@ -2,6 +2,15 @@
 
 **Oficina Especializada BMW · Vitória/ES**
 
+## 🌐 Demo publicada (ao vivo)
+
+- **Painel Mestre (todos os acessos):** https://raw.githack.com/alexpiraginet-bot/Eurovix-/claude/html-scope-elaboration-jrxef5/painel.html
+- **Site:** https://raw.githack.com/alexpiraginet-bot/Eurovix-/claude/html-scope-elaboration-jrxef5/index.html
+- **App do cliente:** https://raw.githack.com/alexpiraginet-bot/Eurovix-/claude/html-scope-elaboration-jrxef5/app.html
+- **WERK OS (painel da oficina):** https://raw.githack.com/alexpiraginet-bot/Eurovix-/claude/html-scope-elaboration-jrxef5/werkos.html
+
+Servido via githack (CDN sobre o GitHub, público) — os links do branch refletem cada push. Para URL definitiva (`alexpiraginet-bot.github.io/Eurovix-/`): habilitar **Settings → Pages → Source: GitHub Actions** uma vez e rodar o workflow `Deploy GitHub Pages` (manual — o token de CI não tem permissão para criar o site do Pages). Há também um mirror pronto para Vercel em `deploy/vercel-mirror/`.
+
 Este repositório evoluiu em duas camadas:
 
 1. **Camada cliente/marketing** — site premium, agendamento online e app do cliente (do brand board original).

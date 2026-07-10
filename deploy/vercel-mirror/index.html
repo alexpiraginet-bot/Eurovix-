@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EUROVIX — carregando…</title>
+<style>
+  body{margin:0;background:linear-gradient(165deg,#0A0A0A,#0D1117);color:#F2F3F5;
+    font-family:system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center}
+  .wm{font-style:italic;font-weight:800;font-size:34px;letter-spacing:.02em}
+  .wm .x{position:relative;display:inline-block}
+  .wm .x::after{content:"";position:absolute;left:-16%;right:-24%;top:52%;height:.09em;background:#E63928;transform:rotate(-38deg);border-radius:1em}
+  small{display:block;font-size:9px;font-weight:600;letter-spacing:.32em;color:#9AA3AF;text-transform:uppercase;margin-top:6px}
+  .bar{width:130px;height:3px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden;margin:22px auto 0}
+  .bar i{display:block;height:100%;width:40%;border-radius:3px;background:linear-gradient(90deg,#E63928,#4A7FD4);animation:l 1.1s ease infinite}
+  @keyframes l{from{transform:translateX(-120%)}to{transform:translateX(320%)}}
+  #nosw{display:none;margin-top:26px;font-size:13px;color:#9AA3AF;line-height:1.7}
+  #nosw a{color:#E63928}
+</style>
+</head>
+<body>
+<div>
+  <div class="wm">EUROVI<span class="x">X</span></div>
+  <small>Oficina Especializada BMW · carregando ecossistema</small>
+  <div class="bar"><i></i></div>
+  <div id="nosw">Seu navegador não suporta a demo publicada.<br>
+    Acesse o código em <a href="https://github.com/alexpiraginet-bot/Eurovix-/tree/claude/html-scope-elaboration-jrxef5">GitHub → alexpiraginet-bot/Eurovix-</a>.</div>
+</div>
+<script>
+(function () {
+  var guard = +(sessionStorage.getItem('evxBoot') || 0);
+  if (guard > 3) { document.getElementById('nosw').style.display = 'block'; return; }
+  sessionStorage.setItem('evxBoot', guard + 1);
+  if (!('serviceWorker' in navigator)) {
+    document.getElementById('nosw').style.display = 'block';
+    return;
+  }
+  navigator.serviceWorker.register('/sw.js').then(function () {
+    if (navigator.serviceWorker.controller) { location.reload(); return; }
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      sessionStorage.removeItem('evxBoot');
+      location.reload();
+    });
+  }).catch(function () {
+    document.getElementById('nosw').style.display = 'block';
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,10 +1,10 @@
+# Execução manual: o GITHUB_TOKEN não tem permissão de admin para CRIAR
+# o site do Pages (enablement). Depois de habilitar Pages uma vez em
+# Settings → Pages → Source: GitHub Actions, rode este workflow — os
+# pushes seguintes podem voltar a acioná-lo automaticamente.
 name: Deploy GitHub Pages
 
 on:
-  push:
-    branches:
-      - claude/html-scope-elaboration-jrxef5
-      - main
   workflow_dispatch:
 
 permissions:
