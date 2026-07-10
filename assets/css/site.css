@@ -198,6 +198,31 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
   background:var(--stage-2);border:1px solid var(--line);border-radius:var(--radius-lg);
   padding:14px;box-shadow:none;
 }
+/* --- Nossa História: narrativa + retratos da engenharia BMW --- */
+.story p{color:var(--txt-2);line-height:1.75;font-size:15px;margin:0 0 13px}
+.story p:last-of-type{margin-bottom:0}
+/* lead precisa vencer .story p (0,1,1) → seletor mais específico */
+.story p.story-lead{font-size:clamp(16px,1.95vw,19.5px);line-height:1.6;color:var(--ink);font-weight:500;margin:0 0 14px}
+/* painel dos números (antes usava a classe .frame, que só existe dentro de
+   .about-visual — classe dedicada evita depender de estilo inline) */
+.stats-panel{
+  background:var(--stage-2);border:1px solid var(--line);border-radius:var(--radius-lg);
+  padding:clamp(18px,3vw,28px);margin-top:clamp(28px,4vw,44px);
+}
+.story-sign{display:flex;align-items:center;gap:12px;margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}
+.story-sign .seal{
+  width:40px;height:40px;border-radius:50%;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bmw-soft);color:var(--bmw);
+}
+.story-sign b{display:block;font-size:14.5px;color:var(--ink);line-height:1.25}
+.story-sign span{font-size:12px;color:var(--ink-2)}
+.about-photo{
+  width:100%;height:auto;display:block;object-fit:cover;aspect-ratio:4/3;
+  border-radius:calc(var(--radius-lg) - 6px);
+}
+.about-photo.tall{aspect-ratio:4/5}
+.photo-cap{font-size:11px;color:var(--ink-2);text-align:center;margin-top:9px;letter-spacing:.01em}
 .badge-float{
   position:absolute;bottom:-18px;left:-14px;
   background:var(--night);color:#fff;border:none;border-radius:var(--radius);
