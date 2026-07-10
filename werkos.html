@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WERK OS — Painel da Oficina · EUROVIX</title>
+<meta name="description" content="WERK OS: sistema operacional da oficina EUROVIX — check-in digital, DVI, orçamento por chassi, kanban, QC e checkout.">
+<link rel="icon" type="image/png" href="assets/img/brand/favicon.png">
+<meta name="theme-color" content="#07090C">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/werkos.css">
+</head>
+<body class="werk-body">
+
+<aside class="wk-side" id="wkSide">
+  <a class="brand" href="index.html" style="flex-direction:column;align-items:flex-start;gap:6px">
+    <img src="assets/img/brand/logo-principal-dark.png" alt="EUROVIX" style="width:170px;height:auto;background:#0B0D10;border:1px solid var(--line);border-radius:8px;padding:8px 12px">
+    <small style="font-family:var(--font-display);font-size:8px;font-weight:700;letter-spacing:.26em;color:var(--red);text-transform:uppercase">WERK OS · Painel da Oficina</small>
+  </a>
+  <nav class="wk-nav" id="wkNav">
+    <button data-view="kanban" class="on">⬛ Kanban da Oficina</button>
+    <button data-view="checkin">📷 Novo Check-in</button>
+    <button data-view="veiculos">🚘 Veículos & Prontuário</button>
+    <button data-view="pecas">⚙️ Motor de Peças</button>
+    <button data-view="gestao">📊 Gestão & DRE</button>
+    <button data-view="config">🛠 Configurações</button>
+  </nav>
+  <div class="foot">
+    Demo funcional — Fase 1 do WERK OS.<br>
+    Integrações reais (PartsLink24, TecDoc, Mercado Pago, NFS-e) plugam nesta mesma interface.<br><br>
+    <a href="painel.html">⌂ Painel mestre</a> · <a href="index.html">Site</a> · <a href="app.html">App do cliente</a>
+  </div>
+</aside>
+
+<main class="wk-main" id="wkMain">
+  <!-- renderizado por werkos.js -->
+</main>
+
+<div class="wk-modal" id="wkModal"><div class="box" id="wkModalBox"></div></div>
+<div class="wk-toasts" id="wkToasts"></div>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/werk-data.js"></script>
+<script src="assets/js/werkos.js"></script>
+</body>
+</html>

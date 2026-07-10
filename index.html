@@ -8,16 +8,16 @@
 <meta property="og:title" content="EUROVIX — Oficina Especializada BMW">
 <meta property="og:description" content="Especialistas em BMW. Excelência em cada detalhe. Agende seu serviço online.">
 <meta property="og:type" content="website">
-<link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+<link rel="icon" type="image/png" href="assets/img/brand/favicon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0A0A0A">
+<meta name="theme-color" content="#FFFFFF">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800;1,900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/site.css">
 </head>
-<body>
+<body class="theme-bmw">
 
 <!-- Sprite de ícones (kit de UI do brand board) -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -66,11 +66,7 @@
 <header class="site-header" id="topo">
   <div class="container">
     <a class="brand" href="#topo" aria-label="EUROVIX — início">
-      <img src="assets/img/logo-simbolo.svg" alt="" width="44" height="44">
-      <span>
-        <span class="wordmark">EUROVI<span class="x">X</span></span>
-        <small>Oficina Especializada BMW</small>
-      </span>
+      <img class="logo-img logo-on-light" src="assets/img/brand/logo-light.png" alt="EUROVIX — Oficina Especializada BMW">
     </a>
     <nav class="main-nav" id="mainNav" aria-label="Navegação principal">
       <a href="#topo" class="active">Home</a>
@@ -109,26 +105,22 @@
       </p>
     </div>
     <div class="hero-visual reveal">
-      <div class="halo"></div>
-      <!-- Símbolo EUROVIX com agulha animada -->
-      <svg class="hero-symbol" viewBox="0 0 120 120" role="img" aria-label="Símbolo EUROVIX — velocímetro e engrenagem">
-        <path d="M 60 106 A 46 46 0 1 0 16.8 44.3" fill="none" stroke="#E63928" stroke-width="13" stroke-dasharray="5.2 5.4"/>
-        <path d="M 60 98 A 38 38 0 1 0 24.3 47.0" fill="none" stroke="#E63928" stroke-width="8"/>
-        <path d="M 36.6 73.5 A 27 27 0 1 0 73.5 36.6" fill="none" stroke="#1E4FA0" stroke-width="7" stroke-linecap="round"/>
-        <path d="M 45 47 L 75 77 M 75 47 L 45 77" fill="none" stroke="#F2F3F5" stroke-width="10" stroke-linecap="round"/>
-        <path class="needle" d="M 88 30 L 43 79" fill="none" stroke="#E63928" stroke-width="5" stroke-linecap="round"/>
-      </svg>
-      <div class="spec-card s1">
-        <svg class="ico" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-badge"/></svg>
-        <div><div class="v">12+ anos</div><div class="k">Só BMW</div></div>
+      <div class="hero-plate">
+        <img class="hero-logo" src="assets/img/brand/logo-principal-dark.png" alt="EUROVIX — Oficina Especializada BMW">
       </div>
-      <div class="spec-card s2">
-        <svg class="ico" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-star"/></svg>
-        <div><div class="v">4.9 / 5</div><div class="k">380+ avaliações</div></div>
-      </div>
-      <div class="spec-card s3">
-        <svg class="ico" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-scan"/></svg>
-        <div><div class="v">ISTA</div><div class="k">Diagnóstico de fábrica</div></div>
+      <div class="hero-chips">
+        <div class="spec-card">
+          <svg class="ico" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-badge"/></svg>
+          <div><div class="v">12+ anos</div><div class="k">Só BMW</div></div>
+        </div>
+        <div class="spec-card">
+          <svg class="ico" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-star"/></svg>
+          <div><div class="v">4.9 / 5</div><div class="k">380+ avaliações</div></div>
+        </div>
+        <div class="spec-card">
+          <svg class="ico" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-scan"/></svg>
+          <div><div class="v">ISTA</div><div class="k">Diagnóstico de fábrica</div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -478,12 +470,8 @@
 <footer class="site-footer">
   <div class="container footer-grid">
     <div class="footer-brand">
-      <a class="brand" href="#topo" aria-label="EUROVIX">
-        <img src="assets/img/logo-simbolo.svg" alt="" width="40" height="40">
-        <span>
-          <span class="wordmark" style="font-size:21px">EUROVI<span class="x">X</span></span>
-          <small>Oficina Especializada BMW</small>
-        </span>
+      <a href="#topo" aria-label="EUROVIX" class="footer-plate">
+        <img src="assets/img/brand/logo-principal-dark.png" alt="EUROVIX — Oficina Especializada BMW">
       </a>
       <p>Precisão de laboratório, alma de pista. Manutenção, diagnóstico e performance para BMW e MINI na Grande Vitória.</p>
     </div>
@@ -500,8 +488,10 @@
     <div>
       <h4>Plataforma</h4>
       <ul>
+        <li><a href="painel.html">Painel mestre — todos os acessos</a></li>
         <li><a href="agendamento.html">Agendar serviço</a></li>
         <li><a href="app.html">App do cliente (demo)</a></li>
+        <li><a href="werkos.html">WERK OS — painel da oficina</a></li>
         <li><a href="apresentacao.html">Apresentação da marca</a></li>
       </ul>
     </div>

@@ -273,6 +273,7 @@ const EVX = (() => {
     key:    '<circle cx="8" cy="14.5" r="4.2"/><path d="M11 11.5L20 3M16 6.5l2.5 2.5M13.5 9l2 2"/>',
     doc:    '<path d="M6 3h8l4 4v14H6V3z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
     logout: '<path d="M14 4H5v16h9M10 12h10M17 8.5l3.5 3.5-3.5 3.5"/>',
+    alert:  '<path d="M12 3.8 21.4 20H2.6L12 3.8z"/><path d="M12 10v4.4M12 17.4v.2"/>',
     speed:  '<path d="M12 4a9 9 0 0 1 9 9h-3.2M12 4a9 9 0 0 0-9 9h3.2M12 4v3"/><path d="M12 13l4-4"/><circle cx="12" cy="13" r="1.5"/>',
   };
 

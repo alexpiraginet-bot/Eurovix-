@@ -121,3 +121,102 @@ button,input,select,textarea{font:inherit;color:inherit}
   .reveal{opacity:1;transform:none;transition:none}
   html{scroll-behavior:auto}
 }
+
+/* ============================================================
+   TEMA BMW — superfícies do cliente (site, agendamento, app,
+   painel). Linguagem visual do bmw.com.br: branco, grafite,
+   azul #1C69D4 como única cor de ação, cantos quase retos,
+   tipografia neo-grotesca. O vermelho EUROVIX permanece apenas
+   dentro da arte do logo. O WERK OS (interno) segue dark.
+   ============================================================ */
+
+body.theme-bmw{
+  /* Paleta BMW digital */
+  --bmw:#1C69D4;
+  --bmw-dark:#0653B6;
+  --bmw-soft:#E8F0FB;
+  --ink:#262626;
+  --ink-2:#4D4D4D;
+  --ink-3:#8E8E8E;
+  --paper:#FFFFFF;
+  --stage:#F2F2F2;
+  --stage-2:#F6F6F6;
+  --line:#E6E6E6;
+  --line-strong:#D2D2D2;
+  --night:#0A0A0A;
+  --night-2:#1A1A1A;
+  --ok:#217A39;
+  --ok-soft:#E7F3EB;
+  --warn:#C77700;
+  --warn-soft:#FBF1E1;
+  --danger:#C00000;
+  --danger-soft:#FBEAEA;
+
+  /* Remapeia os tokens legados para o claro (componentes reaproveitados) */
+  --red:var(--bmw);
+  --red-dark:var(--bmw-dark);
+  --red-soft:var(--bmw-soft);
+  --red-border:#BCD3F1;
+  --blue:var(--bmw);
+  --blue-light:var(--bmw);
+  --blue-soft:var(--bmw-soft);
+  --blue-border:#BCD3F1;
+  --navy:var(--stage-2);
+  --card:var(--paper);
+  --card-2:var(--stage-2);
+  --txt:var(--ink);
+  --txt-2:var(--ink-2);
+  --txt-3:var(--ink-3);
+
+  --font-display:'Inter',system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
+  --font-body:'Inter',system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
+  --radius:4px;
+  --radius-sm:2px;
+  --radius-lg:6px;
+  --shadow:0 14px 40px rgba(20,24,31,.12);
+  --shadow-sm:0 6px 20px rgba(20,24,31,.08);
+
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--font-body);
+}
+body.theme-bmw ::selection{background:var(--bmw);color:#fff}
+body.theme-bmw ::-webkit-scrollbar-track{background:var(--stage-2)}
+body.theme-bmw ::-webkit-scrollbar-thumb{background:var(--line-strong)}
+body.theme-bmw :focus-visible{outline:2px solid var(--bmw)}
+
+/* Botões — padrão BMW: retos, sólidos azuis / outline grafite */
+body.theme-bmw .btn{
+  font-family:var(--font-display);font-weight:600;letter-spacing:.01em;
+  border-radius:var(--radius-sm);padding:14px 30px;
+}
+body.theme-bmw .btn-primary{
+  background:var(--bmw);color:#fff;box-shadow:none;
+}
+body.theme-bmw .btn-primary:hover{background:var(--bmw-dark);transform:none;box-shadow:0 8px 22px rgba(28,105,212,.28)}
+body.theme-bmw .btn-secondary{
+  background:transparent;color:var(--ink);border:1px solid var(--ink);
+}
+body.theme-bmw .btn-secondary:hover{border-color:var(--bmw);color:var(--bmw);transform:none}
+body.theme-bmw .btn-ghost{color:var(--ink-2)}
+body.theme-bmw .btn-ghost:hover{color:var(--bmw)}
+
+/* Kicker → eyebrow BMW (grafite, sem traço vermelho) */
+body.theme-bmw .kicker{color:var(--ink-3);letter-spacing:.24em}
+body.theme-bmw .kicker::before{background:var(--bmw);width:26px}
+
+/* Link editorial BMW: "Saiba mais ›" */
+body.theme-bmw .bmw-link{
+  display:inline-flex;align-items:center;gap:7px;
+  color:var(--bmw);font-weight:600;font-size:14px;cursor:pointer;
+  transition:gap .2s,color .2s;
+}
+body.theme-bmw .bmw-link:hover{gap:11px;color:var(--bmw-dark)}
+body.theme-bmw .bmw-link::after{content:"›";font-size:18px;line-height:1;margin-top:-2px}
+
+/* Logos reais (sem fundo transparente): blend elimina a caixa */
+.logo-on-light{mix-blend-mode:multiply}
+.logo-on-dark{mix-blend-mode:screen}
+
+/* Reveal mais sóbrio no claro */
+body.theme-bmw .reveal{transform:translateY(16px)}
