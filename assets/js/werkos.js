@@ -1090,7 +1090,12 @@
           <div class="wfield"><label>E-mail (será o login)</label><input id="eq-email" type="email" placeholder="paulo@eurovix.com.br" autocomplete="off"></div>
         </div>
         <div class="wk-grid2" style="margin-top:12px">
-          <div class="wfield"><label>Senha provisória (mín. 6)</label><input id="eq-senha" type="text" autocomplete="off" placeholder="a pessoa troca depois em Configurações"></div>
+          <div class="wfield"><label>Senha provisória (mín. 6)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="eq-senha" type="password" autocomplete="new-password" placeholder="a pessoa troca depois em Configurações" style="flex:1">
+              <button type="button" class="quote-btn" id="eq-senha-ver" aria-label="Mostrar ou ocultar a senha">👁 ver</button>
+            </div>
+          </div>
           <div class="wfield"><label>Papel</label><select id="eq-papel">${opcoes.map(p => `<option value="${p}">${PAPEIS[p]}</option>`).join('')}</select></div>
         </div>
         <div class="wk-actions"><button class="btn btn-primary" id="eq-criar">Criar acesso</button></div>
@@ -1111,6 +1116,13 @@
       else toast('Não foi possível', res.erro);
       views.equipe();
     }));
+    const verSenha = $('#eq-senha-ver');
+    if (verSenha) verSenha.addEventListener('click', () => {
+      const inp = $('#eq-senha');
+      const mostrando = inp.type === 'text';
+      inp.type = mostrando ? 'password' : 'text';
+      verSenha.textContent = mostrando ? '👁 ver' : '🙈 ocultar';
+    });
     const criar = $('#eq-criar');
     if (criar) criar.addEventListener('click', async () => {
       const nome = $('#eq-nome').value.trim(), email = $('#eq-email').value.trim();

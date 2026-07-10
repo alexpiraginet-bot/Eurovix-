@@ -72,6 +72,15 @@ begin
   if coalesce(trim(p_nome), '') = '' then
     raise exception 'Informe o nome do colaborador';
   end if;
+  if coalesce(trim(p_email), '') = '' then
+    raise exception 'Informe o e-mail (login) do colaborador';
+  end if;
+
+  -- serializa as escritas na staff: o invariante do "último admin" (abaixo)
+  -- é checado com count(*), então duas gestões simultâneas precisam ser
+  -- ordenadas. SHARE ROW EXCLUSIVE bloqueia writes concorrentes mas deixa
+  -- staff_listar (SELECT) passar. Vale até o fim desta transação/RPC.
+  lock table public.staff in share row exclusive mode;
 
   select id into v_uid from auth.users
    where lower(email) = lower(trim(p_email))
@@ -118,6 +127,9 @@ begin
   if p_usuario = auth.uid() then
     raise exception 'Você não pode remover a si mesmo da equipe';
   end if;
+  -- serializa com as demais gestões (ver nota em staff_upsert): garante que
+  -- duas remoções simultâneas não deixem 0 admins pela corrida no count(*).
+  lock table public.staff in share row exclusive mode;
   select s.papel into v_alvo from public.staff s where s.auth_user = p_usuario;
   if v_alvo is null then
     raise exception 'Esta pessoa não está na equipe';
@@ -133,10 +145,13 @@ end;
 $$;
 
 -- Bootstrap: instalações feitas antes desta página (INSERT manual do runbook,
--- papel padrão 'consultor') ainda não têm NENHUM admin — promove os membros
--- atuais (hoje, o dono). Idempotente: havendo um admin, não faz nada.
+-- papel padrão 'consultor') ainda não têm NENHUM admin — promove APENAS o
+-- membro mais antigo (o fundador/dono, o 1º cadastrado) para não conceder
+-- admin em massa a bases que já tinham vários staff. Idempotente: havendo
+-- qualquer admin, não faz nada.
 update public.staff set papel = 'admin'
- where not exists (select 1 from public.staff where papel = 'admin');
+ where auth_user = (select auth_user from public.staff order by criado_em asc, auth_user asc limit 1)
+   and not exists (select 1 from public.staff where papel = 'admin');
 
 -- permissões (mesmo padrão da seção 7: revoke primeiro, grant mínimo depois;
 -- as próprias funções validam papel e dão RAISE para quem não pode)
