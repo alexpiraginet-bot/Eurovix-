@@ -873,8 +873,10 @@
     const cfgG = getConfig().garantiaMeses;
     const agora = new Date();
     const valor = opts.valor != null ? opts.valor : local.totalOS(alvo, true);
-    updateOS(numero, (o) => local._aplicarPagamento(o, { metodo: opts.metodo, valor, retirada: opts.retirada, desc: opts.desc, ator: opts.ator }, agora, cfgG));
-    return getOS(numero); // OS atualizada = pagamento recém-registrado
+    // captura o resultado do mutator otimista: null se virou no-op em concorrência
+    let aplicado = false;
+    updateOS(numero, (o) => { aplicado = local._aplicarPagamento(o, { metodo: opts.metodo, valor, retirada: opts.retirada, desc: opts.desc, ator: opts.ator }, agora, cfgG); });
+    return aplicado ? getOS(numero) : null;
   };
 
   /* ============================================================

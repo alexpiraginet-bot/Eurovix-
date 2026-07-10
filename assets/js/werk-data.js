@@ -642,9 +642,11 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     const cfgG = getConfig().garantiaMeses;
     const agora = new Date();
     const valor = opts.valor != null ? opts.valor : totalOS(alvo, true);
-    // guarda + evento carimbados DENTRO do mutator (sem 3º param do updateOS)
-    updateOS(numero, o => aplicarPagamento(o, { metodo: opts.metodo, valor, retirada: opts.retirada, desc: opts.desc, ator: opts.ator }, agora, cfgG));
-    return getOS(numero); // OS atualizada = pagamento recém-registrado
+    // guarda + evento DENTRO do mutator (sem 3º param); captura se aplicou de fato
+    // — se em concorrência o mutator virar no-op, devolve null (chamador não duplica)
+    let aplicado = false;
+    updateOS(numero, o => { aplicado = aplicarPagamento(o, { metodo: opts.metodo, valor, retirada: opts.retirada, desc: opts.desc, ator: opts.ator }, agora, cfgG); });
+    return aplicado ? getOS(numero) : null;
   }
   function chatCliente(numero, texto) {
     const o = getOS(numero);
