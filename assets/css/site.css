@@ -606,3 +606,19 @@ body.theme-bmw .cta-band .btn-secondary:hover{border-color:var(--bmw);color:var(
 }
 .success-box p{color:var(--ink-2);font-size:14px;max-width:46ch;margin:10px auto 0;line-height:1.7}
 .success-actions{display:flex;gap:12px;justify-content:center;margin-top:26px;flex-wrap:wrap}
+
+/* ---------- Gêmeo digital 3D (teaser escuro) ---------- */
+.twin-section{
+  background:
+    radial-gradient(900px 420px at 12% 8%, rgba(28,105,212,.14), transparent 60%),
+    linear-gradient(170deg,#121212,var(--night, #0A0A0A));
+  color:#fff;
+}
+.twin-section .kicker{color:#9E9E9E}
+.twin-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:clamp(28px,4.5vw,60px);align-items:center}
+.twin-frame{
+  background:#0B0D10;border:1px solid rgba(255,255,255,.16);border-radius:var(--radius-lg,6px);
+  overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.45);
+}
+.twin-hint{font-size:11px;color:#8E8E8E;padding:10px 16px;border-top:1px solid rgba(255,255,255,.1)}
+@media (max-width:900px){.twin-grid{grid-template-columns:1fr}}
