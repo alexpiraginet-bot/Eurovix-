@@ -315,6 +315,8 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
 .stage-card .gain small{display:block;font-size:9.5px;font-weight:600;letter-spacing:.14em;color:#8E8E8E;text-transform:uppercase}
 .perf-note{display:flex;gap:10px;align-items:start;margin-top:18px;font-size:12px;color:#8E8E8E!important;line-height:1.6}
 .perf-note .ico{color:#E0A526;flex:none;margin-top:1px}
+/* No mobile a seção de performance empilha (as duas colunas forçavam scroll) */
+@media (max-width:900px){.perf-grid{grid-template-columns:1fr}}
 
 /* ---------- Processo ---------- */
 .process{counter-reset:step}
@@ -346,6 +348,8 @@ body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bm
 .app-features{display:grid;gap:16px;margin-top:26px}
 .app-cta-row{display:flex;gap:14px;margin-top:28px;flex-wrap:wrap;align-items:center}
 .store-note{font-size:12px;color:var(--ink-3)}
+/* No mobile a seção do app empilha (o mock do celular ia forçar scroll horizontal) */
+@media (max-width:900px){.app-section-grid{grid-template-columns:1fr}}
 
 /* Mockup de telefone — app claro (estilo My BMW) */
 .phone{
