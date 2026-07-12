@@ -250,10 +250,20 @@
         </div>
       </div>
 
-      <div class="sec-label">Seu BMW em 3D — inspeção digital <a data-goto="os">minhas OS</a></div>
-      <div class="acard" style="padding:0;overflow:hidden;border-radius:14px">
-        <div id="twin3d" style="height:236px"></div>
-        <p style="font-size:10px;color:var(--ink-3);padding:8px 14px;border-top:1px solid var(--line)">Arraste para girar · passe o dedo nos pontos para ver o status de cada item (DVI).</p>
+      <div class="sec-label">Seu BMW em 3D <a data-goto="os">minhas OS</a></div>
+      <div class="d3-card">
+        ${window.WERK3D && WERK3D.embedReal ? `<div class="d3-tabs">
+          <button class="d3-tab on" data-d3="insp">Inspeção DVI</button>
+          <button class="d3-tab" data-d3="real">Modelo real</button>
+        </div>` : ''}
+        <div class="d3-pane on" data-pane="insp">
+          <div id="twin3d" style="height:236px"></div>
+          <p class="d3-note">Arraste para girar · toque nos pontos para ver o status de cada item (DVI).</p>
+        </div>
+        ${window.WERK3D && WERK3D.embedReal ? `<div class="d3-pane" data-pane="real">
+          <div id="twinReal" style="height:280px"></div>
+          <p class="d3-note">Modelo 3D real do seu ${v.modelo} — arraste para girar e dê zoom (demonstração).</p>
+        </div>` : ''}
       </div>
 
       <div class="sec-label">Saúde do veículo</div>
@@ -310,6 +320,21 @@
       toast('Veículo alterado', `Mostrando ${vehicle().modelo} (${vehicle().placa}).`, 'ok');
     });
     if (v && window.EVXTwin) EVXTwin.mount('#twin3d', { saude: v.saude, modelo: v.modelo, compact: true });
+    // Alternador 3D: monta o modelo BMW real só na 1ª vez que a aba é aberta (lazy — sem custo no load).
+    if (v && window.WERK3D && WERK3D.embedReal) {
+      const card = $('[data-view="inicio"]').querySelector('.d3-card');
+      if (card) card.querySelectorAll('[data-d3]').forEach(btn => btn.addEventListener('click', () => {
+        const which = btn.dataset.d3;
+        card.querySelectorAll('.d3-tab').forEach(t => t.classList.toggle('on', t === btn));
+        card.querySelectorAll('.d3-pane').forEach(p => p.classList.toggle('on', p.dataset.pane === which));
+        if (which === 'real') {
+          const box = card.querySelector('#twinReal');
+          if (box && !box.dataset.loaded) {
+            try { WERK3D.embedReal(box, v.modelo); box.dataset.loaded = '1'; } catch (_) {}
+          }
+        }
+      }));
+    }
     bindCommon($('[data-view="inicio"]'));
   }
 
