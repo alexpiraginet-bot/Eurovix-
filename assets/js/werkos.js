@@ -361,9 +361,9 @@
         <div class="wk-panel">
           <h3>${I('gauge')} Painel & níveis</h3>
           <div class="wk-grid3">
-            <div class="wfield"><label>Odômetro (km) — OCR na integração</label><input id="ck-odo" inputmode="numeric" value="${ck.odometro || ''}" placeholder="48500"></div>
-            <div class="wfield"><label>Combustível: <b id="fuelLabel">${ck.combustivel || 50}%</b></label>
-              <input id="ck-fuel" type="range" min="0" max="100" step="5" value="${ck.combustivel || 50}" style="accent-color:var(--red)"></div>
+            <div class="wfield"><label>Odômetro (km) — OCR na integração</label><input id="ck-odo" inputmode="numeric" value="${ck.odometro ?? ''}" placeholder="48500"></div>
+            <div class="wfield"><label>Combustível: <b id="fuelLabel">${ck.combustivel ?? 50}%</b></label>
+              <input id="ck-fuel" type="range" min="0" max="100" step="5" value="${ck.combustivel ?? 50}" style="accent-color:var(--red)"></div>
             <div class="wfield"><label>Luzes de alerta acesas</label><input id="ck-luzes" value="${(ck.luzes || []).join(', ')}" placeholder="Ex.: Service, TPMS (separar por vírgula)"></div>
           </div>
         </div>
@@ -408,11 +408,12 @@
           <h3>${I('gauge')} Leitura da IA
             <span class="ck-ia-badge">${ck.iaResumo.modo === 'assistida' ? 'assistida' : 'IA'} · ${Math.round(ck.iaResumo.confianca * 100)}% confiança</span></h3>
           <div class="ck-ia-grid">
-            <div class="ck-ia-cell"><span class="k">Odômetro</span><span class="v">${Number(ck.iaResumo.km).toLocaleString('pt-BR')} km</span></div>
-            <div class="ck-ia-cell"><span class="k">Combustível</span><span class="v">${ck.iaResumo.combustivel}%</span></div>
+            <div class="ck-ia-cell"><span class="k">Odômetro</span><span class="v">${ck.iaResumo.km != null ? Number(ck.iaResumo.km).toLocaleString('pt-BR') + ' km' : (ck.iaResumo.kmRecepcao ? Number(ck.iaResumo.kmRecepcao).toLocaleString('pt-BR') + ' km · informado' : '— não lido')}</span></div>
+            <div class="ck-ia-cell"><span class="k">Combustível</span><span class="v">${ck.iaResumo.combustivel != null ? ck.iaResumo.combustivel + '%' : '— não lido'}</span></div>
             <div class="ck-ia-cell"><span class="k">Luzes de alerta</span><span class="v">${ck.iaResumo.luzes.length ? ck.iaResumo.luzes.join(', ') : 'nenhuma'}</span></div>
             <div class="ck-ia-cell"><span class="k">Avarias marcadas</span><span class="v">${ck.iaResumo.avarias.length}</span></div>
             <div class="ck-ia-cell"><span class="k">Itens faltando</span><span class="v">${ck.iaResumo.itensFaltantes.length ? ck.iaResumo.itensFaltantes.join(', ') : 'nenhum'}</span></div>
+            <div class="ck-ia-cell"><span class="k">A conferir</span><span class="v">${(ck.iaResumo.itensNaoVerificados || []).length ? ck.iaResumo.itensNaoVerificados.join(', ') : '—'}</span></div>
           </div>
           <p class="ck-ia-note">Campos pré-preenchidos acima — <b>revise e ajuste</b> antes de continuar. A IA marcou ${ck.iaResumo.avarias.length} avaria(s) na silhueta.</p>
           <button type="button" class="ck-ai-btn" id="ckSugerir">Sugerir orçamento a partir dos sinais</button>
@@ -451,7 +452,7 @@
         const btn = $('#ckAnalisar'); btn.disabled = true; btn.classList.add('loading'); const orig = btn.innerHTML; btn.textContent = 'Analisando fotos…';
         try {
           const a = await WERK.analisarFotos(ck.fotos, { vin: ck.vin, placa: ck.placa, km: ck.odometro });
-          ck.odometro = a.km; ck.combustivel = a.combustivel; ck.luzes = a.luzes; ck.itens = a.itens;
+          ck.odometro = a.km ?? ck.odometro; ck.combustivel = a.combustivel ?? ck.combustivel; ck.luzes = a.luzes; ck.itens = a.itens;
           ck.danos = ck.danos.filter(d => !d.ia);                 // re-análise substitui só as avarias da IA
           a.avarias.forEach(av => ck.danos.push({ x: av.x, y: av.y, nota: av.nota, ia: true }));
           ck.iaResumo = a; ck.iaOrcamento = null;
