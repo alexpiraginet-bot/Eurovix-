@@ -1096,6 +1096,201 @@
   };
 
   /* ============================================================
+     VIEW · AGENDA — fila de agendamentos (site + manuais):
+     calendário do mês + cronograma do dia. Confirmar / cancelar /
+     converter em check-in. Dados via WERK.getAgendamentos() —
+     mesma interface no modo demo (localStorage) e nuvem (Supabase).
+     ============================================================ */
+  let agSel = null;                 // dia selecionado (YYYY-MM-DD)
+  let agMes = null;                 // mês exibido no calendário { y, m } (m 0-based)
+  const agIso = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  const AG_ST = {
+    novo:       { rotulo: 'novo',       cls: 'pendente' },
+    confirmado: { rotulo: 'confirmado', cls: 'aprovado' },
+    cancelado:  { rotulo: 'cancelado',  cls: 'recusado' },
+    convertido: { rotulo: 'na oficina', cls: 'aprovado' },
+  };
+  const AG_CSS = `<style>
+    .ag-wrap{display:grid;grid-template-columns:340px 1fr;gap:14px;align-items:start}
+    @media (max-width:980px){.ag-wrap{grid-template-columns:1fr}}
+    .ag-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+    .ag-nav b{font-family:var(--font-display);font-size:13px;font-weight:800;text-transform:capitalize}
+    .ag-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+    .ag-dow{font-family:var(--font-display);font-size:9px;font-weight:800;letter-spacing:.1em;color:var(--txt-3);text-align:center;padding:4px 0}
+    .ag-cell{position:relative;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;font:inherit;background:var(--navy);border:1px solid var(--line);border-radius:9px;color:var(--txt-2);font-size:11.5px;cursor:pointer}
+    .ag-cell.vazio{background:none;border:none;cursor:default}
+    .ag-cell:not(.vazio):hover{border-color:var(--line-strong);color:var(--txt)}
+    .ag-cell.hoje{border-color:var(--blue-light)}
+    .ag-cell.sel{border-color:var(--red);background:var(--red-soft);color:var(--txt)}
+    .ag-cell em{font-style:normal;font-family:var(--font-display);font-weight:800;font-size:8.5px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;background:var(--red);color:#fff;display:inline-flex;align-items:center;justify-content:center}
+    .ag-row{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;padding:12px 0;border-bottom:1px dashed var(--line)}
+    .ag-row:last-child{border-bottom:0}
+    .ag-hora{font-family:var(--font-display);font-weight:800;font-size:13.5px;min-width:46px;color:var(--txt)}
+    .ag-info{flex:1 1 160px;min-width:150px}
+    .ag-info b{font-size:12.5px}
+    .ag-info .sub{display:block;font-size:11px;color:var(--txt-3);margin-top:2px;overflow-wrap:anywhere}
+    .ag-acts{flex:1 1 auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+  </style>`;
+
+  views.agenda = () => {
+    const hoje = agIso(new Date());
+    if (!agSel) agSel = hoje;
+    if (!agMes) agMes = { y: +agSel.slice(0, 4), m: +agSel.slice(5, 7) - 1 };
+    const ags = WERK.getAgendamentos();
+    const porDia = {};
+    ags.forEach(a => { if (a.data && a.status !== 'cancelado') porDia[a.data] = (porDia[a.data] || 0) + 1; });
+
+    /* grade do mês */
+    const prim = new Date(agMes.y, agMes.m, 1);
+    const nDias = new Date(agMes.y, agMes.m + 1, 0).getDate();
+    let celulas = '';
+    for (let i = 0; i < prim.getDay(); i++) celulas += '<span class="ag-cell vazio"></span>';
+    for (let d = 1; d <= nDias; d++) {
+      const iso = `${agMes.y}-${String(agMes.m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const n = porDia[iso] || 0;
+      celulas += `<button type="button" class="ag-cell ${iso === agSel ? 'sel' : ''} ${iso === hoje ? 'hoje' : ''}" data-ag-dia="${iso}"><span>${d}</span>${n ? `<em>${n}</em>` : ''}</button>`;
+    }
+
+    const doDia = ags.filter(a => a.data === agSel);
+    const semData = ags.filter(a => !a.data && a.status !== 'cancelado');
+    const novos = ags.filter(a => a.status === 'novo').length;
+    const diaLabel = new Date(agSel + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+
+    const linha = (a) => {
+      const st = AG_ST[a.status] || AG_ST.novo;
+      const aberto = a.status === 'novo' || a.status === 'confirmado';
+      const quando = a.data ? new Date(a.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }) : 'data a combinar';
+      const acts = [
+        a.status === 'novo' ? `<button class="quote-btn" data-ag-conf="${escHtml(a.id)}">✓ confirmar</button>` : '',
+        aberto ? `<button class="quote-btn" data-ag-ck="${escHtml(a.id)}">▶ check-in</button>` : '',
+        aberto && a.telefone ? `<a class="quote-btn" target="_blank" rel="noopener" href="${WERK.waLink(a.telefone, `Olá, ${(a.nome || '').split(' ')[0]}! Confirmando seu horário na EUROVIX: ${quando}${a.hora ? ' às ' + a.hora : ''} — ${a.servico_nome || 'serviço'}. Protocolo ${a.protocolo || ''}.`)}">WhatsApp</a>` : '',
+        aberto ? `<button class="quote-btn" data-ag-canc="${escHtml(a.id)}">✕ cancelar</button>` : '',
+        a.status === 'convertido' && a.os_numero ? `<button class="quote-btn" onclick="location.hash='#/os/${+a.os_numero}'">abrir OS #${+a.os_numero}</button>` : '',
+      ].filter(Boolean).join('');
+      return `
+        <div class="ag-row">
+          <span class="ag-hora">${escHtml(a.hora || '—')}</span>
+          <div class="ag-info">
+            <b>${escHtml(a.nome)}</b> <span class="ap-badge ${st.cls}">${st.rotulo}</span>
+            <span class="sub">${[a.veiculo, a.placa, a.servico_nome || a.servico].filter(Boolean).map(escHtml).join(' · ') || '—'}${a.obs ? ` · <em style="font-style:normal;color:var(--txt-2)">${escHtml(a.obs)}</em>` : ''}</span>
+            <span class="sub">${escHtml(a.protocolo || '')}${a.telefone ? ' · ' + escHtml(a.telefone) : ''}</span>
+          </div>
+          <div class="ag-acts">${acts}</div>
+        </div>`;
+    };
+
+    main.innerHTML = head('Agenda', `Fila de agendamentos do site + manuais · ${novos} aguardando confirmação`,
+      `<button class="btn btn-primary" id="agNovo">＋ Novo agendamento</button>`) + AG_CSS + `
+      <div class="ag-wrap">
+        <div class="wk-panel">
+          <div class="ag-nav">
+            <button type="button" class="quote-btn" id="agPrev" aria-label="Mês anterior">‹</button>
+            <b>${prim.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</b>
+            <span style="display:flex;gap:6px">
+              <button type="button" class="quote-btn" id="agHoje">hoje</button>
+              <button type="button" class="quote-btn" id="agNext" aria-label="Próximo mês">›</button>
+            </span>
+          </div>
+          <div class="ag-grid">
+            ${['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(d => `<span class="ag-dow">${d}</span>`).join('')}
+            ${celulas}
+          </div>
+          <p style="font-size:10.5px;color:var(--txt-3);margin-top:10px">O contador de cada dia ignora cancelados. Agendamentos do site chegam como <b>novo</b> — confirme e converta em check-in na chegada.</p>
+        </div>
+        <div class="wk-panel">
+          <h3>${I('calendar')} Cronograma · ${diaLabel} <span style="font-size:10px;color:var(--txt-3);font-weight:400">(${doDia.length} agendamento${doDia.length === 1 ? '' : 's'})</span></h3>
+          ${doDia.map(linha).join('') || '<p style="font-size:12px;color:var(--txt-3)">Nenhum agendamento para este dia — use ＋ Novo agendamento ou aguarde a fila do site.</p>'}
+          ${semData.length ? `<h3 style="margin-top:16px">${I('alert')} Sem data definida</h3>${semData.map(linha).join('')}` : ''}
+        </div>
+      </div>`;
+
+    $$('[data-ag-dia]').forEach(b => b.addEventListener('click', () => { agSel = b.dataset.agDia; views.agenda(); }));
+    $('#agPrev').addEventListener('click', () => { agMes = agMes.m === 0 ? { y: agMes.y - 1, m: 11 } : { y: agMes.y, m: agMes.m - 1 }; views.agenda(); });
+    $('#agNext').addEventListener('click', () => { agMes = agMes.m === 11 ? { y: agMes.y + 1, m: 0 } : { y: agMes.y, m: agMes.m + 1 }; views.agenda(); });
+    $('#agHoje').addEventListener('click', () => { agSel = hoje; agMes = null; views.agenda(); });
+    $('#agNovo').addEventListener('click', modalNovoAgendamento);
+
+    $$('[data-ag-conf]').forEach(b => b.addEventListener('click', async () => {
+      const a = ags.find(x => x.id === b.dataset.agConf);
+      await WERK.setAgendamentoStatus(b.dataset.agConf, 'confirmado');
+      toast('Agendamento confirmado', a ? `${(a.nome || '').split(' ')[0]} · ${a.hora || 'sem hora'} — avise pelo WhatsApp.` : '');
+      views.agenda();
+    }));
+    $$('[data-ag-canc]').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm('Cancelar este agendamento?')) return;
+      await WERK.setAgendamentoStatus(b.dataset.agCanc, 'cancelado');
+      toast('Agendamento cancelado', 'A linha fica no dia, riscada, para histórico.');
+      views.agenda();
+    }));
+    $$('[data-ag-ck]').forEach(b => b.addEventListener('click', () => {
+      const a = ags.find(x => x.id === b.dataset.agCk);
+      if (!a) return;
+      const limpo = (s) => String(s || '').replace(/[<>"]/g, '').trim(); // dado do site não pode quebrar os inputs do wizard
+      ck.vin = '';                                    // VIN é lido na recepção — nunca herdado de outro check-in
+      ck.cliente = limpo(a.nome);
+      ck.telefone = limpo(a.telefone);
+      ck.placa = limpo(a.placa).toUpperCase();
+      ck.sintoma = limpo(`Agendamento ${a.protocolo || 'do site'}: ${a.servico_nome || a.servico || 'serviço'}${a.veiculo ? ' — ' + a.veiculo : ''}${a.obs ? '. ' + a.obs : ''}`);
+      Promise.resolve(WERK.setAgendamentoStatus(a.id, 'convertido')).catch(() => {}); // melhor esforço
+      toast('Check-in iniciado', `Dados de ${limpo(a.nome).split(' ')[0] || 'cliente'} pré-preenchidos — confirme o VIN.`);
+      location.hash = '#/checkin';
+    }));
+  };
+
+  function modalNovoAgendamento() {
+    const svcs = (typeof EVX !== 'undefined' && EVX.SERVICES) || [];
+    const slots = (typeof EVX !== 'undefined' && EVX.SLOTS) || ['08:00', '09:00', '10:00', '11:00', '13:30', '14:30', '15:30', '16:30'];
+    modal(`
+      <h3>＋ Novo agendamento</h3>
+      <p style="font-size:11.5px;color:var(--txt-3);margin-bottom:12px">Entrada manual (telefone/WhatsApp/balcão) — cai na mesma fila dos agendamentos do site.</p>
+      <div class="wk-grid2">
+        <div class="wfield"><label>Nome do cliente *</label><input id="ag-nome" placeholder="Nome completo"></div>
+        <div class="wfield"><label>Telefone/WhatsApp</label><input id="ag-tel" placeholder="(27) 9…"></div>
+      </div>
+      <div class="wk-grid2" style="margin-top:10px">
+        <div class="wfield"><label>Veículo</label><input id="ag-veic" placeholder="Ex.: BMW 320i M Sport (G20)"></div>
+        <div class="wfield"><label>Placa</label><input id="ag-placa" maxlength="8" style="text-transform:uppercase" placeholder="ABC-1D23"></div>
+      </div>
+      <div class="wk-grid3" style="margin-top:10px">
+        <div class="wfield"><label>Serviço</label><select id="ag-svc">${svcs.map(s => `<option value="${s.id}">${s.nome}</option>`).join('') || '<option value="">Serviço</option>'}</select></div>
+        <div class="wfield"><label>Data</label><input id="ag-data" type="date" value="${agSel || ''}"></div>
+        <div class="wfield"><label>Hora</label><select id="ag-hora">${slots.map(h => `<option>${h}</option>`).join('')}</select></div>
+      </div>
+      <div class="wfield" style="margin-top:10px"><label>Observação</label><textarea id="ag-obs" rows="2" placeholder="Sintoma relatado, pedido do cliente…"></textarea></div>
+      <div class="wk-actions" style="justify-content:flex-end;margin-top:14px">
+        <button class="btn btn-secondary" onclick="document.getElementById('wkModal').classList.remove('open')">Cancelar</button>
+        <button class="btn btn-primary" id="agSalvar">Salvar agendamento</button>
+      </div>`);
+    $('#agSalvar').addEventListener('click', async () => {
+      const nome = $('#ag-nome').value.trim();
+      if (!nome) { $('#ag-nome').focus(); return; }
+      const sv = svcs.find(s => s.id === $('#ag-svc').value);
+      const btn = $('#agSalvar');
+      btn.disabled = true; btn.textContent = 'Salvando…';
+      const row = await WERK.addAgendamento({
+        nome,
+        telefone: $('#ag-tel').value.trim(),
+        veiculo: $('#ag-veic').value.trim(),
+        placa: $('#ag-placa').value.trim().toUpperCase(),
+        servico: sv ? sv.id : '',
+        servico_nome: sv ? sv.nome : '',
+        data: $('#ag-data').value || null,
+        hora: $('#ag-hora').value,
+        obs: $('#ag-obs').value.trim(),
+      });
+      if (!row) { // nuvem sem conexão/tabela: não fecha o formulário
+        btn.disabled = false; btn.textContent = 'Salvar agendamento';
+        toast('Não foi possível salvar', 'Confira a conexão e tente de novo.');
+        return;
+      }
+      closeModal();
+      if (row.data) { agSel = row.data; agMes = { y: +row.data.slice(0, 4), m: +row.data.slice(5, 7) - 1 }; }
+      toast('Agendamento criado', `${nome.split(' ')[0]} · ${row.hora || 'sem hora'} · protocolo ${row.protocolo}`);
+      views.agenda();
+    });
+  }
+
+  /* ============================================================
      VIEW · EQUIPE (nuvem): colaboradores sem SQL — o login nasce
      no próprio painel e as regras de papel valem no SERVIDOR
      (RPCs staff_*): admin gerencia todos; gestor cria/edita só

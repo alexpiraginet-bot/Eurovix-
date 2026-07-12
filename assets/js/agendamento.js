@@ -242,6 +242,36 @@
       `Serviço: ${appt.servicoNome}\n` +
       `Data: ${appt.dataLabel} às ${appt.hora}`;
     $('#whatsLink').href = `https://wa.me/${EVX.CONTACT.whatsapp}?text=${encodeURIComponent(msg)}`;
+
+    /* WERK OS · Agenda — envia o agendamento também para a fila da oficina
+       (RPC pública agendar_publico, chave anônima). MELHOR ESFORÇO: o sucesso
+       do cliente (protocolo + WhatsApp + localStorage acima) nunca depende
+       disto; sem EVX_ENV/vendor (demo local) o bloco é inerte. */
+    try {
+      const env = window.EVX_ENV || {};
+      if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY &&
+          typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
+        const sb = supabase.createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false }, // página anônima: não toca na sessão do app
+        });
+        sb.rpc('agendar_publico', {
+          p_dados: {
+            nome: appt.contato.nome,
+            telefone: appt.contato.tel,
+            veiculo: appt.veiculo,
+            placa: appt.placa,
+            servico: appt.servicoId,
+            servico_nome: appt.servicoNome,
+            data: appt.dataISO,            // YYYY-MM-DD
+            hora: appt.hora,
+            obs: appt.obs,
+            protocolo: appt.protocolo,
+          },
+        }).then(({ error }) => { if (error) console.warn('[EVX] fila da oficina indisponível', error.message || error); })
+          .catch((e) => console.warn('[EVX] fila da oficina indisponível', (e && e.message) || e));
+      }
+    } catch (e) { /* melhor esforço — a confirmação local já foi exibida */ }
+
     show(5);
   }
 
