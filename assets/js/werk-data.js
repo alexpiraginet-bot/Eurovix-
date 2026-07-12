@@ -15,7 +15,9 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     vehicles: 'evx.werk.vehicles',
     clients: 'evx.werk.clients',
     config: 'evx.werk.config',
+    agendamentos: 'evx.werk.agendamentos',
     seedv: 'evx.werk.seed.v1',
+    seedAgenda: 'evx.werk.seed.agenda.v1',
     seq: 'evx.werk.seq',
   };
 
@@ -292,6 +294,58 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     return `https://wa.me/${d.length > 11 ? d : '55' + d}?text=${encodeURIComponent(texto || '')}`;
   }
 
+  /* ---------- Agenda: fila de agendamentos (site + manuais) ----------
+     Mesma interface nos dois modos (o adaptador de nuvem sobrescreve):
+     linha = { id, protocolo, nome, telefone, veiculo, placa, servico,
+               servico_nome, data (YYYY-MM-DD), hora, obs,
+               status novo|confirmado|cancelado|convertido, os_numero, criado_em } */
+  const agSort = (l) => [...l].sort((a, b) =>
+    ((a.data || '9999-99-99') + ' ' + (a.hora || '99:99')).localeCompare((b.data || '9999-99-99') + ' ' + (b.hora || '99:99')) ||
+    String(a.criado_em || '').localeCompare(String(b.criado_em || '')));
+  const agProtocolo = () => 'AG-' + (Math.random().toString(16).slice(2, 8) + '000000').slice(0, 6).toUpperCase();
+
+  const getAgendamentos = () => agSort(read(KEYS.agendamentos, []));
+
+  async function addAgendamento(dados) { // entrada manual da recepção (telefone/balcão)
+    dados = dados || {};
+    const lista = read(KEYS.agendamentos, []);
+    const row = {
+      id: 'ag-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
+      protocolo: dados.protocolo || agProtocolo(),
+      nome: dados.nome || 'Cliente',
+      telefone: dados.telefone || '',
+      veiculo: dados.veiculo || '',
+      placa: String(dados.placa || '').toUpperCase(),
+      servico: dados.servico || '',
+      servico_nome: dados.servico_nome || '',
+      data: (typeof dados.data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dados.data)) ? dados.data : null,
+      hora: dados.hora || '',
+      obs: dados.obs || '',
+      status: dados.status || 'novo',
+      os_numero: null,
+      criado_em: new Date().toISOString(),
+    };
+    lista.push(row);
+    write(KEYS.agendamentos, lista);
+    return { ...row };
+  }
+
+  async function setAgendamentoStatus(id, status, osNumero) {
+    const lista = read(KEYS.agendamentos, []);
+    const a = lista.find(x => x.id === id);
+    if (!a) return null;
+    a.status = status;
+    if (osNumero != null) a.os_numero = osNumero;
+    write(KEYS.agendamentos, lista);
+    return { ...a };
+  }
+
+  // caminho PÚBLICO (site/agendamento.html) — mesma resposta da RPC agendar_publico
+  async function agendarPublico(dados) {
+    const row = await addAgendamento({ ...(dados || {}), status: 'novo' });
+    return { ok: true, protocolo: row.protocolo, id: row.id };
+  }
+
   const getAllOS = () => read(KEYS.os, []);
   const saveAllOS = (l) => write(KEYS.os, l);
   const getOS = (num) => getAllOS().find(o => o.numero === +num);
@@ -526,6 +580,24 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     // seq segue do 1259
     write(KEYS.seq, 1259);
     write(KEYS.seedv, true);
+  }
+
+  /* Seeds da Agenda — guarda própria: aparece também em demos que já
+     tinham sido semeadas antes de a Agenda existir. Datas relativas a hoje. */
+  function seedAgenda() {
+    if (read(KEYS.seedAgenda, false)) return;
+    const dia = (off) => { const t = new Date(); t.setDate(t.getDate() + off); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+    const lista = read(KEYS.agendamentos, []);
+    [
+      { nome: 'Ana Beatriz Rocha', telefone: '(27) 99123-4567', veiculo: 'BMW 320i M Sport (G20)', placa: 'SBC-4A18', servico: 'diagnostico', servico_nome: 'Diagnóstico', data: dia(0), hora: '15:30', obs: 'Luz do motor acesa desde ontem — perde potência na serra.', status: 'novo' },
+      { nome: 'Ricardo Almeida', telefone: '(27) 99900-0000', veiculo: 'BMW M135i xDrive (F40)', placa: 'RQV-2D47', servico: 'manutencao', servico_nome: 'Manutenção', data: dia(1), hora: '09:00', obs: 'Revisão dos 50.000 km.', status: 'confirmado' },
+      { nome: 'Juliana Freire', telefone: '(27) 98876-1122', veiculo: 'BMW X3 xDrive30i (G01)', placa: 'RUX-8C33', servico: 'suspensao', servico_nome: 'Suspensão', data: dia(3), hora: '10:00', obs: 'Batida seca no quebra-molas, só do lado direito.', status: 'novo' },
+    ].forEach((a, i) => lista.push({
+      id: 'ag-seed-' + (i + 1), protocolo: 'AG-DEMO' + (i + 1), os_numero: null,
+      criado_em: new Date(Date.now() - (3 - i) * 3600e3).toISOString(), ...a,
+    }));
+    write(KEYS.agendamentos, lista);
+    write(KEYS.seedAgenda, true);
   }
 
   /* ---------- Migração lazy: clientes derivados das OS (idempotente) ---------- */
@@ -765,6 +837,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
 
   if (!CLOUD) { // na nuvem o banco é a verdade: sem seeds/migração local
     seed();
+    seedAgenda();
     ensureClients();
   }
 
@@ -789,6 +862,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     normTel, normPlaca, getClientes, upsertCliente, clientePorTelefone, clientePorConvite,
     ativarCliente, loginCliente, garagemDe, conviteUrl, waLink,
     getAllOS, saveAllOS, getOS, novaOS, novoItem, updateOS, setStatus,
+    getAgendamentos, addAgendamento, setAgendamentoStatus, agendarPublico,
     pendencias, chatSend,
     pixPayload, brl, fdt, fd,
   };

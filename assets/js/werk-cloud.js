@@ -84,6 +84,7 @@
     vehicles: read(K.vehicles, []),
     clients: read(K.clients, []),
     config: read(K.config, null),
+    agendamentos: read(K.agendamentos, []),
   };
   let user = null;        // usuário Supabase Auth atual (síncrono p/ a UI)
   let isStaff = false;    // detectado na hidratação (linhas visíveis em `staff`)
@@ -97,6 +98,7 @@
     write(K.os, mirror.os);
     write(K.vehicles, mirror.vehicles);
     write(K.clients, mirror.clients);
+    write(K.agendamentos, mirror.agendamentos);
     if (mirror.config && typeof mirror.config === 'object') write(K.config, mirror.config);
   };
   const emit = () => { persist(); ping(); }; // após CADA mudança do espelho
@@ -187,6 +189,32 @@
     ativadoEm: r.ativado_em || null,
   });
 
+  /* Agenda (AGENDAMENTOS.sql) — mesma linha do módulo local */
+  const fromDbAgendamento = (r) => ({
+    id: r.id,
+    protocolo: r.protocolo || '',
+    nome: r.nome || '',
+    telefone: r.telefone || r.telefone_norm || '',
+    veiculo: r.veiculo || '',
+    placa: r.placa || '',
+    servico: r.servico || '',
+    servico_nome: r.servico_nome || '',
+    data: r.data || null,               // date → 'YYYY-MM-DD'
+    hora: r.hora || '',
+    obs: r.obs || '',
+    status: r.status || 'novo',
+    os_numero: r.os_numero == null ? null : r.os_numero,
+    criado_em: r.criado_em || null,
+  });
+  const sortAg = () => mirror.agendamentos.sort((a, b) => // paridade com o agSort local: (data, hora) e depois criado_em
+    ((a.data || '9999-99-99') + ' ' + (a.hora || '99:99')).localeCompare((b.data || '9999-99-99') + ' ' + (b.hora || '99:99')) ||
+    String(a.criado_em || '').localeCompare(String(b.criado_em || '')));
+  const replaceAg = (a) => {
+    const i = mirror.agendamentos.findIndex((x) => x.id === a.id);
+    if (i >= 0) mirror.agendamentos[i] = a; else mirror.agendamentos.push(a);
+    sortAg();
+  };
+
   /* token de convite p/ clientes criados no balcão — ALTA entropia (o token é
      a credencial de ativação da conta); unicidade final pelo UNIQUE do banco */
   const novoToken = () => {
@@ -250,22 +278,67 @@
     } catch (e) { return isNetErr(e) ? oficinaId : null; }
   };
 
+  /* Agenda: tabela OPCIONAL (AGENDAMENTOS.sql). Banco sem o upgrade
+     (42P01/PGRST205/404) ⇒ segue sem Agenda, sem quebrar a hidratação —
+     mesmo padrão de robustez do minha_oficina(). RLS: só staff da oficina
+     recebe linhas; anon/cliente comum ⇒ [] (a view fica vazia, válido). */
+  let temAgendamentos = false;
+  const selAgendamentos = async () => {
+    try {
+      const { data, error } = await sb.from('agendamentos').select('*');
+      if (error) {
+        if (isNetErr(error)) { falha('hidratação agendamentos', error); return null; }
+        console.debug('[EVX cloud] agendamentos indisponível — rode supabase/AGENDAMENTOS.sql', (error && error.message) || '');
+        return null; // null = mantém o que o espelho já tem
+      }
+      setOnline(true);
+      temAgendamentos = true;
+      return data || [];
+    } catch (e) { falha('hidratação agendamentos', e); return null; }
+  };
+
+  /* Realtime da Agenda num canal PRÓPRIO, ligado só depois de a tabela
+     responder: um binding de tabela inexistente derrubaria (CHANNEL_ERROR)
+     o canal das 4 tabelas base. Mudanças chegam pelo mesmo evx:sync. */
+  let canalAg = null;
+  const ligarRealtimeAgenda = () => {
+    if (canalAg || !temAgendamentos) return;
+    try {
+      canalAg = sb.channel('evx-agenda')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'agendamentos' }, (p) => {
+          if (p.eventType === 'DELETE') {
+            const id = p.old && p.old.id;
+            if (id) mirror.agendamentos = mirror.agendamentos.filter((a) => a.id !== id);
+          } else if (p.new) {
+            replaceAg(fromDbAgendamento(p.new));
+          }
+          emit();
+        });
+      canalAg.subscribe((st) => {
+        if (st === 'SUBSCRIBED') hydrate();  // cobre a janela select→subscribe e reconexões
+        else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') warn(`realtime agenda ${st}`); // tabela opcional: não rebaixa o online global
+      });
+    } catch (e) { warn('realtime agenda', e); }
+  };
+
   let hydEpoch = 0; // logout invalida hidratações em curso (nada de dado alheio reaparecer)
   const doHydrate = async () => {
     const epoch = hydEpoch;
-    const [ordens, veiculos, clientes, cfg, staff, ofi] = await Promise.all([
+    const [ordens, veiculos, clientes, cfg, staff, ofi, ags] = await Promise.all([
       sel('ordens', (q) => q.order('criada', { ascending: false })),
       sel('veiculos'),
       sel('clientes'),   // cliente comum: RLS entrega só a própria linha; anon: nada
       sel('config'),     // staff-only: cliente/anon recebem vazio — tolerado
       sel('staff'),      // detecção de papel: staff enxerga a própria tabela, cliente não
       detectOficina(),   // multi-tenant: null = modo legado (banco antigo, anon ou cliente)
+      selAgendamentos(), // Agenda: staff-only via RLS; banco sem a tabela ⇒ null (espelho intacto)
     ]);
     if (epoch !== hydEpoch) return; // logout aconteceu no meio: descarta este resultado
     oficinaId = ofi;
     if (ordens) mirror.os = ordens.map(fromDbOrdem);
     if (veiculos) mirror.vehicles = veiculos.map(fromDbVeiculo);
     if (clientes) mirror.clients = clientes.map(fromDbCliente);
+    if (ags) { mirror.agendamentos = ags.map(fromDbAgendamento); sortAg(); }
     if (staff !== null) {
       isStaff = staff.length > 0;
       const propria = user ? staff.find((r) => r.auth_user === user.id) : null;
@@ -278,6 +351,7 @@
       try { localStorage.removeItem(K.config); } catch (e) { /* noop */ }
     }
     sortOS();
+    ligarRealtimeAgenda(); // no-op enquanto a tabela não existir / canal já ligado
     emit();
   };
 
@@ -562,6 +636,73 @@
   };
 
   /* ============================================================
+     8b · Agenda — fila de agendamentos (site + manuais)
+     ============================================================ */
+  const getAgendamentos = () => clone(mirror.agendamentos); // espelho já ordenado por (data, hora, criado_em)
+
+  const addAgendamento = async (dados) => { // entrada manual da recepção
+    dados = dados || {};
+    const corpo = {
+      protocolo: dados.protocolo || ('AG-' + (Math.random().toString(16).slice(2, 8) + '000000').slice(0, 6).toUpperCase()),
+      nome: dados.nome || 'Cliente',
+      telefone: dados.telefone || null,
+      telefone_norm: local.normTel(dados.telefone) || null,
+      veiculo: dados.veiculo || null,
+      placa: dados.placa ? String(dados.placa).toUpperCase() : null,
+      servico: dados.servico || null,
+      servico_nome: dados.servico_nome || null,
+      data: (typeof dados.data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dados.data)) ? dados.data : null,
+      hora: dados.hora || null,
+      obs: dados.obs || null,
+      status: 'novo',
+      origem: 'painel',
+    };
+    if (oficinaId) corpo.oficina_id = oficinaId; // multi-tenant: o with check do INSERT exige a oficina do staff
+    try {
+      const { data: row, error } = await sb.from('agendamentos').insert(corpo).select().single();
+      if (error) { falha('addAgendamento', error); return null; } // null → a view avisa e não fecha o formulário
+      setOnline(true);
+      const a = fromDbAgendamento(row);
+      replaceAg(a);
+      emit();
+      return clone(a);
+    } catch (e) { falha('addAgendamento', e); return null; }
+  };
+
+  const setAgendamentoStatus = async (id, status, osNumero) => {
+    const cur = mirror.agendamentos.find((x) => x.id === id);
+    if (cur) { // otimista: a Agenda responde na hora; o select/realtime realinham depois
+      cur.status = status;
+      if (osNumero != null) cur.os_numero = osNumero;
+      emit();
+    }
+    const corpo = osNumero != null ? { status, os_numero: osNumero } : { status };
+    try {
+      const { data, error } = await sb.from('agendamentos').update(corpo).eq('id', id).select();
+      if (error) { falha(`setAgendamentoStatus ${id}`, error); return cur ? clone(cur) : null; }
+      setOnline(true);
+      if (data && data.length) {
+        const fresh = fromDbAgendamento(data[0]);
+        replaceAg(fresh);
+        emit();
+        return clone(fresh);
+      }
+      return cur ? clone(cur) : null; // RLS não devolveu a linha (ex.: outra oficina) — espelho segue otimista
+    } catch (e) { falha(`setAgendamentoStatus ${id}`, e); return cur ? clone(cur) : null; }
+  };
+
+  /* caminho PÚBLICO (site): RPC security definer — valida, resolve a oficina
+     ativa e insere com status 'novo'; devolve só { ok, protocolo, id } */
+  const agendarPublico = async (dados) => {
+    try {
+      const { data, error } = await sb.rpc('agendar_publico', { p_dados: dados || {} });
+      if (error) { falha('agendarPublico', error); return { ok: false, erro: (error && error.message) || 'Não foi possível agendar agora' }; }
+      setOnline(true);
+      return data || { ok: false, erro: 'Sem resposta do servidor' };
+    } catch (e) { falha('agendarPublico', e); return { ok: false, erro: 'Falha de conexão — tente de novo' }; }
+  };
+
+  /* ============================================================
      9 · novaOS — await-ável: numero real da sequence + insert
      ============================================================ */
   const novaOS = async (dados) => {
@@ -812,9 +953,9 @@
   const logoutAuth = async () => {
     hydEpoch++; // hidratações em curso (com o token antigo) são descartadas ao resolver
     try { await sb.auth.signOut(); } catch (e) { warn('logoutAuth', e); }
-    mirror.os = []; mirror.vehicles = []; mirror.clients = []; mirror.config = null;
+    mirror.os = []; mirror.vehicles = []; mirror.clients = []; mirror.config = null; mirror.agendamentos = [];
     isStaff = false; meuPapel = null; oficinaId = null;
-    try { [K.os, K.vehicles, K.clients, K.config].forEach((k) => localStorage.removeItem(k)); } catch (e) { /* noop */ }
+    try { [K.os, K.vehicles, K.clients, K.config, K.agendamentos].forEach((k) => localStorage.removeItem(k)); } catch (e) { /* noop */ }
     ping(); // nada de dado alheio fica no aparelho após sair
   };
 
@@ -928,6 +1069,8 @@
     clientePorTelefone, garagemDe, pendencias,
     /* — escritas otimistas (espelho + push assíncrono) — */
     updateOS, setStatus, chatSend, upsertVehicle, upsertCliente, saveConfig, saveAllOS, registrarPagamento,
+    /* — agenda (fila de agendamentos do site + manuais) — */
+    getAgendamentos, addAgendamento, setAgendamentoStatus, agendarPublico,
     /* — await-áveis — */
     novaOS, loginCliente, ativarCliente, clientePorConvite, loginStaff, logoutAuth,
     /* — app do cliente (RPCs com validação server-side) — */
@@ -963,6 +1106,7 @@
   };
 
   sortOS();
+  sortAg();
   adapter.ready = init().catch((e) => warn('init', e)); // ready SEMPRE resolve — hidratação é tolerante a erro
   window.WERK = adapter; // substitui o módulo local (werk-data.js declara `var WERK`)
 })();

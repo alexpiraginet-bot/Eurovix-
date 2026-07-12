@@ -88,3 +88,18 @@ Não “desfaça” colunas na mão com dados reais em cima.
 - Colar a chave **service_role** no site (só a `anon` vai no `env.js` — o RLS protege).
 - Rodar `schema.sql` **depois** do `MULTI-TENANT.sql` (o `schema.sql` recria as policies
   single-tenant). Se rodar por engano, rode o `MULTI-TENANT.sql` de novo por cima.
+
+---
+
+## 📅 Módulo Agenda (fila do site → WERK OS)
+
+Depois do multi-tenant, ative a Agenda:
+1. **SQL Editor** → cole e rode `supabase/AGENDAMENTOS.sql` (idempotente). Cria a
+   tabela `agendamentos` (por oficina) + a função pública `agendar_publico`.
+2. Pronto: quando o cliente agenda no **site** (`/agendamento.html`), o pedido cai
+   na **fila da oficina ativa**; a recepção vê em **WERK OS → 📅 Agenda**
+   (calendário + cronograma), **confirma/cancela** e converte em **check-in** num
+   clique (dados já pré-preenchidos). Cada oficina só vê a própria fila (RLS).
+
+Sem rodar esse SQL, o site segue funcionando (localStorage + WhatsApp, como antes)
+e a Agenda no painel roda com dados de demonstração — nada quebra.
