@@ -1,9 +1,7 @@
 /* ============================================================
-   EUROVIX · Temas + push flutuante (tema & horário)
-   - CLARO é o padrão em todo o sistema (WERK OS incluso);
-     o escuro é opcional e persiste em localStorage (evx.theme)
-   - Toggle: qualquer elemento com [data-theme-toggle] —
-     o push flutuante montado aqui já inclui um
+   EUROVIX · Tema + push flutuante (horário)
+   - Tema ÚNICO escuro (black + midnight) em todo o sistema;
+     não há alternador — dark é sempre aplicado e persistido.
    - Horário oficial (Google Business da EUROVIX):
      Seg–Sex 9h–18h · Sáb 9h–13h · Dom fechado
    ============================================================ */
@@ -16,13 +14,8 @@ window.EVXTheme = (function () {
     return 'dark'; // EUROVIX: tema único black + midnight
   }
   function apply() {
-    const t = current();
-    document.documentElement.setAttribute('data-theme', t);
-    document.querySelectorAll('[data-theme-toggle]').forEach(b => {
-      b.textContent = t === 'dark' ? '☀️' : '🌙';
-      b.setAttribute('aria-label', t === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro');
-      b.title = b.getAttribute('aria-label');
-    });
+    document.documentElement.setAttribute('data-theme', 'dark');
+    try { localStorage.setItem(KEY, 'dark'); } catch (e) {} // normaliza valor antigo p/ o anti-flash
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', '#0A0C10');
   }
@@ -89,14 +82,9 @@ window.EVXTheme = (function () {
     setInterval(refresh, 60000);
     el.querySelector('#evxHoursBtn').addEventListener('click', () => { pop.hidden = !pop.hidden; });
     document.addEventListener('click', (e) => { if (!el.contains(e.target)) pop.hidden = true; });
-    apply(); // ícone do toggle recém-montado
+    apply();
   }
 
-  document.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-theme-toggle]');
-    if (b) { e.preventDefault(); toggle(); }
-  });
-  window.addEventListener('storage', (e) => { if (e.key === KEY) apply(); });
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => { apply(); mountFab(); });
   } else { apply(); mountFab(); }

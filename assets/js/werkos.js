@@ -238,7 +238,7 @@
     const done = WERK.getAllOS().filter(o => o.status === 'entregue');
     main.innerHTML = head('Quadro da Oficina',
       `${all.length} OS ativas · ${done.length} entregues no histórico`,
-      `<button class="btn-image" onclick="location.hash='#/checkin'" aria-label="Novo check-in"><img src="assets/img/ui/btn-novo-checkin.webp" alt="+ Novo check-in" width="1000" height="193"></button>`) + `
+      `<button type="button" class="btn-image" onclick="location.hash='#/checkin'"><img src="assets/img/ui/btn-novo-checkin.webp" alt="+ Novo check-in" width="1000" height="193"></button>`) + `
       <div class="board-tools">
         <div class="seg" id="boardSeg">
           <button data-m="lista">☰ Lista</button>
@@ -961,7 +961,7 @@
       return;
     }
     main.innerHTML = head('Veículos & Prontuário', 'Pesquisou o chassi, aparece a vida inteira do carro.',
-      `<button class="btn-image" onclick="location.hash='#/checkin'" aria-label="Novo check-in"><img src="assets/img/ui/btn-novo-checkin.webp" alt="+ Novo check-in" width="1000" height="193"></button>`) + `
+      `<button type="button" class="btn-image" onclick="location.hash='#/checkin'"><img src="assets/img/ui/btn-novo-checkin.webp" alt="+ Novo check-in" width="1000" height="193"></button>`) + `
       <div class="wk-panel">
         <table class="wk-table">
           <tr><th>VIN</th><th>Veículo</th><th>Placa</th><th>Cliente</th><th class="num">km</th><th class="num">OS</th><th></th></tr>
@@ -984,7 +984,7 @@
     const clientes = WERK.getClientes();
     const oss = WERK.getAllOS();
     main.innerHTML = head('Clientes & Acesso', 'O acesso nasce no check-in: link de convite → cliente cria a senha → login por telefone.',
-      `<button class="btn-image" onclick="location.hash='#/checkin'" aria-label="Novo check-in"><img src="assets/img/ui/btn-novo-checkin.webp" alt="+ Novo check-in" width="1000" height="193"></button>`) + `
+      `<button type="button" class="btn-image" onclick="location.hash='#/checkin'"><img src="assets/img/ui/btn-novo-checkin.webp" alt="+ Novo check-in" width="1000" height="193"></button>`) + `
       <div class="wk-panel">
         <table class="wk-table">
           <tr><th>Cliente</th><th>Telefone (login)</th><th>Garagem</th><th class="num">OS</th><th>Acesso</th><th></th></tr>
