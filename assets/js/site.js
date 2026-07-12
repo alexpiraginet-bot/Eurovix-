@@ -60,7 +60,7 @@
   if (grid && typeof EVX !== 'undefined') {
     grid.insertAdjacentHTML('beforeend', EVX.SERVICES.map(s => `
       <article class="service-card reveal in">
-        <div class="ico-wrap">${EVX.icon(s.icon, 24)}</div>
+        <div class="ico-wrap"><img src="assets/img/icons/${s.icon}.webp" alt="" width="132" height="132" loading="lazy"></div>
         <h3>${s.nome}</h3>
         <div class="tag">${s.tag}</div>
         <p>${s.desc}</p>
