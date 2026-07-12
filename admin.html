@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LexOS — Central Admin</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#06070A">
+<link rel="icon" href="assets/img/lexos-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/lexos.css">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--lex-void);color:var(--lex-t1);font-family:var(--lex-font);line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(120% 55% at 50% -10%,rgba(93,95,234,.14),transparent 60%)}
+  a{color:inherit;text-decoration:none}
+  h1,h2,h3{margin:0;letter-spacing:-.02em}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 clamp(16px,4vw,36px)}
+  .xmark{width:1em;height:1em;display:inline-block;vertical-align:-.14em}
+
+  /* gate */
+  .gate{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .gate .box{width:100%;max-width:380px;background:linear-gradient(165deg,var(--lex-card),rgba(18,26,43,.5));
+    border:1px solid var(--lex-line-2);border-radius:20px;padding:32px 28px;text-align:center}
+  .gate .mk{width:52px;height:auto;margin-bottom:16px;filter:drop-shadow(0 12px 28px rgba(93,95,234,.5))}
+  .gate h1{font-size:22px;font-weight:800}
+  .gate h1 .b{background:var(--lex-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .gate p{color:var(--lex-t2);font-size:13px;margin:8px 0 22px}
+  .gate input{width:100%;background:var(--lex-void);border:1px solid var(--lex-line-2);border-radius:11px;color:var(--lex-t1);
+    font-family:var(--lex-font);font-size:16px;text-align:center;letter-spacing:.2em;padding:13px;outline:none}
+  .gate input:focus{border-color:var(--lex-blue);box-shadow:0 0 0 3px rgba(59,134,242,.18)}
+  .gate button{width:100%;margin-top:14px;background:var(--lex-grad);color:#fff;border:none;border-radius:11px;
+    font-family:var(--lex-font);font-weight:700;font-size:14px;padding:14px;cursor:pointer}
+  .gate .err{color:var(--lex-warn);font-size:12.5px;margin-top:12px;min-height:16px}
+  .gate .hint{font-size:11px;color:var(--lex-t3);margin-top:18px;line-height:1.5}
+
+  /* panel */
+  #panel{display:none}
+  header.top{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,rgba(6,7,10,.92),rgba(6,7,10,.6));
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--lex-line)}
+  .topin{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:18px}
+  .brand .xmark{width:24px;height:24px}
+  .brand .a{color:var(--lex-t1)} .brand .b{background:var(--lex-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .brand .tag{font-family:var(--lex-mono);font-size:9px;letter-spacing:.18em;color:var(--lex-t3);text-transform:uppercase;margin-left:6px;font-weight:600}
+  .logout{font-family:var(--lex-mono);font-size:11px;letter-spacing:.08em;color:var(--lex-t2);border:1px solid var(--lex-line-2);
+    border-radius:9px;padding:8px 13px;cursor:pointer;background:transparent}
+  .logout:hover{color:var(--lex-t1);border-color:var(--lex-blue)}
+
+  section{padding:clamp(28px,4vw,44px) 0;border-bottom:1px solid var(--lex-line)}
+  .sk{font-family:var(--lex-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--lex-blue);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .sk::before{content:"";width:22px;height:1px;background:var(--lex-blue)}
+  h2.s{font-size:clamp(20px,3vw,26px);font-weight:800;margin-bottom:6px}
+  .s-sub{color:var(--lex-t2);font-size:14px;margin-bottom:22px}
+
+  /* link cards */
+  .links{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+  .lk{background:var(--lex-card);border:1px solid var(--lex-line);border-radius:14px;padding:16px 16px 14px;display:flex;flex-direction:column;gap:4px}
+  .lk .ic{font-size:18px;margin-bottom:4px}
+  .lk .nm{font-weight:700;font-size:14.5px}
+  .lk .ds{font-size:12px;color:var(--lex-t2);flex:1}
+  .lk .url{font-family:var(--lex-mono);font-size:11px;color:var(--lex-t3);margin-top:8px;word-break:break-all}
+  .lk .row{display:flex;gap:8px;margin-top:10px}
+  .lk a.go,.lk button.cp{flex:1;text-align:center;font-family:var(--lex-mono);font-size:11px;letter-spacing:.04em;
+    padding:8px;border-radius:8px;border:1px solid var(--lex-line-2);color:var(--lex-t1);cursor:pointer;background:transparent}
+  .lk a.go{background:var(--lex-grad-soft);border-color:transparent}
+  .lk button.cp:hover,.lk a.go:hover{border-color:var(--lex-blue)}
+
+  /* credenciais note */
+  .cred{background:linear-gradient(160deg,var(--lex-card),var(--lex-card-2));border:1px solid var(--lex-line-2);border-radius:16px;padding:20px 22px;margin-top:14px}
+  .cred h3{font-size:15px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .cred ul{margin:0;padding-left:18px;color:var(--lex-t2);font-size:13.5px}
+  .cred li{margin:7px 0}
+  .cred b{color:var(--lex-t1)}
+  .cred code{font-family:var(--lex-mono);font-size:12px;background:var(--lex-void);border:1px solid var(--lex-line);border-radius:5px;padding:1px 6px;color:var(--lex-ice)}
+
+  /* oficinas table */
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--lex-line);border-radius:14px}
+  table{width:100%;border-collapse:collapse;min-width:640px}
+  th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--lex-line);font-size:13px}
+  thead th{font-family:var(--lex-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--lex-t3);background:rgba(255,255,255,.02)}
+  tbody tr:last-child td{border-bottom:none}
+  td .of{font-weight:700}
+  td .sub{font-size:11px;color:var(--lex-t3)}
+  .pill{font-family:var(--lex-mono);font-size:10px;letter-spacing:.06em;padding:3px 8px;border-radius:20px;border:1px solid var(--lex-line-2);color:var(--lex-t2)}
+  .act{display:inline-flex;gap:6px}
+  .act button{font-family:var(--lex-mono);font-size:10.5px;padding:6px 9px;border-radius:7px;border:1px solid var(--lex-line-2);background:transparent;color:var(--lex-t1);cursor:pointer;white-space:nowrap}
+  .act button:hover{border-color:var(--lex-blue)}
+  .empty{padding:26px;text-align:center;color:var(--lex-t3);font-size:13px}
+  .note{font-size:12px;color:var(--lex-t3);margin-top:12px;line-height:1.6}
+  .note b{color:var(--lex-t2)}
+
+  /* checklist */
+  .chk{list-style:none;padding:0;margin:0;counter-reset:c;display:grid;gap:10px}
+  .chk li{counter-increment:c;position:relative;padding:14px 16px 14px 46px;background:var(--lex-card);border:1px solid var(--lex-line);border-radius:12px;font-size:13.5px;color:var(--lex-t2)}
+  .chk li::before{content:counter(c);position:absolute;left:14px;top:13px;width:20px;height:20px;border-radius:6px;
+    background:var(--lex-grad-soft);border:1px solid var(--lex-line-2);display:flex;align-items:center;justify-content:center;
+    font-family:var(--lex-mono);font-size:11px;font-weight:700;color:var(--lex-blue)}
+  .chk li b{color:var(--lex-t1)}
+
+  footer{padding:26px 0 50px}
+  .foot{font-size:11.5px;color:var(--lex-t3);line-height:1.6}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;
+    background:var(--lex-card-2);border:1px solid var(--lex-line-2);border-radius:10px;padding:11px 18px;font-size:13px;
+    transition:opacity .25s,transform .25s;pointer-events:none;z-index:40}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="lexg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#3B86F2"/><stop offset=".5" stop-color="#5A5FEA"/><stop offset="1" stop-color="#8B3FE8"/>
+  </linearGradient>
+  <symbol id="xmark" viewBox="0 0 64 64">
+    <path d="M55 7 L41 7 L9 57 L23 57 Z" fill="url(#lexg)"/>
+    <path d="M32 32 L40 44 L28 46 Z" fill="#0B1330" opacity=".22"/>
+    <path d="M9 7 L23 7 L55 57 L41 57 Z" fill="url(#lexg)"/>
+    <path d="M9 7 L23 7 L32 21 L18 21 Z" fill="#7FB0FF" opacity=".28"/>
+  </symbol>
+</defs></svg>
+
+<!-- ===== GATE ===== -->
+<div class="gate" id="gate">
+  <div class="box">
+    <svg class="mk xmark" style="width:52px;height:auto" viewBox="0 0 64 64" aria-hidden="true"><use href="#xmark"/></svg>
+    <h1><span class="a">Lex</span><span class="b">OS</span> · Admin</h1>
+    <p>Área restrita — acesso do responsável.</p>
+    <form id="gateForm">
+      <input id="pin" type="password" inputmode="numeric" placeholder="PIN de acesso" autocomplete="off" autofocus>
+      <button type="submit">Entrar</button>
+      <div class="err" id="gateErr"></div>
+    </form>
+    <p class="hint">Trava <b>básica</b> (PIN no arquivo). Para segurança real, migra-se para login Supabase — está no roteiro.</p>
+  </div>
+</div>
+
+<!-- ===== PANEL ===== -->
+<div id="panel">
+  <header class="top"><div class="wrap topin">
+    <div class="brand"><svg class="xmark" aria-hidden="true"><use href="#xmark"/></svg>
+      <span><span class="a">Lex</span><span class="b">OS</span></span><span class="tag">Central Admin</span></div>
+    <button class="logout" id="logout">Sair</button>
+  </div></header>
+
+  <!-- LINKS & ACESSOS -->
+  <section><div class="wrap">
+    <div class="sk">Seus acessos</div>
+    <h2 class="s">Tudo num lugar só</h2>
+    <p class="s-sub">Os links que você precisa no dia a dia — copie e mande, ou abra direto.</p>
+    <div class="links" id="linksGrid"></div>
+
+    <div class="cred">
+      <h3>🔐 Onde ficam suas credenciais</h3>
+      <ul>
+        <li><b>Painel WERK OS</b> (login da equipe): e-mail + senha cadastrados no <b>Supabase → Authentication</b>. O primeiro admin nasce do <code>supabase/EQUIPE-UPGRADE.sql</code>.</li>
+        <li><b>Banco de dados</b>: projeto Supabase <code>olfqtvncorwhjrjjzmer</code> (login com sua conta Supabase).</li>
+        <li><b>Deploy</b>: projeto na Vercel (login com sua conta Vercel/GitHub).</li>
+        <li><b>Este admin</b>: PIN no topo de <code>admin.html</code> (constante <code>ADMIN_PIN</code>) — troque quando quiser.</li>
+      </ul>
+    </div>
+  </div></section>
+
+  <!-- OFICINAS -->
+  <section><div class="wrap">
+    <div class="sk">Carteira</div>
+    <h2 class="s">Oficinas cadastradas</h2>
+    <p class="s-sub">Quem se cadastrou pela página pública. Ações rápidas por oficina.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Oficina</th><th>Responsável</th><th>Contato</th><th>Plano</th><th>Quando</th><th></th></tr></thead>
+        <tbody id="ofBody"></tbody>
+      </table>
+    </div>
+    <p class="note" id="ofNote"></p>
+  </div></section>
+
+  <!-- ATIVAÇÃO -->
+  <section style="border-bottom:none"><div class="wrap">
+    <div class="sk">Ativação</div>
+    <h2 class="s">Como colocar uma oficina no ar</h2>
+    <p class="s-sub">Checklist manual (por enquanto) — vira automático quando ligarmos o provisionamento.</p>
+    <ol class="chk">
+      <li>Confirme os dados com o responsável pelo <b>WhatsApp</b> (botão na tabela).</li>
+      <li>Receba <b>logo, cores e catálogo de serviços</b> da oficina.</li>
+      <li>Personalize o ambiente (marca, domínio/subdomínio, serviços).</li>
+      <li>Crie o <b>primeiro admin da equipe</b> no Supabase e faça um <b>check-in de teste</b>.</li>
+      <li>Publique e mande os <b>links</b> (site, painel, app) para o responsável.</li>
+    </ol>
+    <div class="cred" style="margin-top:18px">
+      <h3>🚀 Quer isso multi-dispositivo e automático?</h3>
+      <ul>
+        <li>Hoje os cadastros ficam <b>neste navegador</b> (localStorage). Para vê-los de qualquer lugar, criamos a tabela <code>leads</code> no Supabase — eu já deixo o <code>consultarPlaca</code>/formulário gravando lá.</li>
+        <li>Provisionamento automático (cada oficina ganha o próprio ambiente/subdomínio) é a fase seguinte.</li>
+      </ul>
+    </div>
+  </div></section>
+
+  <footer><div class="wrap"><p class="foot">LexOS™ · Central Admin · por Lex Technology · uso interno.</p></div></footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+  // ===== CONFIG =====
+  var ADMIN_PIN = '2705';                         // troque este PIN. Trava básica (visível no fonte) — segurança real = Supabase.
+  var WA = '5527995999995';
+  var SUPABASE_PROJ = 'olfqtvncorwhjrjjzmer';
+  var $ = function(id){return document.getElementById(id);};
+  var origin = location.origin && location.origin !== 'null' ? location.origin : '';
+
+  // ===== GATE =====
+  var unlocked = sessionStorage.getItem('evx.admin.ok') === '1';
+  function showPanel(){ $('gate').style.display='none'; $('panel').style.display='block'; render(); }
+  if (unlocked) showPanel();
+  $('gateForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    if ($('pin').value.trim() === ADMIN_PIN){ sessionStorage.setItem('evx.admin.ok','1'); showPanel(); }
+    else { $('gateErr').textContent = 'PIN incorreto.'; $('pin').select(); }
+  });
+  $('logout').addEventListener('click', function(){ sessionStorage.removeItem('evx.admin.ok'); location.reload(); });
+
+  // ===== TOAST =====
+  var tmr;
+  function toast(msg){ var t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(tmr); tmr=setTimeout(function(){t.classList.remove('on');},1900); }
+  function copy(txt){ try{ navigator.clipboard.writeText(txt); toast('Copiado ✓'); }catch(_){ toast('Copie manualmente: '+txt); } }
+
+  // ===== LINKS =====
+  var LINKS = [
+    { ic:'📝', nm:'Cadastro público', ds:'Página onde a oficina contrata.', path:'/lexos.html' },
+    { ic:'🎞️', nm:'Apresentação', ds:'Deck de vendas para enviar.', path:'/lexos-apresentacao.html' },
+    { ic:'🔧', nm:'Painel WERK OS', ds:'Gestão da oficina (login da equipe).', path:'/werkos.html' },
+    { ic:'📲', nm:'App do cliente', ds:'PWA que o cliente usa.', path:'/app.html' },
+    { ic:'🌐', nm:'Site (EUROVIX piloto)', ds:'Vitrine da oficina-piloto.', path:'/index.html' },
+    { ic:'🗄️', nm:'Supabase', ds:'Banco de dados e login da equipe.', full:'https://supabase.com/dashboard/project/'+SUPABASE_PROJ },
+    { ic:'▲', nm:'Vercel', ds:'Deploy do projeto.', full:'https://vercel.com/dashboard' },
+    { ic:'💬', nm:'WhatsApp comercial', ds:'Seu número de contato.', full:'https://wa.me/'+WA },
+  ];
+  function renderLinks(){
+    $('linksGrid').innerHTML = LINKS.map(function(l){
+      var url = l.full || (origin + l.path) || l.path;
+      return '<div class="lk"><div class="ic">'+l.ic+'</div><div class="nm">'+l.nm+'</div>'+
+        '<div class="ds">'+l.ds+'</div><div class="url">'+url+'</div>'+
+        '<div class="row"><a class="go" href="'+url+'" target="_blank" rel="noopener">abrir</a>'+
+        '<button class="cp" data-copy="'+url.replace(/"/g,'&quot;')+'">copiar</button></div></div>';
+    }).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('.lk .cp'), function(b){
+      b.addEventListener('click', function(){ copy(b.getAttribute('data-copy')); });
+    });
+  }
+
+  // ===== OFICINAS (leads) =====
+  function leads(){ try{ return JSON.parse(localStorage.getItem('evx.lexos.leads')||'[]'); }catch(_){ return []; } }
+  function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function fmtDate(iso){ if(!iso) return '—'; var d=String(iso).slice(0,10).split('-'); return d.length===3? d[2]+'/'+d[1]+'/'+d[0] : iso; }
+  function waDigits(s){ var d=(s||'').replace(/\D/g,''); if(!d) return WA; return d.length<=11 ? '55'+d : d; }
+  function render(){
+    renderLinks();
+    var list = leads(); var tb = $('ofBody');
+    if (!list.length){
+      tb.innerHTML = '<tr><td colspan="6"><div class="empty">Nenhuma oficina cadastrada <b>neste navegador</b> ainda.<br>Cadastros feitos em outros aparelhos aparecem quando ligarmos a tabela <code>leads</code> no Supabase.</div></td></tr>';
+    } else {
+      tb.innerHTML = list.slice().reverse().map(function(l,idx){
+        var resumo = 'Oficina: '+(l.oficina||'')+' | Resp.: '+(l.responsavel||'')+' | Tel: '+(l.whatsapp||'')+' | '+(l.email||'')+' | Plano: '+(l.plano||'');
+        return '<tr>'+
+          '<td><div class="of">'+esc(l.oficina||'—')+'</div>'+(l.cidade?'<div class="sub">'+esc(l.cidade)+'</div>':'')+(l.subdominio?'<div class="sub">'+esc(l.subdominio)+'.lexos.app</div>':'')+'</td>'+
+          '<td>'+esc(l.responsavel||'—')+'</td>'+
+          '<td>'+esc(l.whatsapp||'—')+(l.email?'<div class="sub">'+esc(l.email)+'</div>':'')+'</td>'+
+          '<td><span class="pill">'+esc(l.plano||'—')+'</span>'+(l.unidades?' <span class="sub">'+esc(l.unidades)+'un</span>':'')+'</td>'+
+          '<td>'+fmtDate(l.em)+'</td>'+
+          '<td><span class="act"><button data-wa="'+esc(waDigits(l.whatsapp))+'">WhatsApp</button>'+
+          '<button data-cp="'+esc(resumo)+'">copiar</button></span></td>'+
+          '</tr>';
+      }).join('');
+      Array.prototype.forEach.call(tb.querySelectorAll('[data-wa]'), function(b){ b.addEventListener('click', function(){ window.open('https://wa.me/'+b.getAttribute('data-wa'),'_blank','noopener'); }); });
+      Array.prototype.forEach.call(tb.querySelectorAll('[data-cp]'), function(b){ b.addEventListener('click', function(){ copy(b.getAttribute('data-cp')); }); });
+    }
+    $('ofNote').innerHTML = '<b>'+list.length+'</b> cadastro(s) neste navegador. Os leads também chegam no seu WhatsApp na hora do envio.';
+  }
+})();
+</script>
+</body>
+</html>
