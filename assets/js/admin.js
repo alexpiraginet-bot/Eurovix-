@@ -78,6 +78,16 @@
     localStorage.setItem(LKEY, JSON.stringify(list.filter(function (x) { return x.id !== id; }))); return { ok: true };
   }
 
+  /* ---------- convite de acesso da oficina (o dono cria a própria senha) ---------- */
+  async function criarConvite(id) {
+    if (CLOUD) {
+      try { var r = await sb.rpc('criar_convite_oficina', { p_oficina_id: id }); if (r.error) return { ok: false, erro: r.error.message }; return { ok: true, token: r.data }; }
+      catch (e) { return { ok: false, erro: String((e && e.message) || e) }; }
+    }
+    return { ok: true, token: 'demo-' + String(id).slice(0, 8) }; // modo demo: token ilustrativo
+  }
+  function linkAcesso(token) { return new URL('ativar-oficina.html?convite=' + encodeURIComponent(token), location.href).href; }
+
   /* ---------- render: links & credenciais ---------- */
   var LINKS = [
     { ic: '📝', nm: 'Cadastro público', ds: 'Página onde a oficina contrata.', path: '/lexos.html' },
@@ -116,12 +126,28 @@
           '<td>' + fmtDate(o.criado_em) + '</td>' +
           '<td><span class="act">' +
           (o.whatsapp ? '<button data-wa="' + esc(waDigits(o.whatsapp)) + '" title="WhatsApp">💬</button>' : '') +
+          '<button data-convite="' + esc(o.id) + '" data-wpp="' + esc(waDigits(o.whatsapp || '')) + '" data-nome="' + esc(o.nome || '') + '" title="Gerar link de acesso do dono da oficina">🔗 acesso</button>' +
           '<button data-edit="' + esc(o.id) + '">editar</button>' +
           '<button class="danger" data-del="' + esc(o.id) + '" data-nome="' + esc(o.nome || '') + '">excluir</button>' +
           '</span></td></tr>';
       }).join('');
       Array.prototype.forEach.call(tb.querySelectorAll('[data-wa]'), function (b) { b.addEventListener('click', function () { window.open('https://wa.me/' + b.getAttribute('data-wa'), '_blank', 'noopener'); }); });
       Array.prototype.forEach.call(tb.querySelectorAll('[data-edit]'), function (b) { b.addEventListener('click', function () { openModal(list.find(function (x) { return String(x.id) === b.getAttribute('data-edit'); })); }); });
+      Array.prototype.forEach.call(tb.querySelectorAll('[data-convite]'), function (b) {
+        b.addEventListener('click', async function () {
+          b.disabled = true; var orig = b.textContent; b.textContent = 'gerando…';
+          var r = await criarConvite(b.getAttribute('data-convite'));
+          b.disabled = false; b.textContent = orig;
+          if (!r.ok) { toast('Erro ao gerar convite: ' + r.erro); return; }
+          var link = linkAcesso(r.token);
+          try { await navigator.clipboard.writeText(link); toast('Link de acesso copiado ✓'); } catch (_) { prompt('Link de acesso do dono da oficina:', link); }
+          var wpp = b.getAttribute('data-wpp');
+          if (wpp) {
+            var msg = 'Olá! O acesso ao WERK OS da ' + (b.getAttribute('data-nome') || 'sua oficina') + ' está pronto. Crie sua senha e entre por este link: ' + link;
+            window.open('https://wa.me/' + wpp + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+          }
+        });
+      });
       Array.prototype.forEach.call(tb.querySelectorAll('[data-del]'), function (b) {
         b.addEventListener('click', async function () {
           if (!confirm('Excluir a oficina "' + b.getAttribute('data-nome') + '"? Esta ação não volta.')) return;
