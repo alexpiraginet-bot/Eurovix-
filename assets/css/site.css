@@ -92,7 +92,16 @@
 .hero h1 .r{color:#fff}
 .hero .lead{font-size:clamp(15px,1.4vw,17.5px);color:#C9C9C9;line-height:1.7;max-width:52ch}
 .hero .lead b{color:#fff;font-weight:600}
-.hero-actions{display:flex;gap:12px;margin-top:30px;flex-wrap:wrap}
+.hero-actions{display:flex;gap:14px;margin-top:30px;flex-wrap:wrap;align-items:flex-end}
+
+/* Botões-imagem — a arte 3D do usuário como botão (escopo do site) */
+.btn-image{display:inline-block;border:none;background:none;padding:0;cursor:pointer;line-height:0;width:100%;max-width:270px;transition:filter .2s ease,transform .2s ease}
+.btn-image img{width:100%;height:auto;display:block}
+.btn-image:hover{filter:brightness(1.08) saturate(1.05);transform:translateY(-2px)}
+.btn-image:active{transform:translateY(0)}
+.btn-image:focus-visible{outline:2px solid var(--bmw);outline-offset:3px;border-radius:10px}
+.cta-band .btn-image{max-width:320px}
+@media (prefers-reduced-motion:reduce){.btn-image{transition:none}.btn-image:hover{filter:none;transform:none}}
 body.theme-bmw .hero .btn-secondary{color:#fff;border-color:#fff}
 body.theme-bmw .hero .btn-secondary:hover{border-color:var(--bmw);color:var(--bmw)}
 .hero-note{

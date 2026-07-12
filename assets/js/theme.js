@@ -13,9 +13,7 @@ window.EVXTheme = (function () {
   const KEY = 'evx.theme';
 
   function current() {
-    let t = null;
-    try { t = localStorage.getItem(KEY); } catch (e) {}
-    return t === 'dark' ? 'dark' : 'light'; // claro é o padrão
+    return 'dark'; // EUROVIX: tema único black + midnight
   }
   function apply() {
     const t = current();
@@ -26,7 +24,7 @@ window.EVXTheme = (function () {
       b.title = b.getAttribute('aria-label');
     });
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', t === 'dark' ? '#0D1014' : '#FFFFFF');
+    if (meta) meta.setAttribute('content', '#0A0C10');
   }
   function set(t) {
     try { localStorage.setItem(KEY, t); } catch (e) {}
@@ -76,8 +74,7 @@ window.EVXTheme = (function () {
           <a href="https://wa.me/5527997306440?text=${encodeURIComponent('Olá! Vim pelo site da EUROVIX.')}" target="_blank" rel="noopener">WhatsApp (27) 99730-6440</a>
         </div>
       </div>
-      <button class="evx-fab-btn" id="evxHoursBtn" type="button" aria-label="Horário de funcionamento" title="Horário de funcionamento">🕐<span class="evx-fab-dot" id="evxHoursDot"></span></button>
-      <button class="evx-fab-btn" type="button" data-theme-toggle aria-label="Tema">🌙</button>`;
+      <button class="evx-fab-btn" id="evxHoursBtn" type="button" aria-label="Horário de funcionamento" title="Horário de funcionamento">🕐<span class="evx-fab-dot" id="evxHoursDot"></span></button>`;
     (document.getElementById('shell') || document.body).appendChild(el);
 
     const pop = el.querySelector('#evxHoursPop');

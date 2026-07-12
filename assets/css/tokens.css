@@ -228,25 +228,29 @@ body.theme-bmw .reveal{transform:translateY(16px)}
    permanecem idênticas — como no bmw.com.
    ============================================================ */
 html[data-theme="dark"] body.theme-bmw{
-  --bmw:#4A94F0;
-  --bmw-dark:#2F6FD0;
-  --bmw-soft:rgba(74,148,240,.14);
-  --ink:#ECEEF2;
-  --ink-2:#A8B0BB;
-  --ink-3:#79818C;
-  --paper:#12151B;
-  --stage:#1A1F27;
-  --stage-2:#0D1014;
-  --line:rgba(255,255,255,.09);
-  --line-strong:rgba(255,255,255,.2);
+  /* EUROVIX black + midnight — base preta, superfícies azul-noite */
+  --bmw:#2E7BEE;
+  --bmw-dark:#1C69D4;
+  --bmw-soft:rgba(46,123,238,.16);
+  --bmw-border:rgba(46,123,238,.4);
+  --ink:#EDF1F7;
+  --ink-2:#A6B0BE;
+  --ink-3:#727C8C;
+  --paper:#111A2B;        /* midnight — cards/superfícies */
+  --stage:#0E1626;
+  --stage-2:#0A0C10;      /* black — fundo base */
+  --card:#111A2B;
+  --card-2:#16223A;
+  --line:rgba(255,255,255,.08);
+  --line-strong:rgba(255,255,255,.18);
   --ok:#3ECF77;
-  --ok-soft:rgba(62,207,119,.13);
+  --ok-soft:rgba(62,207,119,.14);
   --warn:#E8B031;
-  --warn-soft:rgba(232,176,49,.12);
+  --warn-soft:rgba(232,176,49,.13);
   --danger:#FF6B5E;
   --danger-soft:rgba(255,107,94,.12);
-  --shadow:0 14px 40px rgba(0,0,0,.5);
-  --shadow-sm:0 6px 20px rgba(0,0,0,.4);
+  --shadow:0 24px 60px rgba(0,0,0,.6);
+  --shadow-sm:0 10px 28px rgba(0,0,0,.5);
   background:var(--stage-2);
   color:var(--ink);
 }
