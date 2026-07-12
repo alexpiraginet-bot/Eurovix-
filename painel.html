@@ -87,6 +87,12 @@ body.theme-bmw{background:var(--stage-2)}
 .hub-foot a:hover{color:var(--bmw)}
 .pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pl 1.8s ease infinite;margin-right:6px}
 @keyframes pl{0%,100%{opacity:1}50%{opacity:.4}}
+.btn-image{display:block;max-width:300px;margin:2px 0 14px;border:none;background:none;padding:0;cursor:pointer;line-height:0;text-decoration:none;color:inherit;transition:filter .2s ease,transform .2s ease}
+.btn-image img{width:100%;height:auto;display:block;pointer-events:none;user-select:none}
+.btn-image:hover{filter:brightness(1.08) saturate(1.05);transform:translateY(-2px)}
+.btn-image:active{transform:translateY(0)}
+.btn-image:focus-visible{outline:2px solid var(--bmw);outline-offset:3px;border-radius:10px}
+@media (prefers-reduced-motion:reduce){.btn-image{transition:none}.btn-image:hover{filter:none;transform:none}}
 </style>
 </head>
 <body class="theme-bmw">
@@ -135,7 +141,7 @@ body.theme-bmw{background:var(--stage-2)}
     <div class="acc">
       <div class="top"><div class="ico-wrap">🛠</div><div><h3>WERK OS · Painel</h3><span class="tag">kanban 8 etapas · operação completa</span></div></div>
       <p>Fila → diagnóstico → aprovação → peça → execução → QC → lavagem → pronto. Abra lado a lado com o app para ver o tempo real.</p>
-      <a href="werkos.html#/kanban" style="display:block;max-width:300px;margin:2px 0 14px"><img src="assets/img/ui/btn-entrar-werkos.webp" alt="Entrar no WERK OS" width="1000" height="135" style="width:100%;height:auto;display:block"></a>
+      <a class="btn-image" href="werkos.html#/kanban"><img src="assets/img/ui/btn-entrar-werkos.webp" alt="Entrar no WERK OS" width="1000" height="135"></a>
       <div class="links">
         <a class="lnk primary" href="werkos.html#/kanban">Kanban ›</a>
         <a class="lnk" href="werkos.html#/checkin">Novo check-in</a>

@@ -75,10 +75,9 @@ window.EVXTheme = (function () {
     setInterval(refresh, 60000);
     el.querySelector('#evxHoursBtn').addEventListener('click', () => { pop.hidden = !pop.hidden; });
     document.addEventListener('click', (e) => { if (!el.contains(e.target)) pop.hidden = true; });
-    apply();
   }
 
-  apply(); // aplica o tema (data-theme + theme-color) na hora, sem esperar o DOM (evita flash da barra no mobile)
+  apply(); // fixa data-theme=dark e normaliza o localStorage na hora, sem esperar o DOM
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', mountFab);
   } else { mountFab(); }
