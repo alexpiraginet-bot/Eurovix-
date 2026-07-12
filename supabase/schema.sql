@@ -1087,3 +1087,7 @@ grant execute on function public.staff_remover(uuid)            to authenticated
 -- runbook (SETUP-NUVEM.md); os demais, pela view 👥 Equipe do próprio painel.
 -- Re-executar este arquivo é sempre seguro.
 -- ============================================================================
+
+-- pgcrypto no schema `extensions` (Supabase): garante gen_random_bytes() no path
+-- da única função da base que o usa. Idempotente; inócuo em Postgres puro.
+alter function public.checkin_os(jsonb, jsonb, jsonb) set search_path = public, extensions, pg_temp;

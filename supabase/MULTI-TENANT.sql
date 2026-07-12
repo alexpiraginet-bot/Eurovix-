@@ -1424,3 +1424,16 @@ $$;
 revoke all on function public.minhas_chaves() from public, anon;
 grant execute on function public.minhas_chaves() to authenticated;
 -- (as 3 RPCs mantêm os grants já concedidos no schema.sql; create or replace preserva ACL)
+
+-- ============================================================================
+-- 13 · pgcrypto no schema `extensions` (padrão do Supabase)
+-- ----------------------------------------------------------------------------
+-- No Supabase o pgcrypto fica em `extensions`, não em `public`. As funções
+-- SECURITY DEFINER fixam search_path=public,pg_temp (correto p/ segurança), o
+-- que remove `extensions` do caminho e faz gen_random_bytes() "não existir".
+-- Incluímos `extensions` no path SÓ das funções que usam pgcrypto. Idempotente
+-- e inócuo em Postgres puro (lá o pgcrypto vive no public; schema inexistente
+-- no search_path é simplesmente ignorado em runtime).
+-- ============================================================================
+alter function public.criar_convite_oficina(uuid)    set search_path = public, extensions, pg_temp;
+alter function public.checkin_os(jsonb, jsonb, jsonb) set search_path = public, extensions, pg_temp;
