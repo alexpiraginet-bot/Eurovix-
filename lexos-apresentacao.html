@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LexOS — Apresentação · O sistema operacional da oficina</title>
+<meta name="description" content="Apresentação LexOS (por Lex Technology): site, app do cliente e gestão numa plataforma só. Coloque sua oficina no digital em dias.">
+<meta name="theme-color" content="#06070A">
+<link rel="icon" href="assets/img/lexos-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/lexos.css">
+<style>
+  :root{
+    --void:#06070A; --cockpit:#0B111D; --midnight:#0F1A2C; --card:#121E33; --card-2:#182741;
+    --bmw:#2E7BEE; --bmw-deep:#1C69D4; --neon:#4C9BFF; --ice:#8FC2FF;
+    --ink:#EEF2F8; --ink-2:#98A6BC; --ink-3:#5E6B82; --ink-4:#3A4558;
+    --ok:#3ECF77; --warn:#E8B031; --red:#E5484D;
+    --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.15);
+    --mono:'SFMono-Regular','JetBrains Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+    --sans:'Poppins','Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-snap-type:y proximity;scroll-behavior:smooth;background:var(--void)}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--void);color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;overflow-x:hidden}
+  h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.02em;line-height:1.02}
+  p{margin:0}
+
+  /* ---------- Brand bar (fixed) ---------- */
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;justify-content:space-between;
+    padding:16px clamp(18px,4vw,40px);pointer-events:none;
+    background:linear-gradient(180deg,rgba(6,7,10,.9),transparent)}
+  .wm{font-weight:800;font-size:19px;letter-spacing:-.03em;pointer-events:auto}
+  .wm .a{color:var(--ink)} .wm .b{color:var(--bmw)}
+  .wm .reg{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--ink-3);vertical-align:super;font-weight:600}
+  .topbar .by{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--ink-3);text-transform:uppercase}
+  .counter{font-family:var(--mono);font-size:11px;color:var(--ink-2);letter-spacing:.1em}
+  .counter b{color:var(--bmw)}
+
+  /* ---------- Progress rail (fixed) ---------- */
+  .rail{position:fixed;right:clamp(12px,2.5vw,26px);top:50%;transform:translateY(-50%);z-index:40;
+    display:flex;flex-direction:column;gap:12px}
+  .rail button{width:9px;height:9px;padding:0;border:1px solid var(--line-2);border-radius:50%;background:transparent;cursor:pointer;
+    transition:all .3s ease}
+  .rail button.on{background:var(--bmw);border-color:var(--bmw);box-shadow:0 0 0 4px rgba(46,123,238,.16)}
+  @media(max-width:720px){.rail{display:none}}
+
+  /* ---------- Slides ---------- */
+  .slide{position:relative;min-height:100vh;min-height:100dvh;scroll-snap-align:start;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:clamp(78px,11vh,120px) clamp(20px,6vw,90px) clamp(48px,8vh,80px);overflow:hidden}
+  .slide .inner{width:100%;max-width:1120px;margin:0 auto}
+  .kick{font-family:var(--mono);font-size:12px;letter-spacing:.28em;color:var(--bmw);text-transform:uppercase;margin-bottom:22px;
+    display:flex;align-items:center;gap:12px}
+  .kick::before{content:"";width:30px;height:1px;background:var(--bmw)}
+  .snum{position:absolute;top:clamp(78px,11vh,110px);right:clamp(20px,6vw,90px);font-family:var(--mono);
+    font-size:clamp(52px,9vw,110px);font-weight:800;color:rgba(255,255,255,.035);letter-spacing:-.04em;line-height:.8;z-index:0;pointer-events:none}
+  .slide .inner>*{position:relative;z-index:1}
+
+  h1.head{font-size:clamp(34px,6.6vw,74px);font-weight:800}
+  h2.head{font-size:clamp(28px,5vw,52px);font-weight:800}
+  .head .hl{color:var(--bmw)}
+  .lede{font-size:clamp(16px,2.1vw,20px);color:var(--ink-2);max-width:60ch;margin-top:22px;line-height:1.6}
+  .lede b{color:var(--ink);font-weight:600}
+
+  /* ---------- Cover ---------- */
+  .cover{align-items:center;text-align:center}
+  .cover .inner{max-width:900px}
+  .cover .telem{font-family:var(--mono);font-size:11px;letter-spacing:.34em;color:var(--ink-3);text-transform:uppercase;margin-bottom:34px}
+  .cover .telem span{color:var(--bmw)}
+  .bigwm{font-weight:800;letter-spacing:-.045em;font-size:clamp(58px,15vw,150px);line-height:.9;margin:0}
+  .bigwm .a{color:var(--ink)} .bigwm .b{color:var(--bmw)}
+  .cover .tag{font-size:clamp(18px,3vw,30px);color:var(--ink);font-weight:600;margin-top:20px;letter-spacing:-.01em}
+  .cover .sub{color:var(--ink-2);font-size:clamp(15px,2vw,18px);margin-top:16px;max-width:52ch;margin-left:auto;margin-right:auto;line-height:1.6}
+  .cover .by2{margin-top:38px;font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--ink-3);text-transform:uppercase}
+  .cover .by2 b{color:var(--ink-2);font-weight:600}
+  .sweep{position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:conic-gradient(from 200deg at 50% 42%, transparent 0deg, rgba(46,123,238,.10) 26deg, transparent 62deg);
+    animation:rot 14s linear infinite;transform-origin:50% 42%}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  @media(prefers-reduced-motion:reduce){.sweep{animation:none}}
+  .grid-bg{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.5;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:52px 52px;
+    -webkit-mask-image:radial-gradient(60% 55% at 50% 45%,#000,transparent 78%);
+    mask-image:radial-gradient(60% 55% at 50% 45%,#000,transparent 78%)}
+  .scrollhint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;
+    letter-spacing:.2em;color:var(--ink-3);text-transform:uppercase;z-index:2}
+  .scrollhint::after{content:"↓";display:block;text-align:center;margin-top:6px;animation:bob 1.8s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+
+  /* ---------- Problema ---------- */
+  .pains{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}
+  @media(max-width:800px){.pains{grid-template-columns:1fr}}
+  .pain{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 24px;position:relative;overflow:hidden}
+  .pain::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red);opacity:.6}
+  .pain .ic{font-size:26px;margin-bottom:14px}
+  .pain h3{font-size:18px;font-weight:700;margin-bottom:8px}
+  .pain p{color:var(--ink-2);font-size:14.5px;line-height:1.55}
+
+  /* ---------- Solução 3em1 ---------- */
+  .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}
+  @media(max-width:800px){.trio{grid-template-columns:1fr}}
+  .tri{background:linear-gradient(165deg,var(--card),rgba(18,30,51,.35));border:1px solid var(--line);border-radius:18px;padding:28px 24px}
+  .tri.spot{border-color:rgba(46,123,238,.5);box-shadow:0 24px 60px -36px rgba(46,123,238,.9)}
+  .tri .n{font-family:var(--mono);font-size:12px;color:var(--bmw);letter-spacing:.14em;font-weight:700}
+  .tri h3{font-size:21px;font-weight:800;margin:14px 0 6px}
+  .tri .role{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--ink-3);text-transform:uppercase;margin-bottom:14px}
+  .tri p{color:var(--ink-2);font-size:14.5px;line-height:1.55}
+
+  /* ---------- Split (mockup + texto) ---------- */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,70px);align-items:center;margin-top:20px}
+  .split.rev{grid-template-columns:1fr 1fr}
+  @media(max-width:860px){.split,.split.rev{grid-template-columns:1fr;gap:40px}}
+  .feats{list-style:none;padding:0;margin:26px 0 0}
+  .feats li{position:relative;padding-left:30px;margin:16px 0;color:var(--ink-2);font-size:15.5px;line-height:1.5}
+  .feats li b{color:var(--ink);font-weight:600}
+  .feats li::before{content:"";position:absolute;left:0;top:3px;width:17px;height:17px;border-radius:5px;
+    background:rgba(46,123,238,.16);border:1px solid var(--bmw)}
+  .feats li::after{content:"✓";position:absolute;left:3.5px;top:1px;color:var(--neon);font-size:12px;font-weight:800}
+
+  /* ---------- Phone mockup ---------- */
+  .stage{display:flex;justify-content:center;align-items:center}
+  .phone{width:min(280px,80vw);aspect-ratio:9/19.2;border-radius:38px;background:var(--cockpit);
+    border:1px solid var(--line-2);padding:11px;position:relative;
+    box-shadow:0 40px 90px -40px rgba(0,0,0,.9),0 0 0 1px rgba(46,123,238,.14),inset 0 0 0 1px rgba(255,255,255,.03)}
+  .phone .notch{position:absolute;top:16px;left:50%;transform:translateX(-50%);width:96px;height:6px;border-radius:4px;background:rgba(255,255,255,.1);z-index:3}
+  .screen{height:100%;border-radius:28px;background:linear-gradient(180deg,#0A1526,#0B0F1A);overflow:hidden;padding:26px 16px 16px;display:flex;flex-direction:column;gap:12px}
+  .scr-top{display:flex;justify-content:space-between;align-items:center}
+  .scr-top .h{font-size:15px;font-weight:800}
+  .scr-top .av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--bmw),var(--bmw-deep));font-size:11px;
+    display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff}
+  .lbl{font-family:var(--mono);font-size:8.5px;letter-spacing:.16em;color:var(--ink-3);text-transform:uppercase}
+  .carcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px}
+  .carcard .row{display:flex;justify-content:space-between;align-items:center}
+  .carcard .mdl{font-size:14px;font-weight:700}
+  .carcard .plate{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--ink-2);background:var(--void);
+    border:1px solid var(--line);border-radius:4px;padding:2px 6px}
+  .ring{--p:78;width:44px;height:44px;border-radius:50%;
+    background:conic-gradient(var(--ok) calc(var(--p)*1%),rgba(255,255,255,.07) 0);
+    display:flex;align-items:center;justify-content:center;position:relative;margin-top:10px}
+  .ring::before{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--card)}
+  .ring span{position:relative;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ok)}
+  .os{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px}
+  .os .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+  .os .st{font-family:var(--mono);font-size:8px;letter-spacing:.1em;color:var(--bmw);background:rgba(46,123,238,.14);
+    border:1px solid rgba(46,123,238,.4);border-radius:20px;padding:2px 8px;text-transform:uppercase}
+  .bar{height:6px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden}
+  .bar i{display:block;height:100%;width:62%;background:linear-gradient(90deg,var(--bmw),var(--neon))}
+  .apprv{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .apprv .t{font-size:12px;font-weight:600}
+  .apprv .t small{display:block;font-family:var(--mono);color:var(--ink-2);font-size:10px;font-weight:400;margin-top:2px}
+  .apprv .go{font-family:var(--mono);font-size:9px;letter-spacing:.1em;background:var(--bmw);color:#fff;border-radius:8px;padding:8px 11px;font-weight:700;white-space:nowrap;text-transform:uppercase}
+
+  /* ---------- Panel mockup ---------- */
+  .pmock{background:var(--cockpit);border:1px solid var(--line-2);border-radius:16px;overflow:hidden;
+    box-shadow:0 40px 90px -46px rgba(0,0,0,.9),0 0 0 1px rgba(46,123,238,.1);width:100%;max-width:520px}
+  .pmock .bar-top{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .pmock .dot{width:9px;height:9px;border-radius:50%;background:var(--ink-4)}
+  .pmock .dot.r{background:#E5484D}.pmock .dot.y{background:#E8B031}.pmock .dot.g{background:#3ECF77}
+  .pmock .ttl{margin-left:8px;font-weight:800;font-size:12px}.pmock .ttl .b{color:var(--bmw)}
+  .kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:14px}
+  .kcol .kh{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;color:var(--ink-3);text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between}
+  .kcard{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:9px 10px;margin-bottom:7px}
+  .kcard .m{font-size:11px;font-weight:700}
+  .kcard .p{font-family:var(--mono);font-size:8px;color:var(--ink-2);margin-top:3px;letter-spacing:.06em}
+  .kcard.a{border-left:2px solid var(--warn)}.kcard.b{border-left:2px solid var(--bmw)}.kcard.c{border-left:2px solid var(--ok)}
+  .pmock .foot{display:flex;gap:14px;padding:11px 14px;border-top:1px solid var(--line);font-family:var(--mono);font-size:9px;color:var(--ink-3);letter-spacing:.08em}
+  .pmock .foot b{color:var(--ink-2)}
+
+  /* ---------- Steps ---------- */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:44px;counter-reset:st}
+  @media(max-width:800px){.steps{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:440px){.steps{grid-template-columns:1fr}}
+  .steps .st{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 20px;position:relative}
+  .steps .st::before{content:counter(st,decimal-leading-zero);counter-increment:st;font-family:var(--mono);font-size:12px;color:var(--bmw);font-weight:700;letter-spacing:.08em}
+  .steps .st h3{font-size:16px;font-weight:700;margin:11px 0 7px}
+  .steps .st p{color:var(--ink-2);font-size:13.5px;line-height:1.5}
+  .steps .st .t{position:absolute;top:20px;right:18px;font-family:var(--mono);font-size:9.5px;color:var(--ink-3);letter-spacing:.1em}
+
+  /* ---------- Prova ---------- */
+  .proof{display:flex;flex-direction:column;align-items:center;text-align:center}
+  .proof .badge{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+    color:var(--ok);text-transform:uppercase;border:1px solid rgba(62,207,119,.4);background:rgba(62,207,119,.08);
+    border-radius:30px;padding:8px 16px;margin-bottom:28px}
+  .proof .badge .live{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(62,207,119,.6);animation:pulse 2s infinite}
+  @keyframes pulse{70%{box-shadow:0 0 0 8px rgba(62,207,119,0)}100%{box-shadow:0 0 0 0 rgba(62,207,119,0)}}
+  @media(prefers-reduced-motion:reduce){.proof .badge .live{animation:none}}
+  .proof .url{font-family:var(--mono);font-size:clamp(15px,3vw,22px);color:var(--ink);margin-top:26px;letter-spacing:.02em}
+  .proof .url .s{color:var(--ink-3)}
+  .proof .note{color:var(--ink-2);margin-top:20px;max-width:52ch}
+
+  /* ---------- ROI ---------- */
+  .roi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:44px}
+  @media(max-width:800px){.roi{grid-template-columns:repeat(2,1fr)}}
+  .rc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 20px}
+  .rc .g{font-family:var(--mono);font-size:30px;font-weight:800;color:var(--bmw);line-height:1}
+  .rc h3{font-size:15.5px;font-weight:700;margin:12px 0 6px}
+  .rc p{color:var(--ink-2);font-size:13px;line-height:1.5}
+
+  /* ---------- Planos ---------- */
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:40px;align-items:stretch}
+  @media(max-width:800px){.tiers{grid-template-columns:1fr}}
+  .tier{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 22px;display:flex;flex-direction:column;position:relative}
+  .tier.reco{border-color:var(--bmw);background:linear-gradient(180deg,rgba(46,123,238,.1),var(--card) 42%);box-shadow:0 24px 56px -34px rgba(46,123,238,.8)}
+  .tier .rb{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;letter-spacing:.16em;
+    background:var(--bmw);color:#fff;border-radius:20px;padding:4px 12px;font-weight:700;white-space:nowrap}
+  .tier .nm{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-2)}
+  .tier.reco .nm{color:var(--neon)}
+  .tier .pr{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:30px;font-weight:800;margin:10px 0 3px}
+  .tier .pr small{font-size:13px;color:var(--ink-3);font-weight:500}
+  .tier .su{font-size:12px;color:var(--ink-3);border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:14px}
+  .tier ul{list-style:none;padding:0;margin:0;flex:1}
+  .tier li{position:relative;padding-left:20px;font-size:13.5px;color:var(--ink-2);margin:8px 0}
+  .tier li::before{content:"✓";position:absolute;left:0;color:var(--ok);font-weight:700}
+  .tiers-note{margin-top:22px;font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.02em;text-align:center}
+  .tiers-note a{color:var(--neon)}
+
+  /* ---------- CTA ---------- */
+  .cta{align-items:center;text-align:center;background:radial-gradient(80% 60% at 50% 40%,rgba(46,123,238,.12),transparent 62%)}
+  .cta h2{font-size:clamp(32px,6vw,64px);font-weight:800}
+  .cta .sub{color:var(--ink-2);font-size:clamp(16px,2.2vw,20px);margin-top:20px;max-width:50ch;margin-left:auto;margin-right:auto;line-height:1.6}
+  .cta .acts{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:38px}
+  .btn{font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;padding:15px 26px;border-radius:11px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn.pri{background:var(--bmw);color:#fff;border:1px solid var(--bmw)}
+  .btn.sec{background:transparent;color:var(--ink);border:1px solid var(--line-2)}
+  .cta .contact{margin-top:40px;font-family:var(--mono);font-size:13px;color:var(--ink-2);letter-spacing:.04em}
+  .cta .contact b{color:var(--ink)}
+  .cta .by3{margin-top:30px;font-family:var(--mono);font-size:10px;letter-spacing:.24em;color:var(--ink-3);text-transform:uppercase}
+
+  /* reveal */
+  .rv{opacity:0;transform:translateY(20px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+  .slide.active .rv{opacity:1;transform:none}
+  .slide.active .rv:nth-child(2){transition-delay:.08s}
+  .slide.active .rv:nth-child(3){transition-delay:.16s}
+  .slide.active .rv:nth-child(4){transition-delay:.24s}
+  @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
+</style>
+</head>
+<body>
+
+<!-- SVG sprite: ribbon X mark (Lex Technology) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="lexg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B86F2"/><stop offset=".5" stop-color="#5A5FEA"/><stop offset="1" stop-color="#8B3FE8"/>
+    </linearGradient>
+    <symbol id="xmark" viewBox="0 0 64 64">
+      <path d="M55 7 L41 7 L9 57 L23 57 Z" fill="url(#lexg)"/>
+      <path d="M32 32 L40 44 L28 46 Z" fill="#0B1330" opacity=".22"/>
+      <path d="M9 7 L23 7 L55 57 L41 57 Z" fill="url(#lexg)"/>
+      <path d="M9 7 L23 7 L32 21 L18 21 Z" fill="#7FB0FF" opacity=".28"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ============ FIXED CHROME ============ -->
+<div class="topbar">
+  <div class="wm"><svg class="xmark" style="width:22px;height:22px;vertical-align:-.2em;margin-right:7px" aria-hidden="true"><use href="#xmark"/></svg><span class="a">Lex</span><span class="b">OS</span><span class="reg">™</span></div>
+  <div style="display:flex;align-items:center;gap:18px">
+    <span class="by">por Lex Technology</span>
+    <span class="counter"><b id="cnum">01</b> / 10</span>
+  </div>
+</div>
+<nav class="rail" id="rail" aria-label="Navegação dos slides"></nav>
+
+<!-- ============ 01 · COVER ============ -->
+<section class="slide cover active" id="s1" data-t="Capa">
+  <div class="sweep"></div><div class="grid-bg"></div>
+  <div class="inner">
+    <div class="telem rv">VIN <span>·</span> ORDEM DE SERVIÇO <span>·</span> TEMPO REAL</div>
+    <svg class="rv" style="display:block;width:clamp(56px,9vw,86px);height:auto;margin:0 auto 22px;filter:drop-shadow(0 16px 36px rgba(93,95,234,.55))" viewBox="0 0 64 64" aria-hidden="true"><use href="#xmark"/></svg>
+    <h1 class="bigwm rv"><span class="a">Lex</span><span class="b">OS</span></h1>
+    <p class="tag rv">O sistema operacional da oficina.</p>
+    <p class="sub rv">Site, app do cliente e gestão — numa plataforma só. Pronta pra ligar na sua oficina em dias.</p>
+    <p class="by2 rv">Powered by <b>Lex Technology</b></p>
+  </div>
+  <div class="scrollhint">deslize</div>
+</section>
+
+<!-- ============ 02 · PROBLEMA ============ -->
+<section class="slide" id="s2" data-t="O problema">
+  <div class="snum">02</div>
+  <div class="inner">
+    <div class="kick rv">O problema</div>
+    <h2 class="head rv">Hoje, a oficina trabalha <span class="hl">às cegas</span>.</h2>
+    <div class="pains">
+      <div class="pain rv"><div class="ic">📵</div><h3>Cliente no escuro</h3><p>Ele liga a cada duas horas perguntando "e aí, ficou pronto?". Você para o serviço pra atender o telefone.</p></div>
+      <div class="pain rv"><div class="ic">📓</div><h3>Agenda no caderno</h3><p>Horário marcado no WhatsApp, esquecido, furado. O box fica vazio e o faturamento do dia vai embora.</p></div>
+      <div class="pain rv"><div class="ic">🤝</div><h3>Orçamento na desconfiança</h3><p>"Precisa trocar isso e aquilo." Sem foto, sem registro, o cliente duvida — e autoriza menos do que precisa.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03 · SOLUÇÃO ============ -->
+<section class="slide" id="s3" data-t="A solução">
+  <div class="snum">03</div>
+  <div class="inner">
+    <div class="kick rv">A solução</div>
+    <h2 class="head rv">Uma plataforma. <span class="hl">Três frentes.</span></h2>
+    <p class="lede rv">Tudo conversa entre si — a vitrine que atrai, o app que fideliza e o painel que opera. Sem instalar nada, sem servidor pra manter.</p>
+    <div class="trio">
+      <div class="tri rv"><div class="n">01</div><h3>Site + Agendamento</h3><div class="role">A vitrine</div><p>Presença premium com a sua marca e agendamento online 24h. O cliente marca sozinho, sem ocupar o telefone.</p></div>
+      <div class="tri spot rv"><div class="n">02</div><h3>App do cliente</h3><div class="role">A fidelização</div><p>A sua oficina no bolso dele: garagem, acompanhamento em tempo real e aprovação item a item. O diferencial que ninguém no bairro tem.</p></div>
+      <div class="tri rv"><div class="n">03</div><h3>Painel LexOS</h3><div class="role">A operação</div><p>Do check-in ao checkout: ordens de serviço, fotos, PDFs e equipe. O controle total da oficina numa tela.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 · APP DO CLIENTE ============ -->
+<section class="slide" id="s4" data-t="App do cliente">
+  <div class="snum">04</div>
+  <div class="inner">
+    <div class="split">
+      <div>
+        <div class="kick rv">O diferencial</div>
+        <h2 class="head rv">O cliente na <span class="hl">palma da mão</span>.</h2>
+        <ul class="feats">
+          <li class="rv"><b>Garagem digital</b> — todos os veículos dele, com a saúde de cada um.</li>
+          <li class="rv"><b>Acompanha em tempo real</b> — vê a ordem de serviço andar, sem ligar.</li>
+          <li class="rv"><b>Aprova item a item</b> — com foto e preço. Autoriza mais, sem desconfiança.</li>
+          <li class="rv"><b>Histórico transferível</b> — na venda do carro, entrega o prontuário ao comprador.</li>
+        </ul>
+      </div>
+      <div class="stage rv">
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="screen">
+            <div class="scr-top"><div class="h">Minha Garagem</div><div class="av">R</div></div>
+            <div class="carcard">
+              <div class="row"><div class="mdl">BMW M135i</div><div class="plate">IHK-2A22</div></div>
+              <div class="row"><div class="ring"><span>78%</span></div><div style="text-align:right"><div class="lbl">Próxima revisão</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;margin-top:3px">1.200 km</div></div></div>
+            </div>
+            <div class="os">
+              <div class="row"><div class="lbl">Ordem #1258</div><div class="st">Em serviço</div></div>
+              <div class="bar"><i></i></div>
+            </div>
+            <div class="apprv">
+              <div class="t">Pastilhas dianteiras<small>R$ 480,00 · foto anexa</small></div>
+              <div class="go">Aprovar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 05 · PAINEL ============ -->
+<section class="slide" id="s5" data-t="Painel LexOS">
+  <div class="snum">05</div>
+  <div class="inner">
+    <div class="split">
+      <div class="stage rv">
+        <div class="pmock">
+          <div class="bar-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="ttl"><span class="b">Lex</span>OS</span></div>
+          <div class="kanban">
+            <div class="kcol"><div class="kh"><span>Recepção</span><span>2</span></div>
+              <div class="kcard a"><div class="m">Golf GTI</div><div class="p">FQP-1D34 · Revisão</div></div>
+              <div class="kcard a"><div class="m">Civic Si</div><div class="p">RTA-9C10 · Freios</div></div></div>
+            <div class="kcol"><div class="kh"><span>Serviço</span><span>2</span></div>
+              <div class="kcard b"><div class="m">BMW M135i</div><div class="p">IHK-2A22 · OS #1258</div></div>
+              <div class="kcard b"><div class="m">A3 Sedan</div><div class="p">LMN-4E22 · Suspensão</div></div></div>
+            <div class="kcol"><div class="kh"><span>Pronto</span><span>1</span></div>
+              <div class="kcard c"><div class="m">X1 sDrive</div><div class="p">POK-7B55 · Checkout</div></div></div>
+          </div>
+          <div class="foot"><span>Hoje: <b>5 OS</b></span><span>Faturado: <b>R$ 8.240</b></span><span>Aprovações: <b>3</b></span></div>
+        </div>
+      </div>
+      <div>
+        <div class="kick rv">A operação</div>
+        <h2 class="head rv">Do check-in ao checkout, <span class="hl">num lugar só</span>.</h2>
+        <ul class="feats">
+          <li class="rv"><b>Check-in com foto, placa e VIN</b> — e já gera o convite de acesso do cliente.</li>
+          <li class="rv"><b>Ordens de serviço e status</b> — quadro visual da oficina inteira.</li>
+          <li class="rv"><b>PDFs prontos</b> — termo de entrada e prontuário do veículo.</li>
+          <li class="rv"><b>Equipe e relatórios</b> — quem fez o quê, quanto entrou no dia.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 06 · COMO FUNCIONA ============ -->
+<section class="slide" id="s6" data-t="Ativação">
+  <div class="snum">06</div>
+  <div class="inner">
+    <div class="kick rv">Ativação</div>
+    <h2 class="head rv">Da conversa ao ar em <span class="hl">dias</span>.</h2>
+    <p class="lede rv">Você não constrói nada. A plataforma já existe — a gente conecta a sua oficina e personaliza com a sua marca.</p>
+    <div class="steps">
+      <div class="st rv"><span class="t">30 min</span><h3>Conecta</h3><p>Entendemos seus serviços, preços e ativamos o seu ambiente.</p></div>
+      <div class="st rv"><span class="t">2–4 dias</span><h3>Personaliza</h3><p>Sua logo, cores, catálogo e domínio. A cara é toda sua.</p></div>
+      <div class="st rv"><span class="t">1 h</span><h3>Treina</h3><p>Uma hora com a equipe no painel e no app do cliente.</p></div>
+      <div class="st rv"><span class="t">no ar</span><h3>Publica</h3><p>Site no ar, app disponível, primeiro check-in gerando acesso.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 07 · PROVA ============ -->
+<section class="slide" id="s7" data-t="Prova">
+  <div class="snum">07</div>
+  <div class="inner proof">
+    <div class="badge rv"><span class="live"></span> No ar agora</div>
+    <h2 class="head rv" style="text-align:center">Não é promessa.<br><span class="hl">Já está rodando.</span></h2>
+    <p class="url rv"><span class="s">https://</span>eurovix<span class="s">.vercel.app</span></p>
+    <p class="note rv">A <b style="color:var(--ink)">EUROVIX</b> é a primeira oficina na plataforma — site, app e painel funcionando de verdade. Abra no seu celular e veja o app do cliente antes mesmo de fechar.</p>
+  </div>
+</section>
+
+<!-- ============ 08 · ROI ============ -->
+<section class="slide" id="s8" data-t="Por que se paga">
+  <div class="snum">08</div>
+  <div class="inner">
+    <div class="kick rv">Por que se paga</div>
+    <h2 class="head rv">A mensalidade <span class="hl">se paga sozinha</span>.</h2>
+    <div class="roi">
+      <div class="rc rv"><div class="g">−</div><h3>Menos falta</h3><p>Agendamento e lembrete no app reduzem o box vazio.</p></div>
+      <div class="rc rv"><div class="g">+</div><h3>Ticket maior</h3><p>Aprovação com foto: o cliente libera mais serviço.</p></div>
+      <div class="rc rv"><div class="g">↻</div><h3>Cliente volta</h3><p>Garagem e histórico deixam a oficina no bolso dele.</p></div>
+      <div class="rc rv"><div class="g">★</div><h3>Imagem premium</h3><p>Site e app de nível separam você de quem anota no caderno.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 09 · PLANOS ============ -->
+<section class="slide" id="s9" data-t="Planos">
+  <div class="snum">09</div>
+  <div class="inner">
+    <div class="kick rv">Planos</div>
+    <h2 class="head rv">Escolha pelo <span class="hl">tamanho da operação</span>.</h2>
+    <div class="tiers">
+      <div class="tier rv"><div class="nm">Conecta</div><div class="pr">R$ 297<small>/mês</small></div><div class="su">Ativação R$ 890</div>
+        <ul><li>Site personalizado</li><li>Agendamento online</li><li>Painel LexOS</li><li>PDFs (termo/prontuário)</li></ul></div>
+      <div class="tier reco rv"><div class="rb">MAIS ESCOLHIDO</div><div class="nm">Digital</div><div class="pr">R$ 597<small>/mês</small></div><div class="su">Ativação R$ 1.490</div>
+        <ul><li>Tudo do Conecta</li><li><b>App do cliente (PWA)</b></li><li>Garagem + tempo real</li><li>Aprovação item a item</li></ul></div>
+      <div class="tier rv"><div class="nm">Marca própria</div><div class="pr">R$ 1.190<small>/mês</small></div><div class="su">Ativação R$ 2.900</div>
+        <ul><li>Tudo do Digital</li><li>Domínio próprio</li><li>Multi-unidade</li><li>Suporte prioritário</li></ul></div>
+    </div>
+    <p class="tiers-note rv">Sem fidelidade · Anual com 2 meses grátis · <a href="lexos.html#contratar">contratar agora →</a></p>
+  </div>
+</section>
+
+<!-- ============ 10 · CTA ============ -->
+<section class="slide cta" id="s10" data-t="Fechamento">
+  <div class="grid-bg"></div>
+  <div class="inner">
+    <div class="kick rv" style="justify-content:center">Vamos ligar a sua</div>
+    <h2 class="rv">Ative a sua oficina.</h2>
+    <p class="sub rv">Você escolhe o plano, manda logo e serviços, e em dias está no ar. A gente cuida do resto.</p>
+    <div class="acts rv">
+      <a class="btn pri" href="lexos.html#contratar">Quero ativar minha oficina</a>
+      <a class="btn sec" href="https://eurovix.vercel.app" target="_blank" rel="noopener">Ver a EUROVIX ao vivo</a>
+    </div>
+    <p class="contact rv">WhatsApp <b>(__) _____-____</b> · contato@lextechnology.com.br</p>
+    <p class="by3 rv">LexOS™ · powered by Lex Technology</p>
+  </div>
+</section>
+
+<script>
+  (function(){
+    var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+    var rail = document.getElementById('rail');
+    var cnum = document.getElementById('cnum');
+    var pad = function(n){return (n<10?'0':'')+n;};
+
+    // build rail dots
+    slides.forEach(function(s,i){
+      var b = document.createElement('button');
+      b.setAttribute('aria-label', s.getAttribute('data-t') || ('Slide '+(i+1)));
+      b.addEventListener('click', function(){ s.scrollIntoView({behavior:'smooth'}); });
+      rail.appendChild(b);
+    });
+    var dots = Array.prototype.slice.call(rail.children);
+
+    function setActive(i){
+      slides.forEach(function(s,j){ s.classList.toggle('active', j===i); });
+      dots.forEach(function(d,j){ d.classList.toggle('on', j===i); });
+      cnum.textContent = pad(i+1);
+    }
+
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ setActive(slides.indexOf(e.target)); }
+      });
+    }, {threshold:.55});
+    slides.forEach(function(s){ io.observe(s); });
+    setActive(0);
+
+    // keyboard nav
+    function current(){ for(var i=0;i<slides.length;i++){ if(slides[i].classList.contains('active')) return i; } return 0; }
+    document.addEventListener('keydown', function(e){
+      if(e.key==='ArrowDown'||e.key==='PageDown'||e.key===' '){ e.preventDefault(); var n=Math.min(slides.length-1,current()+1); slides[n].scrollIntoView({behavior:'smooth'}); }
+      else if(e.key==='ArrowUp'||e.key==='PageUp'){ e.preventDefault(); var p=Math.max(0,current()-1); slides[p].scrollIntoView({behavior:'smooth'}); }
+      else if(e.key==='Home'){ e.preventDefault(); slides[0].scrollIntoView({behavior:'smooth'}); }
+      else if(e.key==='End'){ e.preventDefault(); slides[slides.length-1].scrollIntoView({behavior:'smooth'}); }
+    });
+  })();
+</script>
+</body>
+</html>

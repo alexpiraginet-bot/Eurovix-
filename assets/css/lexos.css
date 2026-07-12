@@ -1,0 +1,37 @@
+/* ============================================================
+   LexOS — camada de marca (Lex Technology)
+   Fonte geométrica Poppins (self-hosted) + tokens da casa.
+   Usado pelas superfícies do fornecedor: lexos.html, apresentacao.html
+   ============================================================ */
+
+@font-face{font-family:'Poppins';font-style:normal;font-weight:400;font-display:swap;
+  src:url('../fonts/poppins-latin-400-normal.woff2') format('woff2')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:500;font-display:swap;
+  src:url('../fonts/poppins-latin-500-normal.woff2') format('woff2')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:600;font-display:swap;
+  src:url('../fonts/poppins-latin-600-normal.woff2') format('woff2')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:swap;
+  src:url('../fonts/poppins-latin-700-normal.woff2') format('woff2')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:800;font-display:swap;
+  src:url('../fonts/poppins-latin-800-normal.woff2') format('woff2')}
+
+:root{
+  /* Lex Technology — cores da casa */
+  --lex-blue:#3B86F2; --lex-blue-2:#2E7BEE; --lex-violet:#8B3FE8; --lex-violet-2:#7C3AED;
+  --lex-grad:linear-gradient(135deg,#3B86F2 0%,#5A5FEA 52%,#8B3FE8 100%);
+  --lex-grad-soft:linear-gradient(135deg,rgba(59,134,242,.16),rgba(139,63,232,.16));
+  --lex-ink:#0B1330;
+  /* base escura (cockpit) compartilhada com o produto */
+  --lex-void:#06070A; --lex-cockpit:#0B111D; --lex-card:#121A2B; --lex-card-2:#18233A;
+  --lex-line:rgba(255,255,255,.08); --lex-line-2:rgba(255,255,255,.15);
+  --lex-t1:#EEF2F8; --lex-t2:#9AA6BC; --lex-t3:#5E6B82;
+  --lex-ok:#3ECF77; --lex-warn:#E8B031;
+  --lex-font:'Poppins',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --lex-mono:'SFMono-Regular','JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+
+/* wordmark reutilizável */
+.lex-wm{font-family:var(--lex-font);font-weight:800;letter-spacing:-.03em;display:inline-flex;align-items:center;gap:.34em}
+.lex-wm .x{display:inline-block}
+.lex-wm .tx .a{color:var(--lex-t1)}
+.lex-wm .tx .b{background:var(--lex-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
