@@ -16,8 +16,6 @@ window.EVXTheme = (function () {
   function apply() {
     document.documentElement.setAttribute('data-theme', 'dark');
     try { localStorage.setItem(KEY, 'dark'); } catch (e) {} // normaliza valor antigo p/ o anti-flash
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', '#0A0C10');
   }
 
   /* ---------- Horário de funcionamento (fonte: Google Business) ---------- */

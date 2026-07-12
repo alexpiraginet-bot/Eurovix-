@@ -96,7 +96,7 @@
 
 /* Botões-imagem — a arte 3D do usuário como botão (escopo do site) */
 .btn-image{display:inline-block;border:none;background:none;padding:0;cursor:pointer;line-height:0;text-decoration:none;color:inherit;width:100%;max-width:270px;transition:filter .2s ease,transform .2s ease}
-.btn-image img{width:100%;height:auto;display:block}
+.btn-image img{width:100%;height:auto;display:block;pointer-events:none;user-select:none}
 .btn-image:hover{filter:brightness(1.08) saturate(1.05);transform:translateY(-2px)}
 .btn-image:active{transform:translateY(0)}
 .btn-image:focus-visible{outline:2px solid var(--bmw);outline-offset:3px;border-radius:10px}
