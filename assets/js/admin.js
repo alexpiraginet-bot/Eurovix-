@@ -81,8 +81,19 @@
   /* ---------- convite de acesso da oficina (o dono cria a própria senha) ---------- */
   async function criarConvite(id) {
     if (CLOUD) {
-      try { var r = await sb.rpc('criar_convite_oficina', { p_oficina_id: id }); if (r.error) return { ok: false, erro: r.error.message }; return { ok: true, token: r.data }; }
-      catch (e) { return { ok: false, erro: String((e && e.message) || e) }; }
+      try {
+        var r = await sb.rpc('criar_convite_oficina', { p_oficina_id: id });
+        if (r.error) {
+          var m = r.error.message || 'erro';
+          if (r.error.code === 'PGRST202' || /could not find the function|does not exist/i.test(m))
+            return { ok: false, erro: 'Função não encontrada no banco — rode supabase/MULTI-TENANT.sql no SQL Editor e recarregue.' };
+          if (/administradores LexOS|is_lex_admin|permission denied/i.test(m))
+            return { ok: false, erro: 'Seu login não está como admin LexOS. Adicione seu e-mail em public.lex_admins e entre de novo.' };
+          return { ok: false, erro: (r.error.code ? '[' + r.error.code + '] ' : '') + m };
+        }
+        if (!r.data) return { ok: false, erro: 'A função respondeu vazio (sem token).' };
+        return { ok: true, token: r.data };
+      } catch (e) { return { ok: false, erro: String((e && e.message) || e) }; }
     }
     return { ok: true, token: 'demo-' + String(id).slice(0, 8) }; // modo demo: token ilustrativo
   }
@@ -136,15 +147,18 @@
       Array.prototype.forEach.call(tb.querySelectorAll('[data-convite]'), function (b) {
         b.addEventListener('click', async function () {
           b.disabled = true; var orig = b.textContent; b.textContent = 'gerando…';
-          var r = await criarConvite(b.getAttribute('data-convite'));
+          var r;
+          try { r = await criarConvite(b.getAttribute('data-convite')); }
+          catch (e) { r = { ok: false, erro: String((e && e.message) || e) }; }
           b.disabled = false; b.textContent = orig;
-          if (!r.ok) { toast('Erro ao gerar convite: ' + r.erro); return; }
+          if (!r.ok) { toast('Erro ao gerar convite — ' + r.erro); return; }
           var link = linkAcesso(r.token);
-          try { await navigator.clipboard.writeText(link); toast('Link de acesso copiado ✓'); } catch (_) { prompt('Link de acesso do dono da oficina:', link); }
+          try { if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(link); } catch (_) {}
+          window.prompt('Link de acesso do dono da oficina (copie e envie):', link); // sempre mostra o link
           var wpp = b.getAttribute('data-wpp');
           if (wpp) {
             var msg = 'Olá! O acesso ao WERK OS da ' + (b.getAttribute('data-nome') || 'sua oficina') + ' está pronto. Crie sua senha e entre por este link: ' + link;
-            window.open('https://wa.me/' + wpp + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+            try { window.open('https://wa.me/' + wpp + '?text=' + encodeURIComponent(msg), '_blank', 'noopener'); } catch (_) {}
           }
         });
       });
