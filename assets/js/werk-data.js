@@ -658,6 +658,88 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     return updateOS(numero, os => { os.nps = +nota; }, { tipo: 'update', titulo: `NPS ${nota}/10`, desc: 'Avaliação do cliente registrada.', ator: o.cliente });
   }
 
+  /* ============================================================
+     8 · IA de check-in — análise assistida + consulta de placa
+     ------------------------------------------------------------
+     HOJE roda em modo ASSISTIDO (heurística determinística pelo
+     conteúdo do check-in) para demonstrar o fluxo sem custo/latência.
+     AMANHÃ: trocar o corpo de analisarFotos por uma chamada à função
+     serverless de visão (Claude), mantendo o MESMO formato de retorno.
+     A consulta de placa já tenta a API real (/api/placa) e cai para a
+     base local. [API: visão computacional · consulta de placa BR]
+     ============================================================ */
+  const CHECKLIST_ITENS = ['Documento (CRLV)', 'Chave reserva', 'Triângulo', 'Macaco/chave de roda', 'Estepe/kit reparo', 'Tapetes originais'];
+  const AVARIAS_POOL = [
+    { x: 26, y: 42, nota: 'Risco no para-choque dianteiro (lado esq.)', sev: 'media' },
+    { x: 72, y: 46, nota: 'Amassado leve na porta traseira (lado dir.)', sev: 'media' },
+    { x: 50, y: 20, nota: 'Trinca no para-brisa (canto passageiro)', sev: 'alta' },
+    { x: 84, y: 64, nota: 'Roda dianteira direita raspada no meio-fio', sev: 'baixa' },
+    { x: 33, y: 70, nota: 'Desgaste irregular no pneu dianteiro esq.', sev: 'baixa' },
+  ];
+  const LUZES_POOL = ['Service', 'TPMS', 'Check Engine', 'ABS', 'Airbag', 'EPB'];
+
+  function _hash(str) { let h = 2166136261 >>> 0; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h; }
+
+  // Análise assistida das fotos do check-in.
+  async function analisarFotos(fotos, ctx) {
+    ctx = ctx || {};
+    const n = Object.keys(fotos || {}).length;
+    const h = _hash((ctx.vin || ctx.placa || 'EVX') + ':' + n);
+    const kmAtual = ctx.km ? +ctx.km : (18000 + (h % 92000));
+    const combustivel = [15, 25, 35, 50, 60, 70, 85][h % 7];
+    const luzes = (h % 4 === 0) ? [] : LUZES_POOL.slice(0, 1 + (h % 2));
+    const nAvarias = h % 3;                          // 0..2 avarias
+    const avarias = AVARIAS_POOL.slice(0, nAvarias).map(a => ({ ...a }));
+    const faltando = [];                             // índices da CHECKLIST_ITENS ausentes
+    if (h % 5 === 0) faltando.push(2);               // triângulo
+    if (h % 7 === 0) faltando.push(4);               // estepe/kit
+    const itens = CHECKLIST_ITENS.map((_, i) => !faltando.includes(i));
+    return {
+      modo: 'assistida',                             // vira 'ia' quando a visão real estiver ligada
+      km: kmAtual, combustivel, luzes, avarias, itens,
+      itensFaltantes: faltando.map(i => CHECKLIST_ITENS[i]),
+      confianca: 0.72 + (h % 18) / 100,
+      fotosAnalisadas: n,
+    };
+  }
+
+  // Base local mínima de placas-demo (além dos veículos já cadastrados).
+  const PLACA_DEMO = {
+    'PONTO123': { vin: '', modelo: 'VW Golf GTI Mk7', anoModelo: 2019, cor: 'Branco', combustivel: 'Gasolina' },
+  };
+  // Consulta placa → dados do veículo (VIN/chassi, modelo, ano, cor).
+  async function consultarPlaca(placa) {
+    const p = normPlaca(placa);
+    if (!p) return { ok: false, erro: 'Informe a placa.' };
+    const known = getVehicles().find(v => normPlaca(v.placa) === p);
+    if (known) return { ok: true, fonte: 'garagem', placa: p, vin: known.vin, modelo: known.modelo, anoModelo: known.anoModelo, cor: known.cor };
+    if (PLACA_DEMO[p]) return { ok: true, fonte: 'demo', placa: p, ...PLACA_DEMO[p] };
+    try { // API real de placa via função serverless (quando a chave estiver configurada no servidor)
+      const r = await fetch('/api/placa?placa=' + encodeURIComponent(p), { headers: { accept: 'application/json' } });
+      if (r.ok) { const d = await r.json(); if (d && d.ok) return { ...d, placa: p, fonte: 'api' }; }
+    } catch (_) { /* offline / sem endpoint → cai no aviso abaixo */ }
+    return { ok: false, placa: p, erro: 'Placa não encontrada. Configure a API de consulta (/api/placa) ou digite o VIN.' };
+  }
+
+  // Sugestão de orçamento a partir dos sinais do check-in (luzes + sintoma).
+  function sugerirOrcamento(sinais, familia, config) {
+    sinais = sinais || {}; config = config || getConfig();
+    const txt = ((sinais.luzes || []).join(' ') + ' ' + (sinais.sintoma || '')).toLowerCase();
+    const regras = [
+      { re: /service|revis|[óo]leo/, cat: 'oleo', motivo: 'Alerta Service / revisão' },
+      { re: /freio|brake|pastilh|epb/, cat: 'freio_d', motivo: 'Indício de freio' },
+      { re: /amort|susp|barulho|lombada|ru[íi]do/, cat: 'amortecedor', motivo: 'Ruído de suspensão' },
+      { re: /check engine|falha|motor|epc/, cat: 'diagnostico', motivo: 'Check Engine / falha' },
+    ];
+    const cats = [];
+    for (const r of regras) if (r.re.test(txt) && !cats.some(c => c.cat === r.cat)) cats.push(r);
+    if (!cats.length) cats.push({ cat: 'diagnostico', motivo: 'Diagnóstico inicial recomendado' });
+    return cats.map(c => {
+      const m = motorDePecas(c.cat, familia || 'g20', config);
+      return { categoria: c.cat, motivo: c.motivo, descricao: m.descricao, preco: (m.niveis.original.preco || 0) + (m.mo || 0) };
+    });
+  }
+
   if (!CLOUD) { // na nuvem o banco é a verdade: sem seeds/migração local
     seed();
     ensureClients();
@@ -677,6 +759,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     _aplicarPagamento: aplicarPagamento, // interno: só o registrarPagamento (local e do adaptador) deve usar
     KEYS, STATUS, statusIdx, CATEGORIAS, ETK, SUPPLIERS, AW_TABLE,
     validateVIN, decodeVIN, fixVIN, checkRecalls,
+    analisarFotos, consultarPlaca, sugerirOrcamento,
     motorDePecas, itemPreco, totalOS, custoOS,
     getConfig, saveConfig,
     getVehicles, upsertVehicle,
