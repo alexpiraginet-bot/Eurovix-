@@ -19,11 +19,6 @@ window.EVXTheme = (function () {
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', '#0A0C10');
   }
-  function set(t) {
-    try { localStorage.setItem(KEY, t); } catch (e) {}
-    apply();
-  }
-  function toggle() { set(current() === 'dark' ? 'light' : 'dark'); }
 
   /* ---------- Horário de funcionamento (fonte: Google Business) ---------- */
   const HOURS = [
@@ -85,9 +80,10 @@ window.EVXTheme = (function () {
     apply();
   }
 
+  apply(); // aplica o tema (data-theme + theme-color) na hora, sem esperar o DOM (evita flash da barra no mobile)
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => { apply(); mountFab(); });
-  } else { apply(); mountFab(); }
+    document.addEventListener('DOMContentLoaded', mountFab);
+  } else { mountFab(); }
 
-  return { get: current, set, toggle, apply, HOURS, hoursStatus };
+  return { get: current, apply, HOURS, hoursStatus };
 })();
