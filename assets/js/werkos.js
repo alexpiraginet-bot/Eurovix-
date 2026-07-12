@@ -261,7 +261,7 @@
      ============================================================ */
   const ck = { step: 1, fotos: {}, danos: [], sig: null };
   views.checkin = () => {
-    ck.step = 1; ck.fotos = {}; ck.danos = []; ck.sig = null;
+    ck.step = 1; ck.fotos = {}; ck.danos = []; ck.sig = null; ck.view3 = null;
     renderCheckin();
   };
 
@@ -387,7 +387,7 @@
             <button type="button" class="ck-ai-btn primary" id="ckAnalisar">${I('scan', 15)} Analisar fotos com IA — km, combustível, luzes e avarias</button>
           </div>
           <div class="wk-panel">
-            <h3>${I('alert')} Danos preexistentes <span style="font-size:10px;color:var(--txt-3)">— toque na silhueta para marcar</span></h3>
+            <h3>${I('alert')} Danos preexistentes <span style="font-size:10px;color:var(--txt-3)">— gire o carro 3D e toque num painel para marcar</span></h3>
             <div class="car-map" id="carMap">
               <svg viewBox="0 0 400 190">
                 <rect width="400" height="190" fill="#0B0E13"/>
@@ -401,6 +401,8 @@
             <div class="dlist">
               ${ck.danos.map((d, i) => `<div class="drow"><span class="dn">${i + 1}</span> ${d.nota} <button data-del="${i}">✕</button></div>`).join('') || '<div style="font-size:11.5px;color:var(--txt-3)">Nenhum dano marcado.</div>'}
             </div>
+            <button type="button" class="ck-ai-btn" id="ckReal3d" style="margin-top:12px">${I('car', 15)} Ver o modelo real (BMW) em 3D</button>
+            <div id="ckReal3dBox" style="display:none;height:300px;margin-top:10px"></div>
           </div>
         </div>
         ${ck.iaResumo ? `
@@ -434,17 +436,45 @@
           fileToThumb(inp.files[0], (url) => { ck.fotos[slot.dataset.i] = url; snap2(); renderCheckin(); });
         });
       });
-      $('#carMap').addEventListener('click', e => {
-        if (e.target.closest('.dmark')) return;
-        const r = e.currentTarget.getBoundingClientRect();
-        const x = Math.round((e.clientX - r.left) / r.width * 100);
-        const y = Math.round((e.clientY - r.top) / r.height * 100);
-        const nota = prompt('Descreva o dano (ex.: risco no para-choque):');
-        if (nota) { ck.danos.push({ x, y, nota }); snap2(); renderCheckin(); }
-      });
+      const _map = $('#carMap');
+      if (_map && window.WERK3D && WERK3D.supported) {          // carro 3D interativo (com fallback 2D abaixo)
+        ck._v3 = WERK3D.mount(_map, {
+          danos: ck.danos, view: ck.view3,
+          onView: v => { ck.view3 = v; },
+          onAdd: (d) => {
+            const nota = prompt('Descreva o dano (ex.: risco no para-choque):');
+            if (!nota) return;
+            ck.danos.push(Object.assign({}, d, { nota })); snap2(); renderCheckin();
+          },
+          onPick: (i) => {
+            const d = ck.danos[i];
+            if (d && confirm('Remover a avaria "' + (d.nota || '') + '"?')) { ck.danos.splice(i, 1); snap2(); renderCheckin(); }
+          },
+        });
+      } else if (_map) {                                        // fallback: silhueta 2D (sem WebGL/CSS-3D)
+        _map.addEventListener('click', e => {
+          if (e.target.closest('.dmark')) return;
+          const r = e.currentTarget.getBoundingClientRect();
+          const x = Math.round((e.clientX - r.left) / r.width * 100);
+          const y = Math.round((e.clientY - r.top) / r.height * 100);
+          const nota = prompt('Descreva o dano (ex.: risco no para-choque):');
+          if (nota) { ck.danos.push({ x, y, nota }); snap2(); renderCheckin(); }
+        });
+      }
       body.addEventListener('click', e => {
         const del = e.target.dataset && e.target.dataset.del;
         if (del != null && e.target.tagName === 'BUTTON') { ck.danos.splice(+del, 1); snap2(); renderCheckin(); }
+      });
+      const _r3 = $('#ckReal3d');                              // showcase do modelo 3D real (BMW · Sketchfab)
+      if (_r3) _r3.addEventListener('click', () => {
+        const box = $('#ckReal3dBox'); if (!box) return;
+        if (box.style.display !== 'none') { box.style.display = 'none'; _r3.innerHTML = I('car', 15) + ' Ver o modelo real (BMW) em 3D'; return; }
+        box.style.display = 'block';
+        if (!box.dataset.loaded && window.WERK3D && WERK3D.embedReal) {
+          try { WERK3D.embedReal(box, (ck.decoded && ck.decoded.modelo) || ck.placa || 'BMW'); box.dataset.loaded = '1'; }
+          catch (_) { box.innerHTML = '<div style="padding:14px;color:var(--txt-3);font-size:12px">Modelo 3D indisponível offline.</div>'; }
+        }
+        _r3.innerHTML = '▲ Ocultar modelo 3D real';
       });
       $('#ckAnalisar').addEventListener('click', async () => {
         if (Object.keys(ck.fotos).length < 1) { toast('Sem fotos', 'Anexe ao menos uma foto do tour para a IA analisar.'); return; }
