@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LexOS — Ativar acesso da oficina</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{ --bg:#06070A; --panel:#0B111D; --panel2:#0E1626; --line:#1b2740; --ink:#eaf0fb; --ink2:#93a4c4;
+    --g1:#3B86F2; --g2:#5A5FEA; --g3:#8B3FE8; --ok:#25c26e; --err:#ff6b6b; }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{min-height:100dvh;background:radial-gradient(120% 90% at 50% -10%,#0d1830 0%,var(--bg) 60%);
+    color:var(--ink);font:15px/1.55 'Poppins',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{width:100%;max-width:440px;background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:20px;padding:30px 26px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+  .mark{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .x{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--g1),var(--g2) 50%,var(--g3));
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;box-shadow:0 6px 18px rgba(91,95,234,.45)}
+  .wm{font-weight:700;letter-spacing:.3px} .wm b{background:linear-gradient(90deg,var(--g1),var(--g3));-webkit-background-clip:text;background-clip:text;color:transparent}
+  h1{font-size:20px;margin:0 0 4px;font-weight:700;text-wrap:balance}
+  .sub{color:var(--ink2);font-size:13px;margin:0 0 20px}
+  label{display:block;font-size:12px;color:var(--ink2);margin:14px 0 6px;font-weight:600}
+  input{width:100%;padding:12px 13px;background:#0a1120;border:1px solid var(--line);border-radius:11px;color:var(--ink);font-size:15px;font-family:inherit}
+  input:focus{outline:none;border-color:var(--g2);box-shadow:0 0 0 3px rgba(90,95,234,.2)}
+  button{width:100%;margin-top:22px;padding:13px;border:0;border-radius:12px;cursor:pointer;font-weight:700;font-size:15px;font-family:inherit;color:#fff;
+    background:linear-gradient(135deg,var(--g1),var(--g2) 55%,var(--g3));box-shadow:0 10px 26px rgba(91,95,234,.4)}
+  button:disabled{opacity:.6;cursor:default}
+  .msg{margin-top:16px;font-size:13px;padding:10px 12px;border-radius:10px;display:none}
+  .msg.err{display:block;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);color:#ffb4b4}
+  .msg.ok{display:block;background:rgba(37,194,110,.1);border:1px solid rgba(37,194,110,.3);color:#8ff0bd}
+  .foot{margin-top:18px;font-size:12px;color:var(--ink2);text-align:center}
+  .foot a{color:var(--g1);text-decoration:none}
+  .hide{display:none}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="mark"><div class="x">X</div><div class="wm"><b>Lex</b>OS</div></div>
+    <div id="view">
+      <h1 id="titulo">Ativar o acesso da sua oficina</h1>
+      <p class="sub" id="hello">Crie seu login de administrador para entrar no WERK OS.</p>
+      <form id="form">
+        <label for="email">Seu e-mail (login)</label>
+        <input id="email" type="email" autocomplete="email" placeholder="voce@suaoficina.com.br" required>
+        <label for="senha">Crie uma senha</label>
+        <input id="senha" type="password" autocomplete="new-password" placeholder="mín. 6 caracteres" minlength="6" required>
+        <label for="senha2">Repita a senha</label>
+        <input id="senha2" type="password" autocomplete="new-password" placeholder="repita a senha" minlength="6" required>
+        <button id="btn" type="submit">Criar acesso e entrar</button>
+        <div id="msg" class="msg"></div>
+      </form>
+      <div class="foot">Já criou seu acesso? <a href="werkos.html">Entrar no painel</a></div>
+    </div>
+  </div>
+
+  <script src="assets/js/env.js"></script>
+  <script src="assets/vendor/supabase.js"></script>
+  <script>
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var token = (q.get('convite') || '').trim();
+    var nome = (q.get('o') || '').trim();
+    var ENV = window.EVX_ENV || {};
+    var sb = (ENV.SUPABASE_URL && ENV.SUPABASE_ANON_KEY && window.supabase && supabase.createClient)
+      ? supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_ANON_KEY) : null;
+
+    var msg = document.getElementById('msg');
+    var form = document.getElementById('form');
+    var btn = document.getElementById('btn');
+    function show(t, tipo) { msg.textContent = t; msg.className = 'msg ' + (tipo || 'err'); }
+
+    if (nome) {
+      document.getElementById('titulo').textContent = 'Ativar acesso — ' + nome;
+      document.getElementById('hello').textContent = 'Crie o login de administrador da ' + nome + ' para entrar no WERK OS.';
+    }
+    if (!token) { form.classList.add('hide'); show('Link inválido. Peça um novo link de acesso ao LexOS.', 'err'); return; }
+    if (!sb) { show('Este ambiente está em modo demonstração (sem nuvem). A ativação real acontece na produção com o Supabase configurado.', 'err'); }
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      if (!sb) return;
+      var email = document.getElementById('email').value.trim();
+      var senha = document.getElementById('senha').value;
+      var senha2 = document.getElementById('senha2').value;
+      if (senha.length < 6) { show('A senha precisa de ao menos 6 caracteres.'); return; }
+      if (senha !== senha2) { show('As senhas não conferem.'); return; }
+      btn.disabled = true; var orig = btn.textContent; btn.textContent = 'Ativando…'; msg.className = 'msg';
+      try {
+        // 1) cria a conta (ou entra, se já existir)
+        var up = await sb.auth.signUp({ email: email, password: senha });
+        var temSessao = up && up.data && up.data.session;
+        if ((up.error && /register|exist/i.test(up.error.message)) || (!up.error && !temSessao)) {
+          var si = await sb.auth.signInWithPassword({ email: email, password: senha });
+          if (si.error) throw si.error;
+          temSessao = si.data && si.data.session;
+        } else if (up.error) { throw up.error; }
+        if (!temSessao) { throw new Error('Não foi possível iniciar a sessão. Confirme o e-mail e tente entrar novamente.'); }
+        // 2) ativa a oficina (vira admin do próprio tenant)
+        var act = await sb.rpc('ativar_oficina', { p_token: token });
+        if (act.error) throw act.error;
+        show('Acesso ativado ✓ Entrando no painel…', 'ok');
+        setTimeout(function () { location.href = 'werkos.html'; }, 900);
+      } catch (err) {
+        btn.disabled = false; btn.textContent = orig;
+        var m = (err && err.message) || String(err);
+        if (/já utilizado|utilizado por outra/i.test(m)) m = 'Este convite já foi usado para ativar o acesso. Se você é o administrador, entre pelo painel.';
+        else if (/outra oficina/i.test(m)) m = 'Este login já pertence a outra oficina. Use um e-mail diferente para esta.';
+        else if (/inválido/i.test(m)) m = 'Convite inválido ou expirado. Peça um novo link ao LexOS.';
+        show(m, 'err');
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
