@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LexOS — O sistema operacional da oficina</title>
+<meta name="description" content="LexOS: site, app do cliente e gestão numa plataforma só. Contrate e coloque sua oficina no digital em dias. Por Lex Technology.">
+<meta name="theme-color" content="#06070A">
+<link rel="icon" href="assets/img/lexos-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/lexos.css">
+<style>
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--lex-void);color:var(--lex-t1);font-family:var(--lex-font);line-height:1.6;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+    background-image:radial-gradient(120% 60% at 50% -8%,rgba(93,95,234,.16),transparent 60%),
+      radial-gradient(70% 40% at 100% 0%,rgba(139,63,232,.10),transparent 55%)}
+  h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.02em;line-height:1.05}
+  p{margin:0}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 clamp(18px,4vw,40px)}
+  .xmark{width:1em;height:1em;display:inline-block;vertical-align:-.14em}
+
+  /* header */
+  header.top{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);
+    background:linear-gradient(180deg,rgba(6,7,10,.9),rgba(6,7,10,.55));border-bottom:1px solid var(--lex-line)}
+  .topin{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.03em;font-size:20px}
+  .brand .xmark{width:26px;height:26px}
+  .brand .a{color:var(--lex-t1)} .brand .b{background:var(--lex-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .brand .by{font-family:var(--lex-mono);font-size:9px;letter-spacing:.16em;color:var(--lex-t3);text-transform:uppercase;margin-left:6px;font-weight:600}
+  nav.mainnav{display:flex;align-items:center;gap:26px}
+  nav.mainnav a{font-size:14px;color:var(--lex-t2);font-weight:500}
+  nav.mainnav a:hover{color:var(--lex-t1)}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px;padding:11px 20px;border-radius:11px;cursor:pointer;border:1px solid transparent;transition:transform .15s ease,filter .15s ease}
+  .btn:hover{transform:translateY(-1px)}
+  .btn.pri{background:var(--lex-grad);color:#fff;box-shadow:0 14px 34px -16px rgba(93,95,234,.9)}
+  .btn.pri:hover{filter:brightness(1.06)}
+  .btn.ghost{background:transparent;border-color:var(--lex-line-2);color:var(--lex-t1)}
+  @media(max-width:720px){nav.mainnav .navlink{display:none}}
+
+  /* hero */
+  .hero{padding:clamp(58px,10vw,110px) 0 clamp(40px,6vw,72px);text-align:center}
+  .hero .mark-big{width:clamp(64px,11vw,104px);height:auto;margin-bottom:26px;filter:drop-shadow(0 18px 40px rgba(93,95,234,.5))}
+  .eyebrow{font-family:var(--lex-mono);font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--lex-blue);margin-bottom:20px}
+  .hero h1{font-size:clamp(34px,6.4vw,68px);font-weight:800}
+  .hero h1 .g{background:var(--lex-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero .sub{font-size:clamp(16px,2.2vw,20px);color:var(--lex-t2);max-width:56ch;margin:22px auto 0;line-height:1.6}
+  .hero .sub b{color:var(--lex-t1);font-weight:600}
+  .hero .acts{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:34px}
+  .hero .btn{padding:15px 26px;font-size:15px}
+  .trust{margin-top:34px;font-family:var(--lex-mono);font-size:11px;letter-spacing:.16em;color:var(--lex-t3);text-transform:uppercase}
+  .trust b{color:var(--lex-t2)}
+
+  /* section shell */
+  section{padding:clamp(48px,7vw,84px) 0;border-top:1px solid var(--lex-line)}
+  .sec-k{font-family:var(--lex-mono);font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--lex-blue);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+  .sec-k::before{content:"";width:26px;height:1px;background:var(--lex-blue)}
+  h2.sec{font-size:clamp(26px,4.4vw,42px);font-weight:800}
+  .sec-sub{color:var(--lex-t2);max-width:62ch;margin-top:14px;font-size:16px}
+
+  /* trio */
+  .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:38px}
+  @media(max-width:820px){.trio{grid-template-columns:1fr}}
+  .tri{background:linear-gradient(165deg,var(--lex-card),rgba(18,26,43,.4));border:1px solid var(--lex-line);border-radius:18px;padding:26px 24px}
+  .tri.spot{border-color:rgba(93,95,234,.5);box-shadow:0 24px 60px -36px rgba(93,95,234,.9)}
+  .tri .ic{width:44px;height:44px;border-radius:12px;background:var(--lex-grad-soft);border:1px solid var(--lex-line-2);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
+  .tri h3{font-size:20px;font-weight:700}
+  .tri .role{font-family:var(--lex-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--lex-blue);margin:6px 0 12px}
+  .tri p{color:var(--lex-t2);font-size:14.5px;line-height:1.55}
+
+  /* steps */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:38px;counter-reset:st}
+  @media(max-width:820px){.steps{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:440px){.steps{grid-template-columns:1fr}}
+  .steps .st{background:var(--lex-card);border:1px solid var(--lex-line);border-radius:14px;padding:22px 20px;position:relative}
+  .steps .st::before{content:counter(st,decimal-leading-zero);counter-increment:st;font-family:var(--lex-mono);font-size:12px;font-weight:700;
+    background:var(--lex-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .steps .st h3{font-size:16px;font-weight:700;margin:11px 0 7px}
+  .steps .st p{color:var(--lex-t2);font-size:13.5px;line-height:1.5}
+  .steps .st .t{position:absolute;top:20px;right:18px;font-family:var(--lex-mono);font-size:9.5px;color:var(--lex-t3);letter-spacing:.08em}
+
+  /* planos */
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:38px;align-items:start}
+  @media(max-width:820px){.tiers{grid-template-columns:1fr}}
+  .tier{position:relative;background:var(--lex-card);border:1px solid var(--lex-line);border-radius:18px;padding:26px 24px;display:flex;flex-direction:column}
+  .tier.reco{border-color:transparent;background:
+    linear-gradient(var(--lex-card),var(--lex-card)) padding-box,
+    var(--lex-grad) border-box;box-shadow:0 26px 60px -34px rgba(93,95,234,.9)}
+  .tier .rb{position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-family:var(--lex-mono);font-size:10px;letter-spacing:.14em;
+    background:var(--lex-grad);color:#fff;border-radius:20px;padding:5px 14px;font-weight:700;white-space:nowrap}
+  .tier .nm{font-family:var(--lex-mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--lex-t2)}
+  .tier .pr{font-family:var(--lex-mono);font-variant-numeric:tabular-nums;font-size:33px;font-weight:800;margin:12px 0 2px;letter-spacing:-.02em}
+  .tier .pr small{font-size:14px;color:var(--lex-t3);font-weight:500}
+  .tier .su{font-size:12.5px;color:var(--lex-t3);border-bottom:1px solid var(--lex-line);padding-bottom:15px;margin-bottom:15px}
+  .tier ul{list-style:none;padding:0;margin:0 0 20px;flex:1}
+  .tier li{position:relative;padding-left:22px;font-size:13.5px;color:var(--lex-t2);margin:9px 0}
+  .tier li::before{content:"✓";position:absolute;left:0;color:var(--lex-ok);font-weight:700}
+  .tier .pick{width:100%;display:block;text-align:center;font-family:inherit;font-weight:600;font-size:13px;padding:11px;border-radius:10px;border:1px solid var(--lex-line-2);background:transparent;color:var(--lex-t1);cursor:pointer}
+  .tier .pick:hover{border-color:var(--lex-blue)}
+  .tier.reco .pick{background:var(--lex-grad);border-color:transparent;color:#fff}
+  .pick:focus-visible,.again:focus-visible,.btn:focus-visible,.fld input:focus-visible,.fld select:focus-visible,.fld textarea:focus-visible{outline:2px solid var(--lex-neon,#4C9BFF);outline-offset:2px}
+  .tiers-note{margin-top:20px;font-family:var(--lex-mono);font-size:12px;color:var(--lex-t3);letter-spacing:.02em}
+
+  /* contratar */
+  #contratar{scroll-margin-top:80px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,4vw,54px);margin-top:38px;align-items:start}
+  @media(max-width:860px){.form-grid{grid-template-columns:1fr}}
+  .form-aside .li{display:flex;gap:14px;align-items:flex-start;margin:18px 0}
+  .form-aside .li .n{flex:none;width:30px;height:30px;border-radius:9px;background:var(--lex-grad-soft);border:1px solid var(--lex-line-2);
+    display:flex;align-items:center;justify-content:center;font-family:var(--lex-mono);font-size:12px;font-weight:700;color:var(--lex-blue)}
+  .form-aside .li h4{margin:0 0 3px;font-size:15px;font-weight:700}
+  .form-aside .li p{color:var(--lex-t2);font-size:13.5px}
+  .card-form{background:linear-gradient(165deg,var(--lex-card),rgba(18,26,43,.45));border:1px solid var(--lex-line-2);border-radius:20px;padding:clamp(22px,3vw,32px)}
+  .fld{margin-bottom:15px}
+  .fld.row{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:0}
+  @media(max-width:440px){.fld.row{grid-template-columns:1fr;gap:0}}
+  .fld label{display:block;font-size:12px;font-weight:600;color:var(--lex-t2);margin-bottom:6px;letter-spacing:.01em}
+  .fld label .req{color:var(--lex-blue)}
+  .fld input,.fld select,.fld textarea{width:100%;background:var(--lex-void);border:1px solid var(--lex-line-2);border-radius:11px;
+    color:var(--lex-t1);font-family:var(--lex-font);font-size:14.5px;padding:12px 14px;outline:none;transition:border-color .15s ease,box-shadow .15s ease}
+  .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--lex-blue);box-shadow:0 0 0 3px rgba(59,134,242,.18)}
+  .fld textarea{resize:vertical;min-height:74px}
+  .fld .hint{font-size:11.5px;color:var(--lex-t3);margin-top:5px}
+  .sub-suffix{position:relative}
+  .sub-suffix input{padding-right:96px}
+  .sub-suffix .sfx{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-family:var(--lex-mono);font-size:12px;color:var(--lex-t3)}
+  .form-cta{width:100%;justify-content:center;padding:15px;font-size:15px;margin-top:8px}
+  .form-legal{font-size:11.5px;color:var(--lex-t3);margin-top:14px;text-align:center;line-height:1.5}
+  .err{border-color:var(--lex-warn)!important}
+  .form-msg{display:none;font-size:13px;color:var(--lex-warn);margin-top:10px;text-align:center}
+
+  /* success */
+  .success{display:none;text-align:center;padding:8px 0}
+  .success .chk{width:64px;height:64px;border-radius:50%;background:var(--lex-grad);display:flex;align-items:center;justify-content:center;
+    margin:0 auto 20px;font-size:30px;color:#fff;box-shadow:0 18px 40px -16px rgba(93,95,234,.9)}
+  .success h3{font-size:24px;font-weight:800;margin-bottom:12px}
+  .success p{color:var(--lex-t2);font-size:15px;max-width:42ch;margin:0 auto 8px}
+  .success .rec{margin-top:22px;background:var(--lex-void);border:1px solid var(--lex-line);border-radius:12px;padding:16px 18px;text-align:left;font-family:var(--lex-mono);font-size:12.5px;color:var(--lex-t2);line-height:1.7;white-space:pre-wrap;word-break:break-word}
+  .success .again{margin-top:18px;font-size:13px;color:var(--lex-blue);cursor:pointer;font-weight:600;display:inline-block;background:none;border:none;font-family:inherit}
+
+  /* footer */
+  footer{border-top:1px solid var(--lex-line);padding:38px 0 60px}
+  .foot{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+  .foot .brand{font-size:16px}.foot .brand .xmark{width:20px;height:20px}
+  .foot .cols{display:flex;gap:26px;font-size:13px;color:var(--lex-t2)}
+  .foot .cols a:hover{color:var(--lex-t1)}
+  .foot-legal{margin-top:22px;font-size:12px;color:var(--lex-t3);line-height:1.6}
+
+  .rv{opacity:0;transform:translateY(16px);transition:opacity .7s ease,transform .7s ease}
+  .rv.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
+</style>
+</head>
+<body>
+
+<!-- SVG sprite: ribbon X mark -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="lexg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B86F2"/><stop offset=".5" stop-color="#5A5FEA"/><stop offset="1" stop-color="#8B3FE8"/>
+    </linearGradient>
+    <symbol id="xmark" viewBox="0 0 64 64">
+      <path d="M55 7 L41 7 L9 57 L23 57 Z" fill="url(#lexg)"/>
+      <path d="M32 32 L40 44 L28 46 Z" fill="#0B1330" opacity=".22"/>
+      <path d="M9 7 L23 7 L55 57 L41 57 Z" fill="url(#lexg)"/>
+      <path d="M9 7 L23 7 L32 21 L18 21 Z" fill="#7FB0FF" opacity=".28"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="wrap topin">
+    <a class="brand" href="#topo" aria-label="LexOS">
+      <svg class="xmark" aria-hidden="true"><use href="#xmark"/></svg>
+      <span><span class="a">Lex</span><span class="b">OS</span></span>
+      <span class="by">por Lex Technology</span>
+    </a>
+    <nav class="mainnav">
+      <a class="navlink" href="#produto">Produto</a>
+      <a class="navlink" href="#planos">Planos</a>
+      <a class="btn pri" href="#contratar">Contratar</a>
+    </nav>
+  </div>
+</header>
+
+<main id="topo">
+
+  <!-- HERO -->
+  <section class="hero" style="border-top:none">
+    <div class="wrap">
+      <svg class="mark-big xmark" style="width:clamp(64px,11vw,104px);height:auto" viewBox="0 0 64 64" aria-hidden="true"><use href="#xmark"/></svg>
+      <div class="eyebrow">Plataforma para oficinas</div>
+      <h1>O <span class="g">sistema operacional</span><br>da oficina.</h1>
+      <p class="sub">Site, app do cliente e gestão — numa plataforma só. A engenharia é nossa: você <b>contrata, personaliza com a sua marca e entra no ar em dias</b>, pagando uma mensalidade.</p>
+      <div class="acts">
+        <a class="btn pri" href="#contratar">Contratar minha oficina</a>
+        <a class="btn ghost" href="lexos-apresentacao.html">Ver apresentação →</a>
+      </div>
+      <div class="trust">Case ao vivo: <b>EUROVIX</b> · site + app + painel rodando de verdade</div>
+    </div>
+  </section>
+
+  <!-- PRODUTO -->
+  <section id="produto">
+    <div class="wrap">
+      <div class="sec-k rv">O produto</div>
+      <h2 class="sec rv">Uma plataforma. Três frentes.</h2>
+      <p class="sec-sub rv">Tudo conversa entre si — a vitrine que atrai, o app que fideliza e o painel que opera. Sem instalar nada, sem servidor pra manter.</p>
+      <div class="trio">
+        <div class="tri rv"><div class="ic">🌐</div><h3>Site + Agendamento</h3><div class="role">A vitrine</div><p>Presença premium com a sua marca e agendamento online 24h. O cliente marca sozinho.</p></div>
+        <div class="tri spot rv"><div class="ic">📲</div><h3>App do cliente</h3><div class="role">A fidelização</div><p>Garagem, acompanhamento em tempo real e aprovação item a item. O diferencial que ninguém no bairro tem.</p></div>
+        <div class="tri rv"><div class="ic">🔧</div><h3>Painel LexOS</h3><div class="role">A operação</div><p>Do check-in ao checkout: ordens de serviço, fotos, PDFs e equipe. A oficina inteira numa tela.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMO FUNCIONA -->
+  <section>
+    <div class="wrap">
+      <div class="sec-k rv">Ativação</div>
+      <h2 class="sec rv">Da conversa ao ar em dias.</h2>
+      <p class="sec-sub rv">Você não constrói nada. A plataforma já existe — a gente conecta e personaliza com a sua marca.</p>
+      <div class="steps">
+        <div class="st rv"><span class="t">30 min</span><h3>Conecta</h3><p>Entendemos seus serviços, preços e ativamos o ambiente.</p></div>
+        <div class="st rv"><span class="t">2–4 dias</span><h3>Personaliza</h3><p>Sua logo, cores, catálogo e domínio. A cara é toda sua.</p></div>
+        <div class="st rv"><span class="t">1 h</span><h3>Treina</h3><p>Uma hora com a equipe no painel e no app.</p></div>
+        <div class="st rv"><span class="t">no ar</span><h3>Publica</h3><p>Site no ar, app disponível, primeiro check-in gerando acesso.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLANOS -->
+  <section id="planos">
+    <div class="wrap">
+      <div class="sec-k rv">Planos</div>
+      <h2 class="sec rv">Escolha pelo tamanho da operação.</h2>
+      <div class="tiers">
+        <div class="tier rv"><div class="nm">Conecta</div><div class="pr">R$ 297<small>/mês</small></div><div class="su">Ativação R$ 890 · isenta no anual</div>
+          <ul><li>Site personalizado</li><li>Agendamento online</li><li>Painel LexOS completo</li><li>PDFs (termo/prontuário)</li></ul>
+          <button type="button" class="pick" data-plan="Conecta">Contratar Conecta</button></div>
+        <div class="tier reco rv"><div class="rb">MAIS ESCOLHIDO</div><div class="nm">Digital</div><div class="pr">R$ 597<small>/mês</small></div><div class="su">Ativação R$ 1.490 · isenta no anual</div>
+          <ul><li>Tudo do Conecta</li><li>App do cliente (PWA)</li><li>Garagem + tempo real</li><li>Aprovação item a item</li></ul>
+          <button type="button" class="pick" data-plan="Digital">Contratar Digital</button></div>
+        <div class="tier rv"><div class="nm">Marca própria</div><div class="pr">R$ 1.190<small>/mês</small></div><div class="su">Ativação R$ 2.900</div>
+          <ul><li>Tudo do Digital</li><li>Domínio próprio</li><li>Multi-unidade</li><li>Suporte prioritário</li></ul>
+          <button type="button" class="pick" data-plan="Marca própria">Contratar Marca própria</button></div>
+      </div>
+      <p class="tiers-note rv">Sem fidelidade · Plano anual com 2 meses grátis · Valores de referência, ajustáveis por porte.</p>
+    </div>
+  </section>
+
+  <!-- CONTRATAR -->
+  <section id="contratar">
+    <div class="wrap">
+      <div class="sec-k rv">Contratar</div>
+      <h2 class="sec rv">Vamos ligar a sua oficina.</h2>
+      <p class="sec-sub rv">Preencha os dados abaixo. Um consultor Lex confirma tudo e ativa o seu ambiente — daí pra frente, a operação é sua.</p>
+
+      <div class="form-grid">
+        <div class="form-aside rv">
+          <div class="li"><div class="n">1</div><div><h4>Você envia os dados</h4><p>Nome da oficina, contato e o plano que faz sentido.</p></div></div>
+          <div class="li"><div class="n">2</div><div><h4>A gente ativa</h4><p>Personalizamos com a sua marca e publicamos site, app e painel.</p></div></div>
+          <div class="li"><div class="n">3</div><div><h4>A oficina é sua</h4><p>Você opera no painel; seus clientes usam o app. Suporte quando precisar.</p></div></div>
+          <div class="li"><div class="n">✓</div><div><h4>Sem risco</h4><p>Sem fidelidade, sem taxa de servidor, seus dados sempre exportáveis.</p></div></div>
+        </div>
+
+        <div class="card-form rv">
+          <form id="leadForm" novalidate>
+            <div class="fld">
+              <label for="f-oficina">Nome da oficina <span class="req">*</span></label>
+              <input id="f-oficina" name="oficina" type="text" autocomplete="organization" placeholder="Ex.: EUROVIX Performance">
+            </div>
+            <div class="fld">
+              <label for="f-resp">Responsável <span class="req">*</span></label>
+              <input id="f-resp" name="responsavel" type="text" autocomplete="name" placeholder="Seu nome">
+            </div>
+            <div class="fld row">
+              <div class="fld">
+                <label for="f-wpp">WhatsApp <span class="req">*</span></label>
+                <input id="f-wpp" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="(27) 9 9999-9999">
+              </div>
+              <div class="fld">
+                <label for="f-email">E-mail <span class="req">*</span></label>
+                <input id="f-email" name="email" type="email" autocomplete="email" placeholder="voce@oficina.com.br">
+              </div>
+            </div>
+            <div class="fld row">
+              <div class="fld">
+                <label for="f-cidade">Cidade / UF</label>
+                <input id="f-cidade" name="cidade" type="text" placeholder="Vitória / ES">
+              </div>
+              <div class="fld">
+                <label for="f-plano">Plano</label>
+                <select id="f-plano" name="plano">
+                  <option value="Não sei ainda">Não sei ainda — me orientem</option>
+                  <option value="Conecta">Conecta · R$ 297/mês</option>
+                  <option value="Digital" selected>Digital · R$ 597/mês</option>
+                  <option value="Marca própria">Marca própria · R$ 1.190/mês</option>
+                </select>
+              </div>
+            </div>
+            <div class="fld row">
+              <div class="fld">
+                <label for="f-unid">Unidades</label>
+                <select id="f-unid" name="unidades">
+                  <option>1</option><option>2</option><option>3</option><option>4+</option>
+                </select>
+              </div>
+              <div class="fld">
+                <label for="f-sub">Subdomínio desejado</label>
+                <div class="sub-suffix">
+                  <input id="f-sub" name="subdominio" type="text" placeholder="minhaoficina" autocapitalize="none" autocomplete="off">
+                  <span class="sfx">.lexos.app</span>
+                </div>
+              </div>
+            </div>
+            <div class="fld">
+              <label for="f-obs">Observações</label>
+              <textarea id="f-obs" name="observacoes" placeholder="Nº de mecânicos, sistema atual, o que mais te incomoda hoje…"></textarea>
+            </div>
+            <button type="submit" class="btn pri form-cta">Enviar e falar com um consultor</button>
+            <div class="form-msg" id="formMsg">Preencha os campos obrigatórios (*) corretamente.</div>
+            <p class="form-legal">Ao enviar, você concorda em ser contatado pela Lex Technology sobre a ativação. Sem spam.</p>
+          </form>
+
+          <div class="success" id="success">
+            <div class="chk">✓</div>
+            <h3>Recebemos, <span id="okName">tudo certo</span>!</h3>
+            <p>Um consultor Lex vai confirmar os dados e ativar a sua oficina. Se o WhatsApp abrir, é só enviar a mensagem já preenchida.</p>
+            <div class="rec" id="okRec"></div>
+            <button type="button" class="again" id="again">Enviar outro cadastro</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <a class="brand" href="#topo" aria-label="LexOS">
+        <svg class="xmark" aria-hidden="true"><use href="#xmark"/></svg>
+        <span><span class="a">Lex</span><span class="b">OS</span></span>
+      </a>
+      <div class="cols">
+        <a href="#produto">Produto</a>
+        <a href="#planos">Planos</a>
+        <a href="lexos-apresentacao.html">Apresentação</a>
+        <a href="#contratar">Contratar</a>
+      </div>
+    </div>
+    <p class="foot-legal">LexOS™ é um produto Lex Technology · família LEX AI · LEX CLOUD · LEX PAY · LEX OS.<br>
+      Valores de referência para o mercado brasileiro de oficinas (2026), posicionamento premium — ajustáveis por porte e nº de unidades.</p>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    'use strict';
+    // ==== CONFIG (preencher com os dados reais da Lex) ====
+    var LEX_WA = '55XXXXXXXXXXX';               // WhatsApp comercial (só dígitos, com DDI 55). Placeholder.
+    var LEX_MAIL = 'contato@lextechnology.com.br';
+
+    // reveal
+    var rv = document.querySelectorAll('.rv');
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
+      rv.forEach(function(e){io.observe(e);});
+    } else { rv.forEach(function(e){e.classList.add('in');}); }
+
+    var form = document.getElementById('leadForm');
+    var msg = document.getElementById('formMsg');
+    var $ = function(id){return document.getElementById(id);};
+
+    // plano quick-pick nos cards
+    document.querySelectorAll('.pick').forEach(function(b){
+      b.addEventListener('click', function(){
+        var v = b.getAttribute('data-plan');
+        var sel = $('f-plano');
+        for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===v){ sel.selectedIndex=i; break; } }
+        document.getElementById('contratar').scrollIntoView({behavior:'smooth'});
+        setTimeout(function(){ $('f-oficina').focus(); }, 500);
+      });
+    });
+
+    function clearErr(){ ['f-oficina','f-resp','f-wpp','f-email'].forEach(function(id){$(id).classList.remove('err');}); msg.style.display='none'; }
+    function digits(s){ return (s||'').replace(/\D/g,''); }
+    function validEmail(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
+
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      clearErr();
+      var d = {
+        oficina:$('f-oficina').value.trim(),
+        responsavel:$('f-resp').value.trim(),
+        whatsapp:$('f-wpp').value.trim(),
+        email:$('f-email').value.trim(),
+        cidade:$('f-cidade').value.trim(),
+        plano:$('f-plano').value,
+        unidades:$('f-unid').value,
+        subdominio:$('f-sub').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,''),
+        observacoes:$('f-obs').value.trim()
+      };
+      var bad=false;
+      if(!d.oficina){ $('f-oficina').classList.add('err'); bad=true; }
+      if(!d.responsavel){ $('f-resp').classList.add('err'); bad=true; }
+      if(digits(d.whatsapp).length<10){ $('f-wpp').classList.add('err'); bad=true; }
+      if(!validEmail(d.email)){ $('f-email').classList.add('err'); bad=true; }
+      if(bad){ msg.style.display='block'; return; }
+
+      // persiste localmente (nada se perde mesmo sem backend)
+      try{
+        var key='evx.lexos.leads';
+        var list=JSON.parse(localStorage.getItem(key)||'[]');
+        d.em = new Date().toISOString();
+        list.push(d);
+        localStorage.setItem(key, JSON.stringify(list));
+      }catch(_){}
+
+      // resumo legível (também é o corpo do WhatsApp)
+      var linhas = [
+        'Novo cadastro LexOS',
+        '— Oficina: '+d.oficina,
+        '— Responsável: '+d.responsavel,
+        '— WhatsApp: '+d.whatsapp,
+        '— E-mail: '+d.email,
+        d.cidade ? '— Cidade/UF: '+d.cidade : null,
+        '— Plano: '+d.plano+' · Unidades: '+d.unidades,
+        d.subdominio ? '— Subdomínio: '+d.subdominio+'.lexos.app' : null,
+        d.observacoes ? '— Obs.: '+d.observacoes : null
+      ].filter(Boolean);
+      var resumo = linhas.join('\n');
+
+      // handoff por WhatsApp se o número estiver configurado
+      var waConfigured = /^\d{12,13}$/.test(LEX_WA);
+      if(waConfigured){
+        var waUrl='https://wa.me/'+LEX_WA+'?text='+encodeURIComponent(resumo);
+        window.open(waUrl,'_blank','noopener');
+      }
+
+      // estado de sucesso
+      $('okName').textContent = d.responsavel.split(' ')[0] || 'tudo certo';
+      $('okRec').textContent = resumo + (waConfigured ? '' : '\n\n(Envie este resumo para '+LEX_MAIL+')');
+      form.style.display='none';
+      $('success').style.display='block';
+      $('success').scrollIntoView({behavior:'smooth',block:'center'});
+    });
+
+    $('again').addEventListener('click', function(){
+      form.reset(); form.style.display='block';
+      document.getElementById('success').style.display='none';
+      document.getElementById('contratar').scrollIntoView({behavior:'smooth'});
+    });
+  })();
+</script>
+</body>
+</html>
