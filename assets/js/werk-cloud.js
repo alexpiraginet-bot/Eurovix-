@@ -88,6 +88,7 @@
   let user = null;        // usuário Supabase Auth atual (síncrono p/ a UI)
   let isStaff = false;    // detectado na hidratação (linhas visíveis em `staff`)
   let meuPapel = null;    // papel do usuário atual na equipe (admin/gestor/…)
+  let oficinaId = null;   // multi-tenant: uuid da oficina do staff (null = banco single-tenant, anon ou cliente)
   let conviteBuf = null;  // resposta de convite_info p/ garagemDe na tela de cadastro
 
   const sortOS = () => mirror.os.sort((a, b) => new Date(b.criada) - new Date(a.criada)); // paridade com unshift local
@@ -231,17 +232,37 @@
     } catch (e) { falha(`hidratação ${tabela}`, e); return null; }
   };
 
+  /* multi-tenant (MULTI-TENANT.sql): minha_oficina() devolve a oficina do STAFF
+     autenticado. Banco antigo (função inexistente — 42883/PGRST202/404), anon ou
+     cliente comum ⇒ null = modo legado (escritas idênticas às de hoje). NUNCA
+     lança nem bloqueia a hidratação; re-roda a cada hydrate (boot, troca de auth,
+     loginStaff). Erro de REDE preserva o modo já detectado — offline não rebaixa
+     um staff multi-tenant para escritas legadas que falhariam no banco novo. */
+  const detectOficina = async () => {
+    try {
+      const { data, error } = await sb.rpc('minha_oficina');
+      if (error) {
+        if (isNetErr(error)) return oficinaId;
+        console.debug('[EVX cloud] minha_oficina() indisponível — modo single-tenant', (error && error.message) || '');
+        return null;
+      }
+      return (typeof data === 'string' && data) ? data : null;
+    } catch (e) { return isNetErr(e) ? oficinaId : null; }
+  };
+
   let hydEpoch = 0; // logout invalida hidratações em curso (nada de dado alheio reaparecer)
   const doHydrate = async () => {
     const epoch = hydEpoch;
-    const [ordens, veiculos, clientes, cfg, staff] = await Promise.all([
+    const [ordens, veiculos, clientes, cfg, staff, ofi] = await Promise.all([
       sel('ordens', (q) => q.order('criada', { ascending: false })),
       sel('veiculos'),
       sel('clientes'),   // cliente comum: RLS entrega só a própria linha; anon: nada
       sel('config'),     // staff-only: cliente/anon recebem vazio — tolerado
       sel('staff'),      // detecção de papel: staff enxerga a própria tabela, cliente não
+      detectOficina(),   // multi-tenant: null = modo legado (banco antigo, anon ou cliente)
     ]);
     if (epoch !== hydEpoch) return; // logout aconteceu no meio: descarta este resultado
+    oficinaId = ofi;
     if (ordens) mirror.os = ordens.map(fromDbOrdem);
     if (veiculos) mirror.vehicles = veiculos.map(fromDbVeiculo);
     if (clientes) mirror.clients = clientes.map(fromDbCliente);
@@ -450,7 +471,9 @@
     emit();
     const corpo = toDbVeiculo(merged);
     enqueue(`veiculo:${v.vin}`, async () => {
-      const { error } = await sb.from('veiculos').upsert(corpo, { onConflict: 'vin' });
+      const { error } = oficinaId // multi-tenant: carimba a oficina — a PK/conflito vira (oficina_id, vin)
+        ? await sb.from('veiculos').upsert({ ...corpo, oficina_id: oficinaId }, { onConflict: 'oficina_id,vin' })
+        : await sb.from('veiculos').upsert(corpo, { onConflict: 'vin' });
       if (error) return falha(`upsertVehicle ${v.vin}`, error);
       setOnline(true);
     });
@@ -487,8 +510,10 @@
         Object.assign(cur, fromDbCliente((up && up[0]) || rows[0]));
         emit();
       } else {
+        const novo = { telefone_norm: tel, telefone: cur.telefone, nome: cur.nome, desde: cur.desde || new Date().getFullYear(), convite: cur.convite };
+        if (oficinaId) novo.oficina_id = oficinaId; // multi-tenant: o with check do INSERT exige a oficina
         const { data: nrow, error: e3 } = await sb.from('clientes')
-          .insert({ telefone_norm: tel, telefone: cur.telefone, nome: cur.nome, desde: cur.desde || new Date().getFullYear(), convite: cur.convite })
+          .insert(novo)
           .select().single();
         if (e3) {
           if (e3.code === '23505') { // corrida: outro check-in inseriu primeiro — adota a linha do banco
@@ -508,7 +533,9 @@
     mirror.config = cfg;
     emit();
     enqueue('config', async () => {
-      const { error } = await sb.from('config').upsert({ id: 1, data: cfg });
+      const { error } = oficinaId // multi-tenant: 1 linha POR oficina — PK/conflito em oficina_id
+        ? await sb.from('config').upsert({ oficina_id: oficinaId, data: cfg }, { onConflict: 'oficina_id' })
+        : await sb.from('config').upsert({ id: 1, data: cfg });
       if (error) return falha('saveConfig', error);
       setOnline(true);
     });
@@ -523,6 +550,7 @@
       if (antes.get(os.numero) === JSON.stringify(os)) return; // linha idêntica: não sobe
       const corpo = clone(toDbInsert(os));
       enqueue(`os:${os.numero}`, async () => {
+        if (oficinaId) corpo.oficina_id = oficinaId; // multi-tenant: o with check do INSERT exige a oficina (numero segue PK global)
         const { data, error } = await sb.from('ordens').upsert(corpo, { onConflict: 'numero' }).select();
         if (error) return falha(`saveAllOS #${os.numero}`, error);
         setOnline(true);
@@ -563,7 +591,9 @@
         eventos: [{ ts: new Date().toISOString(), tipo: 'abertura', titulo: 'OS aberta', desc: 'Check-in digital concluído', ator: dados.ator || 'Recepção' }],
         versao: 0,
       };
-      const { data: row, error: e2 } = await sb.from('ordens').insert(toDbInsert(os)).select().single();
+      const corpo = toDbInsert(os);
+      if (oficinaId) corpo.oficina_id = oficinaId; // multi-tenant: o with check do INSERT exige a oficina
+      const { data: row, error: e2 } = await sb.from('ordens').insert(corpo).select().single();
       if (e2) { falha(`novaOS: insert #${os.numero}`, e2); return null; }
       setOnline(true);
       os.versao = (row && row.versao) || 0;
@@ -783,7 +813,7 @@
     hydEpoch++; // hidratações em curso (com o token antigo) são descartadas ao resolver
     try { await sb.auth.signOut(); } catch (e) { warn('logoutAuth', e); }
     mirror.os = []; mirror.vehicles = []; mirror.clients = []; mirror.config = null;
-    isStaff = false; meuPapel = null;
+    isStaff = false; meuPapel = null; oficinaId = null;
     try { [K.os, K.vehicles, K.clients, K.config].forEach((k) => localStorage.removeItem(k)); } catch (e) { /* noop */ }
     ping(); // nada de dado alheio fica no aparelho após sair
   };
@@ -907,6 +937,7 @@
     staffListar, staffCriar, staffEditar, staffRemover, mudarMinhaSenha,
     /* — estado — */
     authUser: () => user,
+    minhaOficina: () => oficinaId, // multi-tenant: oficina do staff atual (null em modo legado/cliente/anon)
     cloud: true,
     get online() { return online; },
   };
