@@ -659,14 +659,15 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
   }
 
   /* ============================================================
-     8 · IA de check-in — análise assistida + consulta de placa
+     8 · IA de check-in — visão real das fotos + consulta de placa
      ------------------------------------------------------------
-     HOJE roda em modo ASSISTIDO (heurística determinística pelo
-     conteúdo do check-in) para demonstrar o fluxo sem custo/latência.
-     AMANHÃ: trocar o corpo de analisarFotos por uma chamada à função
-     serverless de visão (Claude), mantendo o MESMO formato de retorno.
-     A consulta de placa já tenta a API real (/api/placa) e cai para a
-     base local. [API: visão computacional · consulta de placa BR]
+     analisarFotos() tenta a VISÃO REAL na função serverless
+     /api/analisar-fotos (usa a ANTHROPIC_API_KEY configurada na
+     Vercel) e cai no modo ASSISTIDO (heurística determinística) se a
+     chave/endpoint não estiver disponível — mesmo formato de retorno,
+     nada quebra na demo local. A consulta de placa segue o mesmo
+     padrão: tenta a API real (/api/placa) e cai para a base local.
+     [API: visão computacional · consulta de placa BR]
      ============================================================ */
   const CHECKLIST_ITENS = ['Documento (CRLV)', 'Chave reserva', 'Triângulo', 'Macaco/chave de roda', 'Estepe/kit reparo', 'Tapetes originais'];
   const AVARIAS_POOL = [
@@ -680,8 +681,8 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
 
   function _hash(str) { let h = 2166136261 >>> 0; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h; }
 
-  // Análise assistida das fotos do check-in.
-  async function analisarFotos(fotos, ctx) {
+  // Análise assistida das fotos (fallback determinístico, sem custo/latência).
+  function _analisarAssistida(fotos, ctx) {
     ctx = ctx || {};
     const n = Object.keys(fotos || {}).length;
     const h = _hash((ctx.vin || ctx.placa || 'EVX') + ':' + n);
@@ -695,12 +696,32 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     if (h % 7 === 0) faltando.push(4);               // estepe/kit
     const itens = CHECKLIST_ITENS.map((_, i) => !faltando.includes(i));
     return {
-      modo: 'assistida',                             // vira 'ia' quando a visão real estiver ligada
+      modo: 'assistida',                             // 'ia' quando a visão real responde
       km: kmAtual, combustivel, luzes, avarias, itens,
       itensFaltantes: faltando.map(i => CHECKLIST_ITENS[i]),
       confianca: 0.72 + (h % 18) / 100,
       fotosAnalisadas: n,
     };
+  }
+
+  // Lê as fotos do check-in. Tenta a visão REAL (função serverless
+  // /api/analisar-fotos, que usa a ANTHROPIC_API_KEY do servidor) e cai
+  // no modo assistido se a chave/endpoint não estiver disponível (demo
+  // local em file://, deploy sem a variável, offline). Mesmo formato.
+  async function analisarFotos(fotos, ctx) {
+    ctx = ctx || {};
+    try {
+      const r = await fetch('/api/analisar-fotos', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ fotos, ctx }),
+      });
+      if (r.ok) {
+        const d = await r.json();
+        if (d && d.ok) return d;                     // { modo:'ia', km, combustivel, luzes, avarias, itens, itensFaltantes, confianca, fotosAnalisadas }
+      }
+    } catch (_) { /* sem endpoint / offline / file:// → modo assistido */ }
+    return _analisarAssistida(fotos, ctx);
   }
 
   // Base local mínima de placas-demo (além dos veículos já cadastrados).
