@@ -358,3 +358,32 @@ html[data-theme="light"] .kcard:hover{border-color:var(--red-border)}
   .kpis{gap:8px}
   .board-q{max-width:none}
 }
+
+/* ---------- IA de check-in (leitura de fotos + consulta de placa) ---------- */
+.ck-ai-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:12px;
+  font-family:var(--font-display);font-size:12.5px;font-weight:600;letter-spacing:.01em;
+  padding:11px 14px;border-radius:11px;cursor:pointer;
+  background:rgba(255,255,255,.03);border:1px solid var(--line);color:var(--txt);
+  transition:border-color .15s ease,background .15s ease,filter .15s ease}
+.ck-ai-btn:hover{border-color:var(--red-border);background:var(--red-soft);color:#FF8B7D}
+.ck-ai-btn.primary{background:linear-gradient(180deg,#E5484D,#C2333A);border-color:transparent;color:#fff}
+.ck-ai-btn.primary:hover{filter:brightness(1.07);color:#fff}
+.ck-ai-btn:disabled,.ck-ai-btn.loading{opacity:.6;cursor:progress}
+.ck-ai-btn svg{flex:none}
+
+.ck-ia-panel{border-color:var(--red-border);box-shadow:0 0 0 1px rgba(229,72,77,.12) inset}
+.ck-ia-panel h3{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ck-ia-badge{font-family:ui-monospace,'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:#FF8B7D;background:var(--red-soft);border:1px solid var(--red-border);border-radius:20px;padding:3px 10px;font-weight:700}
+.ck-ia-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:10px}
+.ck-ia-cell{background:var(--card);padding:11px 13px;display:flex;flex-direction:column;gap:3px}
+.ck-ia-cell .k{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-3)}
+.ck-ia-cell .v{font-size:14px;font-weight:600;color:var(--txt)}
+.ck-ia-note{font-size:11.5px;color:var(--txt-2);margin:12px 0 4px}
+.ck-ia-note b{color:var(--txt)}
+.ck-ia-orc{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:7px}
+.ck-ia-orc .orc-row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:13px}
+.ck-ia-orc .orc-row small{display:block;font-size:10.5px;color:var(--txt-3)}
+.ck-ia-orc .orc-row b{font-family:ui-monospace,'JetBrains Mono',monospace;color:var(--txt);white-space:nowrap}
+.ck-ia-orc .orc-foot{font-size:10.5px;color:var(--txt-3);margin-top:2px}

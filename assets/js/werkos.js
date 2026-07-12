@@ -290,6 +290,7 @@
             <div class="wfield">
               <label>Placa</label>
               <input id="ck-placa" maxlength="8" placeholder="ABC-1D23" style="text-transform:uppercase" value="${ck.placa || ''}">
+              <button type="button" class="ck-ai-btn" id="ckPlaca">${I('scan', 15)} Ler placa &amp; puxar dados do veículo</button>
             </div>
           </div>
           <div id="vinDecoded" style="margin-top:12px"></div>
@@ -328,6 +329,19 @@
           </div>`;
       };
       vinInput.addEventListener('input', checkVin); checkVin();
+      $('#ckPlaca').addEventListener('click', async () => {
+        const btn = $('#ckPlaca'); const placaVal = $('#ck-placa').value;
+        if (!WERK.normPlaca(placaVal)) { toast('Placa', 'Digite a placa primeiro.'); return; }
+        btn.disabled = true; btn.classList.add('loading'); const orig = btn.innerHTML; btn.textContent = 'Consultando…';
+        try {
+          const r = await WERK.consultarPlaca(placaVal);
+          if (!r.ok) { toast('Placa não encontrada', r.erro); return; }
+          $('#ck-placa').value = r.placa;
+          if (r.vin) { vinInput.value = r.vin; checkVin(); }
+          const fonteTxt = r.fonte === 'api' ? 'consulta oficial' : r.fonte === 'garagem' ? 'já na garagem' : 'base demo';
+          toast('Veículo identificado', `${r.modelo || 'Veículo'}${r.anoModelo ? ' · ' + r.anoModelo : ''} · ${fonteTxt}`);
+        } finally { btn.disabled = false; btn.classList.remove('loading'); btn.innerHTML = orig; }
+      });
       $('#ckNext1').addEventListener('click', () => {
         const v = WERK.validateVIN(vinInput.value);
         if (!v.ok) { hint.className = 'hintline err'; hint.textContent = '✗ ' + (v.motivo || 'VIN inválido'); vinInput.focus(); return; }
@@ -362,7 +376,7 @@
         </div>
         <div class="wk-grid2">
           <div class="wk-panel">
-            <h3>${I('car')} Tour fotográfico 360° <span style="font-size:10px;color:var(--txt-3)">(mín. 4 fotos — IA marca danos na Fase 3)</span></h3>
+            <h3>${I('car')} Tour fotográfico 360° <span style="font-size:10px;color:var(--txt-3)">(mín. 4 fotos)</span></h3>
             <div class="media-grid" id="fotoGrid">
               ${FOTO_SLOTS.map((s, i) => `
                 <label class="media-slot ${ck.fotos[i] ? 'filled' : ''}" data-i="${i}">
@@ -370,6 +384,7 @@
                   <input type="file" accept="image/*" capture="environment" hidden>
                 </label>`).join('')}
             </div>
+            <button type="button" class="ck-ai-btn primary" id="ckAnalisar">${I('scan', 15)} Analisar fotos com IA — km, combustível, luzes e avarias</button>
           </div>
           <div class="wk-panel">
             <h3>${I('alert')} Danos preexistentes <span style="font-size:10px;color:var(--txt-3)">— toque na silhueta para marcar</span></h3>
@@ -388,6 +403,21 @@
             </div>
           </div>
         </div>
+        ${ck.iaResumo ? `
+        <div class="wk-panel ck-ia-panel">
+          <h3>${I('gauge')} Leitura da IA
+            <span class="ck-ia-badge">${ck.iaResumo.modo === 'assistida' ? 'assistida' : 'IA'} · ${Math.round(ck.iaResumo.confianca * 100)}% confiança</span></h3>
+          <div class="ck-ia-grid">
+            <div class="ck-ia-cell"><span class="k">Odômetro</span><span class="v">${Number(ck.iaResumo.km).toLocaleString('pt-BR')} km</span></div>
+            <div class="ck-ia-cell"><span class="k">Combustível</span><span class="v">${ck.iaResumo.combustivel}%</span></div>
+            <div class="ck-ia-cell"><span class="k">Luzes de alerta</span><span class="v">${ck.iaResumo.luzes.length ? ck.iaResumo.luzes.join(', ') : 'nenhuma'}</span></div>
+            <div class="ck-ia-cell"><span class="k">Avarias marcadas</span><span class="v">${ck.iaResumo.avarias.length}</span></div>
+            <div class="ck-ia-cell"><span class="k">Itens faltando</span><span class="v">${ck.iaResumo.itensFaltantes.length ? ck.iaResumo.itensFaltantes.join(', ') : 'nenhum'}</span></div>
+          </div>
+          <p class="ck-ia-note">Campos pré-preenchidos acima — <b>revise e ajuste</b> antes de continuar. A IA marcou ${ck.iaResumo.avarias.length} avaria(s) na silhueta.</p>
+          <button type="button" class="ck-ai-btn" id="ckSugerir">Sugerir orçamento a partir dos sinais</button>
+          ${ck.iaOrcamento ? `<div class="ck-ia-orc">${ck.iaOrcamento.map(o => `<div class="orc-row"><span>${o.descricao} <small>${o.motivo}</small></span><b>${WERK.brl(o.preco)}</b></div>`).join('')}<div class="orc-foot">Sugestões — o consultor confirma o que entra na OS.</div></div>` : ''}
+        </div>` : ''}
         <div class="wk-actions" style="justify-content:space-between">
           <button class="btn btn-secondary" id="ckBack2">← Voltar</button>
           <button class="btn btn-primary" id="ckNext2">Continuar → Assinatura</button>
@@ -414,6 +444,25 @@
       body.addEventListener('click', e => {
         const del = e.target.dataset && e.target.dataset.del;
         if (del != null && e.target.tagName === 'BUTTON') { ck.danos.splice(+del, 1); snap2(); renderCheckin(); }
+      });
+      $('#ckAnalisar').addEventListener('click', async () => {
+        if (Object.keys(ck.fotos).length < 1) { toast('Sem fotos', 'Anexe ao menos uma foto do tour para a IA analisar.'); return; }
+        snap2();
+        const btn = $('#ckAnalisar'); btn.disabled = true; btn.classList.add('loading'); const orig = btn.innerHTML; btn.textContent = 'Analisando fotos…';
+        try {
+          const a = await WERK.analisarFotos(ck.fotos, { vin: ck.vin, placa: ck.placa, km: ck.odometro });
+          ck.odometro = a.km; ck.combustivel = a.combustivel; ck.luzes = a.luzes; ck.itens = a.itens;
+          ck.danos = ck.danos.filter(d => !d.ia);                 // re-análise substitui só as avarias da IA
+          a.avarias.forEach(av => ck.danos.push({ x: av.x, y: av.y, nota: av.nota, ia: true }));
+          ck.iaResumo = a; ck.iaOrcamento = null;
+        } catch (_) { toast('IA', 'Não foi possível analisar agora. Tente de novo.'); btn.disabled = false; btn.innerHTML = orig; return; }
+        renderCheckin();
+      });
+      const sug = $('#ckSugerir');
+      if (sug) sug.addEventListener('click', () => {
+        snap2();
+        ck.iaOrcamento = WERK.sugerirOrcamento({ luzes: ck.luzes, sintoma: ck.sintoma }, ck.decoded && ck.decoded.familia, null);
+        renderCheckin();
       });
       function snap2() {
         ck.odometro = $('#ck-odo') ? $('#ck-odo').value : ck.odometro;
