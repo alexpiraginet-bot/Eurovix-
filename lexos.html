@@ -97,8 +97,10 @@
   .tier ul{list-style:none;padding:0;margin:0 0 20px;flex:1}
   .tier li{position:relative;padding-left:22px;font-size:13.5px;color:var(--lex-t2);margin:9px 0}
   .tier li::before{content:"✓";position:absolute;left:0;color:var(--lex-ok);font-weight:700}
-  .tier .pick{text-align:center;font-weight:600;font-size:13px;padding:11px;border-radius:10px;border:1px solid var(--lex-line-2);color:var(--lex-t1);cursor:pointer}
+  .tier .pick{width:100%;display:block;text-align:center;font-family:inherit;font-weight:600;font-size:13px;padding:11px;border-radius:10px;border:1px solid var(--lex-line-2);background:transparent;color:var(--lex-t1);cursor:pointer}
+  .tier .pick:hover{border-color:var(--lex-blue)}
   .tier.reco .pick{background:var(--lex-grad);border-color:transparent;color:#fff}
+  .pick:focus-visible,.again:focus-visible,.btn:focus-visible,.fld input:focus-visible,.fld select:focus-visible,.fld textarea:focus-visible{outline:2px solid var(--lex-neon,#4C9BFF);outline-offset:2px}
   .tiers-note{margin-top:20px;font-family:var(--lex-mono);font-size:12px;color:var(--lex-t3);letter-spacing:.02em}
 
   /* contratar */
@@ -136,7 +138,7 @@
   .success h3{font-size:24px;font-weight:800;margin-bottom:12px}
   .success p{color:var(--lex-t2);font-size:15px;max-width:42ch;margin:0 auto 8px}
   .success .rec{margin-top:22px;background:var(--lex-void);border:1px solid var(--lex-line);border-radius:12px;padding:16px 18px;text-align:left;font-family:var(--lex-mono);font-size:12.5px;color:var(--lex-t2);line-height:1.7;white-space:pre-wrap;word-break:break-word}
-  .success .again{margin-top:18px;font-size:13px;color:var(--lex-blue);cursor:pointer;font-weight:600;display:inline-block}
+  .success .again{margin-top:18px;font-size:13px;color:var(--lex-blue);cursor:pointer;font-weight:600;display:inline-block;background:none;border:none;font-family:inherit}
 
   /* footer */
   footer{border-top:1px solid var(--lex-line);padding:38px 0 60px}
@@ -237,13 +239,13 @@
       <div class="tiers">
         <div class="tier rv"><div class="nm">Conecta</div><div class="pr">R$ 297<small>/mês</small></div><div class="su">Ativação R$ 890 · isenta no anual</div>
           <ul><li>Site personalizado</li><li>Agendamento online</li><li>Painel LexOS completo</li><li>PDFs (termo/prontuário)</li></ul>
-          <div class="pick" data-plan="Conecta">Contratar Conecta</div></div>
+          <button type="button" class="pick" data-plan="Conecta">Contratar Conecta</button></div>
         <div class="tier reco rv"><div class="rb">MAIS ESCOLHIDO</div><div class="nm">Digital</div><div class="pr">R$ 597<small>/mês</small></div><div class="su">Ativação R$ 1.490 · isenta no anual</div>
           <ul><li>Tudo do Conecta</li><li>App do cliente (PWA)</li><li>Garagem + tempo real</li><li>Aprovação item a item</li></ul>
-          <div class="pick" data-plan="Digital">Contratar Digital</div></div>
+          <button type="button" class="pick" data-plan="Digital">Contratar Digital</button></div>
         <div class="tier rv"><div class="nm">Marca própria</div><div class="pr">R$ 1.190<small>/mês</small></div><div class="su">Ativação R$ 2.900</div>
           <ul><li>Tudo do Digital</li><li>Domínio próprio</li><li>Multi-unidade</li><li>Suporte prioritário</li></ul>
-          <div class="pick" data-plan="Marca própria">Contratar Marca própria</div></div>
+          <button type="button" class="pick" data-plan="Marca própria">Contratar Marca própria</button></div>
       </div>
       <p class="tiers-note rv">Sem fidelidade · Plano anual com 2 meses grátis · Valores de referência, ajustáveis por porte.</p>
     </div>
@@ -328,7 +330,7 @@
             <h3>Recebemos, <span id="okName">tudo certo</span>!</h3>
             <p>Um consultor Lex vai confirmar os dados e ativar a sua oficina. Se o WhatsApp abrir, é só enviar a mensagem já preenchida.</p>
             <div class="rec" id="okRec"></div>
-            <span class="again" id="again">Enviar outro cadastro</span>
+            <button type="button" class="again" id="again">Enviar outro cadastro</button>
           </div>
         </div>
       </div>
