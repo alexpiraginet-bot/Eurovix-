@@ -172,6 +172,17 @@ body.app-body{
 .hcard.w .hbar i{background:var(--warn)}
 .hcard.d .hbar i{background:var(--danger)}
 
+/* Visão 3D — alternador: inspeção DVI (twin) ⇄ modelo BMW real */
+.d3-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.d3-tabs{display:flex;gap:6px;padding:10px 11px 2px}
+.d3-tab{flex:1;padding:8px 6px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink-3);cursor:pointer;transition:all .18s}
+.d3-tab:hover{border-color:var(--line-strong);color:var(--ink-2)}
+.d3-tab.on{background:var(--bmw);border-color:var(--bmw);color:#fff}
+.d3-pane{display:none}
+.d3-pane.on{display:block}
+.d3-note{font-size:10px;color:var(--ink-3);padding:8px 14px;border-top:1px solid var(--line)}
+
 /* Ações rápidas */
 .quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:16px}
 .qbtn{
