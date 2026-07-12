@@ -2,12 +2,12 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<script>(function(){try{var t=localStorage.getItem("evx.theme");document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light")}catch(e){document.documentElement.setAttribute("data-theme","light")}})();</script>
+<script>document.documentElement.setAttribute("data-theme","dark");</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel Mestre — EUROVIX · Todos os acessos</title>
 <meta name="description" content="Hub central do ecossistema EUROVIX: site, agendamento, app do cliente, WERK OS, documentos e repositório.">
 <link rel="icon" type="image/png" href="assets/img/brand/favicon.png">
-<meta name="theme-color" content="#FFFFFF">
+<meta name="theme-color" content="#0A0C10">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -87,13 +87,19 @@ body.theme-bmw{background:var(--stage-2)}
 .hub-foot a:hover{color:var(--bmw)}
 .pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pl 1.8s ease infinite;margin-right:6px}
 @keyframes pl{0%,100%{opacity:1}50%{opacity:.4}}
+.btn-image{display:block;max-width:300px;margin:2px 0 14px;border:none;background:none;padding:0;cursor:pointer;line-height:0;text-decoration:none;color:inherit;transition:filter .2s ease,transform .2s ease}
+.btn-image img{width:100%;height:auto;display:block;pointer-events:none;user-select:none}
+.btn-image:hover{filter:brightness(1.08) saturate(1.05);transform:translateY(-2px)}
+.btn-image:active{transform:translateY(0)}
+.btn-image:focus-visible{outline:2px solid var(--bmw);outline-offset:3px;border-radius:10px}
+@media (prefers-reduced-motion:reduce){.btn-image{transition:none}.btn-image:hover{filter:none;transform:none}}
 </style>
 </head>
 <body class="theme-bmw">
 <div class="hub">
 
   <div class="hub-head">
-    <img class="hub-logo" src="assets/img/brand/logo-oficial-preto.png" alt="EUROVIX — Oficina Especializada BMW">
+    <img class="hub-logo" src="assets/img/brand/logo-oficial-branco.png" alt="EUROVIX — Oficina Especializada BMW">
     <div>
       <h1>Painel <span class="r">Mestre</span> — todos os acessos</h1>
       <div class="sub"><span class="pulse"></span>Ecossistema digital EUROVIX + WERK OS · demo funcional Fase 1 · dados vivos deste navegador</div>
@@ -135,6 +141,7 @@ body.theme-bmw{background:var(--stage-2)}
     <div class="acc">
       <div class="top"><div class="ico-wrap">🛠</div><div><h3>WERK OS · Painel</h3><span class="tag">kanban 8 etapas · operação completa</span></div></div>
       <p>Fila → diagnóstico → aprovação → peça → execução → QC → lavagem → pronto. Abra lado a lado com o app para ver o tempo real.</p>
+      <a class="btn-image" href="werkos.html#/kanban"><img src="assets/img/ui/btn-entrar-werkos.webp" alt="Entrar no WERK OS" width="1000" height="135"></a>
       <div class="links">
         <a class="lnk primary" href="werkos.html#/kanban">Kanban ›</a>
         <a class="lnk" href="werkos.html#/checkin">Novo check-in</a>

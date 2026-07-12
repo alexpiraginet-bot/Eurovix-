@@ -1,9 +1,7 @@
 /* ============================================================
-   EUROVIX · Temas + push flutuante (tema & horário)
-   - CLARO é o padrão em todo o sistema (WERK OS incluso);
-     o escuro é opcional e persiste em localStorage (evx.theme)
-   - Toggle: qualquer elemento com [data-theme-toggle] —
-     o push flutuante montado aqui já inclui um
+   EUROVIX · Tema + push flutuante (horário)
+   - Tema ÚNICO escuro (black + midnight) em todo o sistema;
+     não há alternador — dark é sempre aplicado e persistido.
    - Horário oficial (Google Business da EUROVIX):
      Seg–Sex 9h–18h · Sáb 9h–13h · Dom fechado
    ============================================================ */
@@ -13,26 +11,12 @@ window.EVXTheme = (function () {
   const KEY = 'evx.theme';
 
   function current() {
-    let t = null;
-    try { t = localStorage.getItem(KEY); } catch (e) {}
-    return t === 'dark' ? 'dark' : 'light'; // claro é o padrão
+    return 'dark'; // EUROVIX: tema único black + midnight
   }
   function apply() {
-    const t = current();
-    document.documentElement.setAttribute('data-theme', t);
-    document.querySelectorAll('[data-theme-toggle]').forEach(b => {
-      b.textContent = t === 'dark' ? '☀️' : '🌙';
-      b.setAttribute('aria-label', t === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro');
-      b.title = b.getAttribute('aria-label');
-    });
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', t === 'dark' ? '#0D1014' : '#FFFFFF');
+    document.documentElement.setAttribute('data-theme', 'dark');
+    try { localStorage.setItem(KEY, 'dark'); } catch (e) {} // normaliza valor antigo p/ o anti-flash
   }
-  function set(t) {
-    try { localStorage.setItem(KEY, t); } catch (e) {}
-    apply();
-  }
-  function toggle() { set(current() === 'dark' ? 'light' : 'dark'); }
 
   /* ---------- Horário de funcionamento (fonte: Google Business) ---------- */
   const HOURS = [
@@ -76,8 +60,7 @@ window.EVXTheme = (function () {
           <a href="https://wa.me/5527997306440?text=${encodeURIComponent('Olá! Vim pelo site da EUROVIX.')}" target="_blank" rel="noopener">WhatsApp (27) 99730-6440</a>
         </div>
       </div>
-      <button class="evx-fab-btn" id="evxHoursBtn" type="button" aria-label="Horário de funcionamento" title="Horário de funcionamento">🕐<span class="evx-fab-dot" id="evxHoursDot"></span></button>
-      <button class="evx-fab-btn" type="button" data-theme-toggle aria-label="Tema">🌙</button>`;
+      <button class="evx-fab-btn" id="evxHoursBtn" type="button" aria-label="Horário de funcionamento" title="Horário de funcionamento">🕐<span class="evx-fab-dot" id="evxHoursDot"></span></button>`;
     (document.getElementById('shell') || document.body).appendChild(el);
 
     const pop = el.querySelector('#evxHoursPop');
@@ -92,17 +75,12 @@ window.EVXTheme = (function () {
     setInterval(refresh, 60000);
     el.querySelector('#evxHoursBtn').addEventListener('click', () => { pop.hidden = !pop.hidden; });
     document.addEventListener('click', (e) => { if (!el.contains(e.target)) pop.hidden = true; });
-    apply(); // ícone do toggle recém-montado
   }
 
-  document.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-theme-toggle]');
-    if (b) { e.preventDefault(); toggle(); }
-  });
-  window.addEventListener('storage', (e) => { if (e.key === KEY) apply(); });
+  apply(); // fixa data-theme=dark e normaliza o localStorage na hora, sem esperar o DOM
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => { apply(); mountFab(); });
-  } else { apply(); mountFab(); }
+    document.addEventListener('DOMContentLoaded', mountFab);
+  } else { mountFab(); }
 
-  return { get: current, set, toggle, apply, HOURS, hoursStatus };
+  return { get: current, apply, HOURS, hoursStatus };
 })();
