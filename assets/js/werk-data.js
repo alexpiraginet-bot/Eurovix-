@@ -697,8 +697,10 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     const itens = CHECKLIST_ITENS.map((_, i) => !faltando.includes(i));
     return {
       modo: 'assistida',                             // 'ia' quando a visão real responde
-      km: kmAtual, combustivel, luzes, avarias, itens,
+      km: kmAtual, kmFonte: 'assistida', kmRecepcao: (ctx.km ? +ctx.km : null),
+      combustivel, combustivelLido: true, luzes, avarias, itens,
       itensFaltantes: faltando.map(i => CHECKLIST_ITENS[i]),
+      itensNaoVerificados: [],                        // mesmo formato do modo IA
       confianca: 0.72 + (h % 18) / 100,
       fotosAnalisadas: n,
     };
