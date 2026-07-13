@@ -644,6 +644,15 @@
             </div>
           </div>
           <div class="wk-panel">
+            <h3>${I('scan')} Diagnóstico ISTA — perito IA <span style="font-size:10px;color:var(--txt-3)">foto ou PDF → a IA lê, decifra os códigos e prioriza</span></h3>
+            ${(() => { const ev = [...os.eventos].reverse().find(e => e.tipo === 'ista'); return (ev && ev.laudo) ? renderLaudoIsta(ev.laudo) : '<p style="font-size:12px;color:var(--txt-3);margin-bottom:8px">Anexe o laudo do ISTA (memória de falhas). A IA transcreve, traduz, separa causa-raiz de consequência e sugere as medições — você revisa antes de orçar.</p>'; })()}
+            <label class="btn btn-secondary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;font-size:12px;margin-top:6px">
+              📎 Anexar laudo do ISTA (foto/PDF)
+              <input id="istaFile" type="file" accept="image/*,application/pdf" multiple hidden>
+            </label>
+            <span id="istaStatus" style="font-size:11px;color:var(--txt-3);margin-left:8px"></span>
+          </div>
+          <div class="wk-panel">
             <h3>${I('list')} Itens de diagnóstico (DVI) <span style="font-size:10px;color:var(--txt-3)">🔴 crítico · 🟡 preventivo · 🟢 ok — item sem mídia não avança</span></h3>
             <div id="diagList">${os.itens.map(i => diagItemHTML(os, i)).join('') || '<p style="font-size:12px;color:var(--txt-3)">Nenhum item ainda — adicione abaixo.</p>'}</div>
             ${os.status === 'diagnostico' || os.status === 'fila' ? diagFormHTML() : ''}
@@ -695,6 +704,34 @@
     bindOSHandlers(os);
   };
 
+  // Render do laudo ISTA analisado pela IA. Escapa tudo (conteúdo vem da IA/OCR).
+  function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
+  function renderLaudoIsta(l) {
+    l = l || {};
+    if (l.eh_ista === false) return `<p style="font-size:12px;color:var(--warn);margin-bottom:8px">${esc(l.resumo_executivo || 'O anexo não parece um diagnóstico ISTA/BMW.')}</p>`;
+    const sevCor = { critica: 'var(--red)', alta: '#ff8a3d', media: 'var(--warn)', baixa: 'var(--txt-3)' };
+    const aviso = (l.requer_confirmacao_profissional && (l.avisos_seguranca || []).length)
+      ? `<div style="background:rgba(255,60,60,.1);border:1px solid var(--red);border-radius:9px;padding:9px 11px;font-size:11.5px;color:#ffb4b4;margin-bottom:10px">⚠️ ${esc((l.avisos_seguranca || []).join(' '))}</div>` : '';
+    const recap = l.recaptura_necessaria
+      ? `<div style="background:rgba(255,176,49,.1);border:1px solid var(--warn);border-radius:9px;padding:8px 11px;font-size:11px;color:#ffd89a;margin-bottom:10px">📷 ${esc(l.motivo_recaptura || 'Reenvie uma captura mais nítida do laudo.')}</div>` : '';
+    const codigos = (l.codigos || []).map(c => `
+      <div style="border:1px solid var(--line-strong);border-radius:9px;padding:9px 11px;margin-bottom:6px;background:var(--navy)">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">
+          <code style="font-size:12.5px;color:${sevCor[c.severidade] || 'var(--txt)'};font-weight:700">${esc(c.codigo)}</code>
+          <span style="font-size:9.5px;color:var(--txt-3)">${esc(c.modulo || '')}${c.modulo ? ' · ' : ''}${esc(c.sistema || '')} · ${c.tipo === 'raiz' ? '🎯 causa-raiz' : c.tipo === 'consequente' ? '↪ consequente' : 'a investigar'}${c.critico_seguranca ? ' · 🛡️ segurança' : ''}</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--txt);margin-top:3px">${esc(c.descricao)}</div>
+        ${c.causa_provavel ? `<div style="font-size:10.5px;color:var(--txt-2);margin-top:3px">Causa provável: ${esc(c.causa_provavel)}</div>` : ''}
+        ${c.exige_medicao && c.medicao ? `<div style="font-size:10.5px;color:var(--accent,#5aa0ff);margin-top:3px">🔧 Medir antes: ${esc(c.medicao)}</div>` : ''}
+      </div>`).join('');
+    return `
+      ${aviso}${recap}
+      <p style="font-size:12px;color:var(--txt);margin-bottom:8px">${esc(l.resumo_executivo)}</p>
+      ${l.causa_raiz_provavel ? `<p style="font-size:11.5px;color:var(--txt-2);margin-bottom:8px">🎯 <b>Causa-raiz provável:</b> ${esc(l.causa_raiz_provavel)}</p>` : ''}
+      ${codigos ? `<div style="margin-bottom:8px">${codigos}</div>` : '<p style="font-size:11.5px;color:var(--txt-3);margin-bottom:8px">Nenhum código legível no anexo.</p>'}
+      ${(l.proximos_passos || []).length ? `<div style="font-size:11px;color:var(--txt-2)"><b>Próximos passos:</b><ul style="margin:4px 0 0;padding-left:16px">${l.proximos_passos.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : ''}
+      <p style="font-size:10px;color:var(--txt-3);margin-top:8px">Confiança da leitura: ${Math.round((l.confianca || 0) * 100)}% · ${l.modo === 'demo' ? 'modo demonstração' : 'IA'} · <b>revise antes de orçar</b></p>`;
+  }
   function diagItemHTML(os, i) {
     const nv = i.niveis[i.nivelEscolhido || 'original'];
     return `
@@ -953,6 +990,26 @@
       if (!v) return;
       WERK.updateOS(os.numero, o => o.dtcs.push(v), { tipo: 'update', titulo: 'DTC importado', desc: v, ator: os.tecnico });
       views.os(os.numero);
+    });
+
+    // Diagnóstico ISTA → perito IA: lê os anexos (foto/PDF) e grava o laudo na OS.
+    const istaFile = $('#istaFile');
+    if (istaFile) istaFile.addEventListener('change', async () => {
+      const files = [...(istaFile.files || [])].slice(0, 6);
+      if (!files.length) return;
+      const status = $('#istaStatus');
+      if (status) status.textContent = '⏳ Lendo o laudo com a IA…';
+      try {
+        const arquivos = await Promise.all(files.map(f => new Promise((res, rej) => {
+          const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(f);
+        })));
+        const laudo = await WERK.analisarIsta(arquivos, { modelo: os.veiculo, placa: os.placa, vin: os.vin, km: os.km });
+        if (!laudo || !laudo.ok) { if (status) status.textContent = '⚠️ ' + ((laudo && laudo.erro) || 'Não consegui ler o laudo.'); return; }
+        const resumo = (laudo.resumo_executivo || 'Laudo lido').slice(0, 140);
+        WERK.updateOS(os.numero, () => {}, { tipo: 'ista', titulo: 'Diagnóstico ISTA lido pela IA', desc: resumo, ator: os.tecnico, laudo });
+        toast('Diagnóstico ISTA analisado', laudo.requer_confirmacao_profissional ? '⚠️ Há sistema de segurança — confirme antes de orçar.' : 'Códigos decifrados e priorizados na OS.');
+        views.os(os.numero);
+      } catch (e) { if (status) status.textContent = '⚠️ Falha ao ler o arquivo.'; }
     });
 
     $$('[data-quote]').forEach(b => b.addEventListener('click', () => {
