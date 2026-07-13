@@ -1059,6 +1059,8 @@
     CATEGORIAS: local.CATEGORIAS, ETK: local.ETK, SUPPLIERS: local.SUPPLIERS, AW_TABLE: local.AW_TABLE,
     validateVIN: local.validateVIN, decodeVIN: local.decodeVIN, fixVIN: local.fixVIN, checkRecalls: local.checkRecalls,
     analisarFotos: local.analisarFotos, analisarIsta: local.analisarIsta, consultarPlaca: local.consultarPlaca, sugerirOrcamento: local.sugerirOrcamento,
+    /* — dicionário de códigos (cache de aprendizado por navegador; delegado ao módulo local) — */
+    carregarSeedObd: local.carregarSeedObd, dicGet: local.dicGet, dicAprender: local.dicAprender, dicStats: local.dicStats, decodeLocal: local.decodeLocal, lerLocal: local.lerLocal,
     motorDePecas: local.motorDePecas, itemPreco: local.itemPreco, totalOS: local.totalOS, custoOS: local.custoOS,
     novoItem: local.novoItem, itemDeIsta: local.itemDeIsta, pixPayload: local.pixPayload,
     brl: local.brl, fdt: local.fdt, fd: local.fd,

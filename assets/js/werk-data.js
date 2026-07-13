@@ -841,9 +841,172 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     return _analisarAssistida(fotos, ctx);
   }
 
-  // Perito de diagnóstico ISTA: manda os anexos (fotos/PDF) para a função
-  // serverless /api/analisar-ista (usa a ANTHROPIC_API_KEY). Sem chave/endpoint
-  // (demo local), devolve um laudo de exemplo para o painel poder mostrar a tela.
+  /* ============================================================
+     DICIONÁRIO DE CÓDIGOS DE FALHA — camada de APRENDIZADO
+     ------------------------------------------------------------
+     Faz a IA consumir MENOS a cada leitura: todo laudo lido pela
+     IA ENSINA o dicionário (código → descrição pt-BR, sistema,
+     severidade, termo de peça). Códigos já conhecidos passam a
+     ser decodificados LOCALMENTE (sem IA, custo ZERO) e só os
+     inéditos vão para a IA. Vem semeado com o banco OBD-II
+     MUNDIAL (SAE J2012/ISO 15031-6 — ~2 mil códigos genéricos
+     P (motor/transmissão) e U (rede/comunicação) que qualquer
+     scanner emite: Autel, Launch, ISTA, ELM327…); os códigos
+     genéricos C/B e os proprietários (hex BMW etc.) são
+     aprendidos dos laudos reais lidos pela IA.
+     Fica no navegador (localStorage) — é um cache de custo, não
+     dado do cliente; por isso o adaptador de nuvem o delega ao
+     módulo local sem tabela dedicada.
+     ============================================================ */
+  const KDIC = 'evx.ista.dic';         // aprendidos (localStorage): { "8040D2": {descricao, sistema, …} }
+  let _seedObd = null;                 // banco mundial já carregado (lazy)
+  let _seedObdPromise = null;
+
+  // Sistema a partir do prefixo SAE J2012 (letra de família + origem).
+  function dicSistemaSae(cod) {
+    const L = String(cod || '').toUpperCase()[0];
+    if (L === 'P') return 'motor';               // Powertrain (motor/transmissão)
+    if (L === 'C') return 'freios/estabilidade'; // Chassis (ABS/DSC, direção, suspensão)
+    if (L === 'B') return 'carroceria';          // Body (airbag/SRS refinado por palavra-chave)
+    if (L === 'U') return 'eletrica';            // Network/comunicação (barramento CAN/LIN)
+    return 'outro';
+  }
+  // Palavras que denunciam sistema de segurança na descrição (reforço p/ leitura local).
+  function descCritica(desc) {
+    return /airbag|\bsrs\b|restraint|cinto|pretens|freio|\babs\b|\bdsc\b|\bdxc\b|est?abilidad|dire[çc][aã]o|steering|\beps\b|brake/i.test(String(desc || ''));
+  }
+
+  // Carrega (uma vez) o banco OBD-II mundial. Offline/file:// → {} (segue só com
+  // os aprendidos + heurística de prefixo). cache:'force-cache' porque é estático.
+  async function carregarSeedObd() {
+    if (_seedObd) return _seedObd;
+    if (_seedObdPromise) return _seedObdPromise;
+    _seedObdPromise = (async () => {
+      try {
+        const r = await fetch('assets/data/dtc-obd.json', { cache: 'force-cache' });
+        if (r.ok) { const j = await r.json(); if (j && typeof j === 'object') { _seedObd = j; return j; } }
+      } catch (_) { /* sem rede / file:// */ }
+      _seedObd = {}; return _seedObd;
+    })();
+    return _seedObdPromise;
+  }
+
+  function dicAprendidos() { return read(KDIC, {}) || {}; }
+
+  // Consulta síncrona de UM código: aprendido (pt-BR, do balcão) > banco mundial
+  // (EN, genérico) > null. O banco só aparece depois de carregarSeedObd().
+  function dicGet(cod) {
+    const c = String(cod || '').toUpperCase().trim();
+    if (!c) return null;
+    const ap = dicAprendidos()[c];
+    if (ap && ap.descricao) return { codigo: c, fonte: 'aprendido', ...ap };
+    const seed = _seedObd && _seedObd[c];
+    if (seed) return { codigo: c, descricao: seed, sistema: dicSistemaSae(c), formato: /^[PBCU]\d/.test(c) ? 'sae' : 'desconhecido', fonte: 'banco' };
+    return null;
+  }
+
+  // Aprende com um laudo já lido pela IA. Só entra o que a IA TRANSCREVEU (não
+  // leitura ambígua de foto). Reaproveita o que já sabia quando o campo vier vazio.
+  function dicAprender(codigos) {
+    if (!Array.isArray(codigos) || !codigos.length) return { novos: 0, total: 0 };
+    const dic = dicAprendidos();
+    let novos = 0;
+    for (const c of codigos) {
+      if (!c || typeof c !== 'object') continue;
+      const cod = String(c.codigo || '').toUpperCase().trim();
+      if (!cod || cod === '—' || !c.descricao) continue;
+      if (c.caractere_ambiguo) continue;                 // não fixa leitura duvidosa
+      const antes = dic[cod];
+      dic[cod] = {
+        descricao: String(c.descricao).slice(0, 240),
+        sistema: c.sistema || (antes && antes.sistema) || dicSistemaSae(cod),
+        severidade: c.severidade || (antes && antes.severidade) || 'media',
+        termo_peca: c.termo_peca || (antes && antes.termo_peca) || null,
+        formato: c.formato || (antes && antes.formato) || null,
+        modulo: c.modulo || (antes && antes.modulo) || null,
+        critico_seguranca: !!(c.critico_seguranca || (antes && antes.critico_seguranca)),
+        vezes: ((antes && antes.vezes) || 0) + 1,
+      };
+      if (!antes) novos++;
+    }
+    write(KDIC, dic);
+    return { novos, total: Object.keys(dic).length };
+  }
+
+  function dicStats() {
+    const aprendidos = Object.keys(dicAprendidos()).length;
+    const banco = _seedObd ? Object.keys(_seedObd).length : 0;
+    return { aprendidos, banco, total: aprendidos + banco };
+  }
+
+  // Decodifica uma lista de códigos SÓ com o dicionário (sem IA). Devolve o que
+  // conseguiu + o que ficou de fora, para o painel decidir se cai na IA.
+  async function decodeLocal(codigos, ctx) {
+    await carregarSeedObd();
+    const lista = (Array.isArray(codigos) ? codigos : [])
+      .map(x => (typeof x === 'string' ? x : (x && x.codigo) || ''))
+      .map(s => String(s).toUpperCase().trim()).filter(Boolean);
+    const vistos = new Set(); const conhecidos = []; const desconhecidos = [];
+    for (const cod of lista) {
+      if (vistos.has(cod)) continue; vistos.add(cod);
+      const hit = dicGet(cod);
+      if (!hit) { desconhecidos.push(cod); continue; }
+      const critico = !!hit.critico_seguranca || descCritica(hit.descricao);
+      conhecidos.push({
+        codigo: cod,
+        formato: hit.formato || (/^[PBCU]\d/.test(cod) ? 'sae' : (/^[0-9A-F]{4,6}$/.test(cod) ? 'hex_bmw' : 'desconhecido')),
+        modulo: hit.modulo || null,
+        descricao: hit.descricao || 'Falha registrada',
+        sistema: hit.sistema || dicSistemaSae(cod),
+        severidade: critico ? 'alta' : (hit.severidade || 'media'),
+        tipo: 'indefinido', critico_seguranca: critico, caractere_ambiguo: false,
+        exige_medicao: true, medicao: null,
+        termo_peca: hit.termo_peca || null, causa_provavel: '', acao: '',
+        fonte_dic: hit.fonte,
+      });
+    }
+    return { conhecidos, desconhecidos, total: vistos.size, cobertura: vistos.size ? conhecidos.length / vistos.size : 0 };
+  }
+
+  // Monta um laudo (mesmo formato do da IA) a partir da leitura LOCAL — renderiza
+  // igual, mas sem causa-raiz profunda (isso continua sendo trabalho da IA, via
+  // "aprofundar com IA"). Usado quando TODOS os códigos já são conhecidos.
+  function montarLaudoLocal(dec, ctx) {
+    ctx = ctx || {};
+    const codigos = (dec && dec.conhecidos) || [];
+    const temCritico = codigos.some(c => c.critico_seguranca);
+    return {
+      ok: true, modo: 'dicionario', eh_ista: true, legivel: true,
+      recaptura_necessaria: false, motivo_recaptura: null,
+      veiculo: { modelo: ctx.modelo || null, chassi: null, km: null },
+      resumo_executivo: codigos.length + ' código(s) decodificados pelo dicionário local — leitura sem custo de IA.'
+        + (temCritico ? ' Há código de sistema de segurança: confirme e meça antes de orçar.' : '')
+        + ' Para separar causa-raiz de consequência, use “aprofundar com IA”.',
+      causa_raiz_provavel: null,
+      requer_confirmacao_profissional: temCritico,
+      avisos_seguranca: temCritico ? ['Há código de sistema de segurança (airbag/freio/direção). Não libere o veículo — confirme e meça antes de qualquer ação.'] : [],
+      codigos,
+      codigos_omitidos: 0,
+      sistemas_afetados: [...new Set(codigos.map(c => c.sistema))],
+      prioridades: [],
+      proximos_passos: (dec && dec.desconhecidos && dec.desconhecidos.length)
+        ? ['Ainda sem catálogo: ' + dec.desconhecidos.join(', ') + ' — leia com IA para decodificar e ensinar o dicionário.'] : [],
+      observacoes: 'Leitura local pelo dicionário (banco OBD-II mundial + aprendizado da oficina). Descrições de códigos ainda não revisados pela IA podem vir em inglês.',
+      confianca: 0.75, anexos: 0, modo_dicionario: true,
+    };
+  }
+
+  // Atalho para o painel: decodifica local e, se cobriu 100%, devolve o laudo
+  // pronto (custo zero); senão devolve o mapa de cobertura para cair na IA.
+  async function lerLocal(codigos, ctx) {
+    const dec = await decodeLocal(codigos, ctx);
+    if (dec.total && !dec.desconhecidos.length) return montarLaudoLocal(dec, ctx);
+    return { ok: false, cobertura: dec.cobertura, conhecidos: dec.conhecidos.length, desconhecidos: dec.desconhecidos, total: dec.total };
+  }
+
+  // Perito de diagnóstico do scanner: manda os anexos (fotos/PDF) ou o texto
+  // extraído para a função serverless /api/analisar-ista (usa a ANTHROPIC_API_KEY).
+  // Sem chave/endpoint (demo local), devolve um laudo de exemplo para a tela.
   async function analisarIsta(arquivos, ctx, texto) {
     ctx = ctx || {};
     try {
@@ -954,6 +1117,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     KEYS, STATUS, statusIdx, CATEGORIAS, ETK, SUPPLIERS, AW_TABLE,
     validateVIN, decodeVIN, fixVIN, checkRecalls,
     analisarFotos, analisarIsta, consultarPlaca, sugerirOrcamento,
+    carregarSeedObd, dicGet, dicAprender, dicStats, decodeLocal, lerLocal,
     motorDePecas, itemPreco, totalOS, custoOS,
     getConfig, saveConfig,
     getVehicles, upsertVehicle,
