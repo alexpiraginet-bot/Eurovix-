@@ -65,12 +65,15 @@
       return;
     }
     if (c.senha) {
+      history.replaceState(null, '', location.pathname); // limpa ?convite= da URL
+      const s = EVX.getSession();
+      if (s && s.telefone && WERK.normTel(s.telefone) === WERK.normTel(c.telefone) && (!WERK.cloud || WERK.authUser())) { enter(s); return; }
       $('#l-tel').value = c.telefone;
       loginView.classList.remove('hide');
       loginInfo('Seu acesso já está ativo — entre com sua senha.');
       return;
     }
-    $('#convHello').textContent = `Bem-vindo(a), ${c.nome.split(' ')[0]}!`;
+    $('#convHello').textContent = `Bem-vindo(a), ${(String(c.nome || '').trim().split(' ')[0]) || 'cliente'}!`;
     const g = WERK.garagemDe(c.telefone);
     $('#convVeics').innerHTML = g.length
       ? g.map(v => `<div class="conv-veic">${EVX.icon('car', 20)}<div><b>${v.modelo}</b><br><span>${v.placa}${v.cor ? ' · ' + v.cor : ''}</span></div></div>`).join('')
@@ -131,14 +134,19 @@
     $('#appHeader').hidden = false;
     $('#views').hidden = false;
     $('#tabbar').hidden = false;
-    $('#helloName').textContent = session.nome.split(' ')[0];
-
-    if (!EVX.getNotifications().length) {
-      EVX.pushNotification({ titulo: 'Bem-vindo ao app EUROVIX!', texto: 'Acompanhe seu BMW, aprove orçamentos item a item e fale com seu consultor por aqui.', quando: Date.now(), tipo: 'ok' });
-      if (myOS().some(o => o.numero === 1258 && o.status === 'aprovacao')) {
-        EVX.pushNotification({ titulo: 'OS #1258 aguarda sua aprovação', texto: 'O orçamento da revisão + bieletas está pronto — aprove pelo app.', quando: Date.now(), tipo: 'os' });
+    // nome pode vir nulo (sessão antiga / linha legada na nuvem). Isto roda ANTES
+    // do render e FORA da rede de segurança — se quebrar aqui, a tela fica em
+    // branco com "Olá, Cliente". Blindado + render garantido logo abaixo.
+    try {
+      $('#helloName').textContent = (String(session.nome || 'Cliente').trim().split(' ')[0]) || 'Cliente';
+      if (!EVX.getNotifications().length) {
+        EVX.pushNotification({ titulo: 'Bem-vindo ao app EUROVIX!', texto: 'Acompanhe seu BMW, aprove orçamentos item a item e fale com seu consultor por aqui.', quando: Date.now(), tipo: 'ok' });
+        if (myOS().some(o => o.numero === 1258 && o.status === 'aprovacao')) {
+          EVX.pushNotification({ titulo: 'OS #1258 aguarda sua aprovação', texto: 'O orçamento da revisão + bieletas está pronto — aprove pelo app.', quando: Date.now(), tipo: 'os' });
+        }
       }
-    }
+    } catch (e) { console.error('enter(): cabeçalho/notificações falhou — seguindo para o render', e); }
+    history.replaceState({ tab: 'inicio', osOpen: null }, ''); // base do histórico do app
     renderAll();
   }
 
@@ -241,7 +249,7 @@
       <div class="os-card" data-os="${o.numero}" role="button" tabindex="0">
         <span class="os-dot ${osStateCls(o)}"></span>
         <div class="os-info">
-          <b>OS #${o.numero} · ${(o.itens && o.itens[0] ? o.itens[0].titulo : (o.sintoma || 'Check-in')).slice(0, 34)}</b>
+          <b>OS #${o.numero} · ${(((o.itens && o.itens[0] && o.itens[0].titulo) || o.sintoma || 'Check-in')).slice(0, 34)}</b>
           <span>${o.veiculo || ''} · ${o.placa || ''}</span>
         </div>
         ${osBadge(o)}
@@ -282,7 +290,7 @@
       ${window.WERK3D && WERK3D.embedReal ? `
       <div class="sec-label">Seu BMW em 3D <a data-goto="os">minhas OS</a></div>
       <div class="d3-card">
-        <div id="twinReal" class="d3-real"></div>
+        <div id="twinReal" class="d3-real" style="height:230px;min-height:0"></div>
         <div class="d3-meta">
           <span class="d3-swatch" style="background:${corHex(v.cor)}" title="Cor do veículo"></span>
           <div><b>${v.modelo}</b>${v.cor ? `<span>Cor do veículo: ${v.cor}</span>` : ''}</div>
@@ -339,9 +347,12 @@
 
     const sw = $('#vcSwitch');
     if (sw) sw.addEventListener('click', () => {
-      state.vehicleIdx = (state.vehicleIdx + 1) % garagem().length;
+      const n = garagem().length;
+      if (!n) return;                          // garagem esvaziou entre render e clique
+      state.vehicleIdx = (state.vehicleIdx + 1) % n;
       renderInicio();
-      toast('Veículo alterado', `Mostrando ${vehicle().modelo} (${vehicle().placa}).`, 'ok');
+      const v2 = vehicle();
+      if (v2) toast('Veículo alterado', `Mostrando ${v2.modelo} (${v2.placa}).`, 'ok');
     });
     // Modelo 3D real: monta JÁ ao abrir a tela (autostart no embed) — o cliente
     // não precisa tocar. Nunca pode derrubar a tela já montada (try/catch).
@@ -472,7 +483,7 @@
       ${o.status === 'entregue' && o.nps == null ? npsHTML(o) : ''}
     `;
 
-    $('#osBack').addEventListener('click', () => { state.osOpen = null; renderOS(); });
+    $('#osBack').addEventListener('click', () => { if (history.state && history.state.osOpen != null) history.back(); else { state.osOpen = null; applyTab('os'); } });
     const send = $('#chatSend');
     if (send) send.addEventListener('click', () => {
       const t = $('#chatInput').value.trim();
@@ -494,7 +505,8 @@
       <div class="sec-label">Orçamento</div>
       <div class="acard budget">
         ${aprovaveis.map(i => {
-          const nv = i.niveis[i.nivelEscolhido || 'original'];
+          const nv = (i.niveis && i.niveis[i.nivelEscolhido || 'original']) || null;
+          if (!nv) return '';
           return `
             <div class="b-item">
               <span style="${i.aprovacao === 'recusado' ? 'text-decoration:line-through;opacity:.55' : ''}">${i.titulo}
@@ -526,7 +538,8 @@
             </label>
             <div style="display:grid;gap:6px;margin-top:10px">
               ${['original', 'oem', 'aftermarket'].map(nk => {
-                const n = i.niveis[nk];
+                const n = i.niveis && i.niveis[nk];
+                if (!n) return '';
                 return `
                   <label style="display:flex;gap:9px;align-items:center;background:var(--navy);border:1px solid var(--line-strong);border-radius:10px;padding:9px 11px;cursor:pointer;font-size:11.5px">
                     <input type="radio" name="nv-${i.id}" value="${nk}" ${nk === 'original' ? 'checked' : ''} style="accent-color:var(--red)">
@@ -635,7 +648,7 @@
       o.itens.filter(i => i.severidade !== 'ok').forEach(i => {
         const cb = $(`.ap-check[data-id="${i.id}"]`, box);
         const nv = ($(`input[name="nv-${i.id}"]:checked`, box) || {}).value || 'original';
-        if (cb && cb.checked) t += i.niveis[nv].preco + i.mo;
+        if (cb && cb.checked && i.niveis && i.niveis[nv]) t += i.niveis[nv].preco + i.mo;
       });
       $('#apTotal', box).textContent = WERK.brl(t);
     };
@@ -733,7 +746,7 @@
           <div><b>${v.modelo}</b><span>${v.placa || ''} · modelo 3D real</span></div>
           <button class="d3-modal-x" type="button" aria-label="Fechar">✕</button>
         </div>
-        <div class="d3-modal-stage"></div>
+        <div class="d3-modal-stage" style="height:260px;min-height:0"></div>
       </div>`;
     shell.appendChild(ov);
     try { WERK3D.embedReal(ov.querySelector('.d3-modal-stage'), v.modelo); } catch (_) {}
@@ -749,7 +762,7 @@
      ============================================================ */
   function renderPerfil() {
     const u = state.user;
-    const initials = u.nome.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
+    const initials = String(u.nome || 'Cliente').trim().split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
     const garantias = myOS().flatMap(o => (o.itens || []).filter(i => i.garantia).map(i => ({ os: o.numero, item: i })));
     const cofres = garagem();
 
@@ -865,14 +878,29 @@
   /* ============================================================
      Navegação
      ============================================================ */
-  function switchTab(tab) {
+  // Render puro da aba (sem mexer no histórico).
+  function applyTab(tab) {
     state.tab = tab;
     if (tab !== 'os') state.osOpen = null;
     $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
     $$('.view').forEach(v => v.classList.toggle('active', v.dataset.view === tab));
     renderTab(tab);
   }
+  // Ação do usuário → empurra no histórico, para o botão Voltar do celular
+  // voltar a aba/OS anterior em vez de sair do app.
+  function switchTab(tab) {
+    history.pushState({ tab: tab, osOpen: tab === 'os' ? state.osOpen : null }, '');
+    applyTab(tab);
+  }
   $$('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+  // Voltar (navegador/celular): fecha modais/gaveta abertos e restaura a aba/OS anterior.
+  window.addEventListener('popstate', (e) => {
+    document.querySelectorAll('.d3-modal').forEach(m => m.remove());
+    const dr = $('#notifDrawer'); if (dr) dr.classList.remove('open');
+    const s = e.state || { tab: 'inicio', osOpen: null };
+    state.osOpen = (s.osOpen != null) ? s.osOpen : null;
+    applyTab(s.tab || 'inicio');
+  });
 
   function bindCommon(root) {
     $$('[data-goto]', root).forEach(el => el.addEventListener('click', () => switchTab(el.dataset.goto)));

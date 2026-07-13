@@ -57,7 +57,7 @@ td{padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top}
 </head>
 <body>
 <div class="toolbar">
-  <a class="back-btn" href="javascript:history.back()">← Voltar</a>
+  <a class="back-btn" href="#" onclick="if(window.opener&&!window.opener.closed){window.close()}else if(history.length>1){history.back()}else{location.href='app.html'}return false">← Voltar</a>
   <button class="print-btn" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
 </div>
 <div class="page" id="doc">Carregando…</div>
