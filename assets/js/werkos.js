@@ -225,6 +225,7 @@
           <div class="hintline err" id="stErr" style="display:none;margin-top:10px">E-mail ou senha inválidos — ou este usuário ainda não foi incluído na equipe da oficina.</div>
           <button class="btn btn-primary" style="margin-top:16px;width:100%" id="stEntrar">Entrar no painel</button>
           <a class="wk-lock-alt" href="app.html">O app do cliente é por aqui →</a>
+          <a class="wk-lock-alt" href="demo.html">🧪 Ver uma demonstração (sem conta) →</a>
         </div>
       </div>`;
     const entrar = async () => {
@@ -2038,7 +2039,7 @@
       if (WERK.carregarSeedObd) WERK.carregarSeedObd().then(pinta).catch(() => {}); // atualiza quando o banco chega
       const ver = $('#cf-dic-ver');
       if (ver) ver.addEventListener('click', () => {
-        let dic = {}; try { dic = JSON.parse(localStorage.getItem('evx.ista.dic') || '{}'); } catch (_) {}
+        const dic = (WERK.dicDump && WERK.dicDump()) || {};
         const chaves = Object.keys(dic).sort();
         const linhas = chaves.length ? chaves.map(k => {
           const d = dic[k] || {};
@@ -2049,7 +2050,7 @@
       const limpar = $('#cf-dic-limpar');
       if (limpar) limpar.addEventListener('click', () => {
         if (!confirm('Limpar os códigos aprendidos? O banco OBD-II mundial continua. A IA volta a aprender do zero os códigos proprietários.')) return;
-        try { localStorage.removeItem('evx.ista.dic'); } catch (_) {}
+        if (WERK.dicLimpar) WERK.dicLimpar();
         pinta(); toast('Dicionário aprendido limpo', 'O banco mundial segue ativo; os proprietários serão reaprendidos.');
       });
     })();
@@ -2173,16 +2174,29 @@
     // Chip de conta: quem está logado + oficina + sair (só na nuvem, com staff).
     const acc = $('#wkAccount');
     if (acc) {
-      const u = WERK.cloud ? WERK.authUser() : null;
+      const u = (WERK.cloud || WERK.isDemo) ? WERK.authUser() : null;
       const perfil = WERK.staffPerfil && WERK.staffPerfil();
       if (u && perfil) {
         const em = u.email || '';
         const av = ((m.displayNome || em || '?').trim()[0] || '?').toUpperCase();
-        acc.innerHTML = `<span class="av">${esc(av)}</span><span class="who"><b>${esc(m.displayNome)}</b><small>${esc(em)}${perfil.papel ? ' · ' + esc(perfil.papel) : ''}</small></span><button class="out" id="wkSair" title="Sair da conta" aria-label="Sair">⎋</button>`;
+        const rot = WERK.isDemo ? '🧪 demonstração · ' + esc(perfil.papel || '') : esc(em) + (perfil.papel ? ' · ' + esc(perfil.papel) : '');
+        acc.innerHTML = `<span class="av">${esc(av)}</span><span class="who"><b>${esc(m.displayNome)}</b><small>${rot}</small></span><button class="out" id="wkSair" title="${WERK.isDemo ? 'Sair da demonstração' : 'Sair da conta'}" aria-label="Sair">⎋</button>`;
         acc.hidden = false;
         const out = $('#wkSair');
-        if (out) out.addEventListener('click', async () => { if (confirm('Sair desta conta?')) { await WERK.logoutAuth(); location.reload(); } });
+        if (out) out.addEventListener('click', async () => {
+          if (WERK.isDemo) { try { sessionStorage.removeItem('evx.demo'); sessionStorage.removeItem('evx.demo.papel'); } catch (_) {} location.href = 'demo.html'; return; }
+          if (confirm('Sair desta conta?')) { await WERK.logoutAuth(); location.reload(); }
+        });
       } else { acc.hidden = true; acc.innerHTML = ''; }
+    }
+    // Demonstração: exibe a separação por papel — o mecânico vê só o operacional
+    // (check-in, quadro, veículos, peças); gestão/equipe/clientes ficam com gestor/admin.
+    // Produção segue inalterada; RBAC real por papel é um próximo passo opcional.
+    if (WERK.isDemo) {
+      const papel = (WERK.staffPerfil() || {}).papel || 'gestor';
+      $$('#wkNav button[data-roles]').forEach(b => {
+        b.style.display = b.dataset.roles.split(',').includes(papel) ? '' : 'none';
+      });
     }
   }
 

@@ -26,11 +26,11 @@
     <button data-view="agenda">📅 Agenda</button>
     <button data-view="checkin">📷 Novo Check-in</button>
     <button data-view="veiculos">🚘 Veículos & Prontuário</button>
-    <button data-view="clientes">👤 Clientes & Acesso</button>
-    <button data-view="equipe">👥 Equipe</button>
+    <button data-view="clientes" data-roles="consultor,gestor,admin">👤 Clientes & Acesso</button>
+    <button data-view="equipe" data-roles="gestor,admin">👥 Equipe</button>
     <button data-view="pecas">⚙️ Motor de Peças</button>
-    <button data-view="gestao">📊 Gestão & DRE</button>
-    <button data-view="config">🛠 Configurações</button>
+    <button data-view="gestao" data-roles="gestor,admin">📊 Gestão & DRE</button>
+    <button data-view="config" data-roles="gestor,admin">🛠 Configurações</button>
   </nav>
   <div id="wkAccount" class="wk-account" hidden></div>
   <div class="foot">
@@ -54,6 +54,7 @@
 <div class="wk-toasts" id="wkToasts"></div>
 
 <script src="assets/js/env.js"></script>
+<script src="assets/js/demo.js"></script>
 <script src="assets/js/theme.js"></script>
 <script src="assets/vendor/qrcode.min.js"></script>
 <script src="assets/js/data.js"></script>
