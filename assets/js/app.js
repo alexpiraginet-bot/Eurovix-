@@ -19,6 +19,26 @@
     osOpen: null,
   };
 
+  /* Marca white-label: nome/logo da oficina logada (nada de default de outra empresa). */
+  const brandNome = () => { try { return (WERK.marca && WERK.marca().displayNome) || 'sua oficina'; } catch (_) { return 'sua oficina'; } };
+  const brandWhats = () => {
+    try { const d = String((WERK.marca && WERK.marca().fone) || '').replace(/\D/g, ''); if (d.length >= 10) return d.length <= 11 ? '55' + d : d; } catch (_) {}
+    return (EVX.CONTACT && EVX.CONTACT.whatsapp) || '';
+  };
+  function renderBrand() {
+    let m = {}; try { m = (WERK.marca && WERK.marca()) || {}; } catch (_) {}
+    const logo = m.logo || null;
+    const isAssetLogo = !!(logo && /^assets\//.test(logo));
+    $$('.js-brand-logo').forEach(img => {
+      const holder = img.parentElement;
+      let wm = holder && holder.querySelector('.js-brand-wordmark');
+      if (logo) { img.src = logo; img.alt = m.displayNome || ''; img.style.display = ''; if (wm) wm.remove(); }
+      else { img.style.display = 'none'; if (holder) { if (!wm) { wm = document.createElement('span'); wm.className = 'js-brand-wordmark'; holder.appendChild(wm); } wm.textContent = m.displayNome || 'Sua oficina'; } }
+    });
+    $$('.js-brand-icon').forEach(ic => { ic.style.display = isAssetLogo ? '' : 'none'; });
+    try { document.title = m.nome ? m.nome + ' · app' : 'App do cliente · LexOS'; } catch (_) {}
+  }
+
   /* ============================================================
      Boot: splash → sessão → login/app
      ============================================================ */
@@ -28,7 +48,9 @@
   const CONVITE = new URLSearchParams(location.search).get('convite');
   const PREVIEW = new URLSearchParams(location.search).has('preview');
 
+  renderBrand(); // marca cedo (splash) no modo local; recarregada após WERK.ready p/ nuvem
   Promise.all([WERK.ready, new Promise(r => setTimeout(r, 1400))]).then(() => {
+    renderBrand();
     splash.classList.add('hide');
     if (WERK.cloud) $('#loginForm .login-demo').style.display = 'none'; // produção: sem conta demo
     // ?preview=1 (com EVX_ENV zerado no app.html) entra direto na conta demo local,
@@ -61,7 +83,7 @@
     const c = await WERK.clientePorConvite(tok);
     if (!c) {
       loginView.classList.remove('hide');
-      loginInfo('Convite não encontrado neste aparelho. Peça um novo link no balcão da EUROVIX ou entre com telefone e senha.');
+      loginInfo(`Convite não encontrado neste aparelho. Peça um novo link no balcão da ${brandNome()} ou entre com telefone e senha.`);
       return;
     }
     if (c.senha) {
@@ -93,7 +115,7 @@
   });
   $('#forgotLink').addEventListener('click', (e) => {
     e.preventDefault();
-    toast('Recuperação de acesso', 'Peça um novo link de acesso no balcão ou pelo WhatsApp da EUROVIX — você cria a senha de novo na hora.', 'ok');
+    toast('Recuperação de acesso', `Peça um novo link de acesso no balcão ou pelo WhatsApp da ${brandNome()} — você cria a senha de novo na hora.`, 'ok');
   });
 
   $('#conviteForm').addEventListener('submit', async (e) => {
@@ -108,7 +130,7 @@
     EVX.setSession(session);
     history.replaceState(null, '', location.pathname);
     conviteView.classList.add('hide');
-    toast('Acesso criado ✓', 'Seu login é o seu telefone. Bem-vindo(a) ao app EUROVIX!', 'ok');
+    toast('Acesso criado ✓', `Seu login é o seu telefone. Bem-vindo(a) ao app da ${brandNome()}!`, 'ok');
     enter(session);
   });
   $('#convToLogin').addEventListener('click', async () => {
@@ -140,7 +162,7 @@
     try {
       $('#helloName').textContent = (String(session.nome || 'Cliente').trim().split(' ')[0]) || 'Cliente';
       if (!EVX.getNotifications().length) {
-        EVX.pushNotification({ titulo: 'Bem-vindo ao app EUROVIX!', texto: 'Acompanhe seu BMW, aprove orçamentos item a item e fale com seu consultor por aqui.', quando: Date.now(), tipo: 'ok' });
+        EVX.pushNotification({ titulo: `Bem-vindo ao app da ${brandNome()}!`, texto: 'Acompanhe seu veículo, aprove orçamentos item a item e fale com seu consultor por aqui.', quando: Date.now(), tipo: 'ok' });
         if (myOS().some(o => o.numero === 1258 && o.status === 'aprovacao')) {
           EVX.pushNotification({ titulo: 'OS #1258 aguarda sua aprovação', texto: 'O orçamento da revisão + bieletas está pronto — aprove pelo app.', quando: Date.now(), tipo: 'os' });
         }
@@ -314,7 +336,7 @@
             <div class="sub">Nenhum veículo vinculado no momento</div>
           </div>
         </div>
-        <div class="vc-next">Seu BMW entra aqui automaticamente no check-in da EUROVIX — e a garagem segue sempre o dono atual de cada placa.</div>
+        <div class="vc-next">Seu veículo entra aqui automaticamente no check-in da ${brandNome()} — e a garagem segue sempre o dono atual de cada placa.</div>
         <div class="vc-cta">
           <a class="btn btn-primary" href="agendamento.html">Agendar visita</a>
           <button class="btn btn-secondary" data-goto="os">Minhas OS</button>
@@ -327,7 +349,7 @@
         <a class="qbtn" href="agendamento.html">${EVX.icon('calendar', 19)}Agendar</a>
         <button class="qbtn" data-goto="servicos">${EVX.icon('scan', 19)}Serviços</button>
         <button class="qbtn" data-goto="os">${EVX.icon('doc', 19)}Histórico</button>
-        <a class="qbtn" href="https://wa.me/${EVX.CONTACT.whatsapp}?text=${encodeURIComponent('Olá! Estou no app EUROVIX e preciso de ajuda.')}" target="_blank" rel="noopener">${EVX.icon('whats', 19)}Suporte</a>
+        <a class="qbtn" href="https://wa.me/${brandWhats()}?text=${encodeURIComponent('Olá! Estou no app da ' + brandNome() + ' e preciso de ajuda.')}" target="_blank" rel="noopener">${EVX.icon('whats', 19)}Suporte</a>
       </div>
 
       ${live.length ? `<div class="sec-label">Em andamento <a data-goto="os">ver tudo</a></div>${live.map(osCardHTML).join('')}` : ''}
@@ -371,7 +393,7 @@
   function renderServicos() {
     $('[data-view="servicos"]').innerHTML = `
       <h2 class="vtitle">Serviços</h2>
-      <p class="vsub">Todo o catálogo EUROVIX — toque para agendar.</p>
+      <p class="vsub">Todo o catálogo da ${brandNome()} — toque para agendar.</p>
       <div class="svc-grid">
         ${EVX.SERVICES.map(s => `
           <a class="svc-tile" href="agendamento.html?servico=${s.id}">
@@ -383,7 +405,7 @@
       <div class="acard" style="margin-top:16px;display:flex;gap:13px;align-items:center">
         ${EVX.icon('shield', 26)}
         <div style="flex:1">
-          <b style="font-family:var(--font-display);font-size:13px">Garantia EUROVIX</b>
+          <b style="font-family:var(--font-display);font-size:13px">Garantia ${brandNome()}</b>
           <p style="font-size:11.5px;color:var(--txt-2);margin-top:2px">12 meses em peças e mão de obra, item a item, com contagem regressiva no seu perfil.</p>
         </div>
       </div>`;
@@ -694,7 +716,7 @@
     return `
       <div class="sec-label">Avalie sua experiência</div>
       <div class="acard" id="npsBox">
-        <p style="font-size:12px;color:var(--txt-2);margin-bottom:10px">De 0 a 10, o quanto você recomendaria a EUROVIX?</p>
+        <p style="font-size:12px;color:var(--txt-2);margin-bottom:10px">De 0 a 10, o quanto você recomendaria a ${brandNome()}?</p>
         <div style="display:grid;grid-template-columns:repeat(11,1fr);gap:4px">
           ${Array.from({ length: 11 }, (_, n) => `<button class="nps-n" data-n="${n}" style="padding:9px 0;border-radius:8px;border:1px solid var(--line-strong);background:var(--navy);color:var(--txt-2);cursor:pointer;font-family:var(--font-display);font-weight:700;font-size:12px">${n}</button>`).join('')}
         </div>
@@ -705,7 +727,7 @@
     if (!box) return;
     $$('.nps-n', box).forEach(b => b.addEventListener('click', () => {
       WERK.avaliarNps(o.numero, +b.dataset.n);
-      toast('Obrigado! 🏁', 'Sua avaliação ajuda a manter o padrão EUROVIX.', 'ok');
+      toast('Obrigado! 🏁', `Sua avaliação ajuda a manter o padrão da ${brandNome()}.`, 'ok');
       renderOS();
     }));
   }
@@ -717,7 +739,7 @@
     const appts = EVX.getAppointments();
     $('[data-view="agenda"]').innerHTML = `
       <h2 class="vtitle">Agenda</h2>
-      <p class="vsub">Seus agendamentos na EUROVIX.</p>
+      <p class="vsub">Seus agendamentos na ${brandNome()}.</p>
       ${appts.length ? appts.map(a => `
         <div class="appt-card">
           <div class="appt-date"><b>${(a.dataLabel.match(/\d+/) || ['—'])[0].padStart(2, '0')}</b><span>${(a.dataLabel.split(' ')[1] || '').split('/')[1] || a.dataLabel.split(' ')[0]}</span></div>
@@ -831,14 +853,14 @@
 
       <div class="sec-label">Conta</div>
       <div class="plist">
-        <a class="prow" href="index.html">${EVX.icon('home', 20)}<div><b>Site EUROVIX</b><span>Serviços e contato</span></div><span class="chev">›</span></a>
+        <a class="prow" href="index.html">${EVX.icon('home', 20)}<div><b>Site da ${brandNome()}</b><span>Serviços e contato</span></div><span class="chev">›</span></a>
         <a class="prow" href="werkos.html" target="_blank">${EVX.icon('tool', 20)}<div><b>WERK OS — painel da oficina</b><span>Abra lado a lado e veja o tempo real</span></div><span class="chev">›</span></a>
         <a class="prow" href="apresentacao.html">${EVX.icon('doc', 20)}<div><b>Apresentação da marca</b><span>Identidade & ecossistema</span></div><span class="chev">›</span></a>
       </div>
       <div class="plist">
         <button class="prow danger" id="logoutBtn">${EVX.icon('logout', 20)}<div><b>Sair da conta</b><span>Encerrar sessão neste aparelho</span></div></button>
       </div>
-      <p style="text-align:center;font-size:10.5px;color:var(--txt-3);margin-top:6px">EUROVIX App · demo v2.0 (WERK OS) · ${EVX.CONTACT.horario}</p>`;
+      <p style="text-align:center;font-size:10.5px;color:var(--txt-3);margin-top:6px">${brandNome()} · app · powered by LexOS</p>`;
 
     $('#logoutBtn').addEventListener('click', logout);
     $$('.prow[data-vehicle]').forEach(b => b.addEventListener('click', () => {
@@ -914,7 +936,7 @@
   // Rede de segurança: um erro de render NUNCA pode deixar a tela em branco.
   // Em vez de sumir tudo, mostramos um cartão de recuperação com Recarregar/Sair.
   function renderFalha(host, tab, err) {
-    try { console.error('EUROVIX · falha ao renderizar a aba "' + tab + '":', err); } catch (_) {}
+    try { console.error('LexOS · falha ao renderizar a aba "' + tab + '":', err); } catch (_) {}
     const det = (err && (err.message || String(err))) || 'erro desconhecido';
     host.innerHTML = `
       <div class="empty-state">

@@ -48,16 +48,28 @@ window.EVXTheme = (function () {
   /* ---------- Push flutuante: horário + alternador de tema ---------- */
   function mountFab() {
     if (document.getElementById('evxFab')) return;
+    // Tenant-aware: no site institucional (sem WERK) mantém a EUROVIX-piloto + horário ao vivo;
+    // no app/painel (WERK presente) usa a identidade da oficina logada.
+    let M = null;
+    try { if (window.WERK && WERK.marca) M = WERK.marca(); } catch (_) { M = null; }
+    const custom = !!(M && M.nome);
+    const nome = custom ? M.nome : 'EUROVIX';
+    const endereco = custom ? (M.endereco || '') : 'R. Hermes Curry Carneiro, 421 · Ilha de Santa Maria, Vitória/ES';
+    const digits = String((custom ? M.fone : '5527997306440') || '').replace(/\D/g, '');
+    const wa = digits.length >= 12 ? digits : (digits.length >= 10 ? '55' + digits : '');
+    const scheduleHTML = custom
+      ? `<div class="ehp-row"><span>Horário</span><b>${M.horario || '—'}</b></div>`
+      : HOURS.map(h => `<div class="ehp-row"><span>${h.rotulo}</span><b>${h.abre != null ? fmt(h.abre) + ' – ' + fmt(h.fecha) : 'Fechado'}</b></div>`).join('');
     const el = document.createElement('div');
     el.className = 'evx-fab';
     el.id = 'evxFab';
     el.innerHTML = `
       <div class="evx-hours-pop" id="evxHoursPop" hidden>
-        <b>EUROVIX · horário de funcionamento</b>
+        <b>${nome} · horário de funcionamento</b>
         <div class="ehp-status" id="ehpStatus"></div>
-        ${HOURS.map(h => `<div class="ehp-row"><span>${h.rotulo}</span><b>${h.abre != null ? fmt(h.abre) + ' – ' + fmt(h.fecha) : 'Fechado'}</b></div>`).join('')}
-        <div class="ehp-foot">R. Hermes Curry Carneiro, 421 · Ilha de Santa Maria, Vitória/ES<br>
-          <a href="https://wa.me/5527997306440?text=${encodeURIComponent('Olá! Vim pelo site da EUROVIX.')}" target="_blank" rel="noopener">WhatsApp (27) 99730-6440</a>
+        ${scheduleHTML}
+        <div class="ehp-foot">${endereco ? endereco + '<br>' : ''}
+          ${wa ? `<a href="https://wa.me/${wa}?text=${encodeURIComponent('Olá! Vim pelo ' + (custom ? 'app' : 'site') + ' da ' + nome + '.')}" target="_blank" rel="noopener">WhatsApp${custom ? '' : ' (27) 99730-6440'}</a>` : ''}
         </div>
       </div>
       <button class="evx-fab-btn" id="evxHoursBtn" type="button" aria-label="Horário de funcionamento" title="Horário de funcionamento">🕐<span class="evx-fab-dot" id="evxHoursDot"></span></button>`;
@@ -65,22 +77,28 @@ window.EVXTheme = (function () {
 
     const pop = el.querySelector('#evxHoursPop');
     const refresh = () => {
-      const st = hoursStatus(new Date());
       const box = el.querySelector('#ehpStatus');
+      const dot = el.querySelector('#evxHoursDot');
+      if (custom) { box.textContent = M.horario || ''; box.className = 'ehp-status'; dot.className = 'evx-fab-dot'; return; }
+      const st = hoursStatus(new Date());
       box.textContent = st.texto;
       box.className = 'ehp-status ' + (st.aberto ? 'open' : 'closed');
-      el.querySelector('#evxHoursDot').className = 'evx-fab-dot ' + (st.aberto ? 'open' : 'closed');
+      dot.className = 'evx-fab-dot ' + (st.aberto ? 'open' : 'closed');
     };
     refresh();
-    setInterval(refresh, 60000);
+    if (!custom) setInterval(refresh, 60000);
     el.querySelector('#evxHoursBtn').addEventListener('click', () => { pop.hidden = !pop.hidden; });
     document.addEventListener('click', (e) => { if (!el.contains(e.target)) pop.hidden = true; });
   }
 
   apply(); // fixa data-theme=dark e normaliza o localStorage na hora, sem esperar o DOM
+  const remount = () => { const f = document.getElementById('evxFab'); if (f) f.remove(); mountFab(); };
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', mountFab);
   } else { mountFab(); }
+  // App/painel: a identidade da oficina pode chegar depois (hidratação da nuvem) — re-monta com a marca certa.
+  try { if (window.WERK && WERK.ready && WERK.ready.then) WERK.ready.then(remount); } catch (_) {}
+  window.addEventListener('evx:sync', remount);
 
   return { get: current, apply, HOURS, hoursStatus };
 })();

@@ -202,13 +202,14 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     valorHora: 380,                     // R$/h de MO
     margens: { original: 22, oem: 28, aftermarket: 35 },   // % por nível
     garantiaMeses: { peca: 12, mo: 12 },
+    // Identidade da oficina — em BRANCO por padrão: cada oficina preenche a sua no
+    // onboarding/Configurações. Nada de marca de outra empresa como default.
     oficina: {
-      nome: 'EUROVIX REPARAÇÃO AUTOMOTIVA LTDA',
-      cnpj: '45.979.822/0001-02',
-      endereco: 'R. Maria de Lourdes Garcia, 303 — Monte Belo, Vitória/ES · CEP 29053-310',
-      cidade: 'Vitória/ES',
-      fone: '(27) 99730-6440 (WhatsApp)',
-      pixChave: 'configure-sua-chave@pix (demo)',
+      nome: '', cnpj: '', endereco: '', cidade: '',
+      fone: '', email: '', pixChave: '', site: '',
+      horario: 'Seg–Sex 8h–18h · Sáb 8h–12h',
+      logo: null,      // fundo escuro (painel/app do cliente)
+      logoDoc: null,   // fundo claro (documentos impressos)
     },
     tecnicos: [
       { id: 't1', nome: 'Régis Souza',  espec: 'Motor / Powertrain' },
@@ -224,8 +225,14 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
   function read(k, fb) { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : fb; } catch (e) { return fb; } }
   function write(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { console.warn('storage cheio', e); } }
 
-  const getConfig = () => ({ ...DEFAULT_CONFIG, ...read(KEYS.config, {}), margens: { ...DEFAULT_CONFIG.margens, ...(read(KEYS.config, {}).margens || {}) } });
+  const getConfig = () => { const s = read(KEYS.config, {}) || {}; return { ...DEFAULT_CONFIG, ...s, margens: { ...DEFAULT_CONFIG.margens, ...(s.margens || {}) }, oficina: { ...DEFAULT_CONFIG.oficina, ...(s.oficina || {}) } }; };
   const saveConfig = (c) => write(KEYS.config, c);
+  // Identidade resolvida da oficina — com flags de conveniência p/ o render white-label.
+  function marca() {
+    const o = getConfig().oficina || {};
+    const nome = (o.nome || '').trim();
+    return { ...o, nome, displayNome: nome || 'Sua oficina', temLogo: !!o.logo, temLogoDoc: !!o.logoDoc, configurada: !!(nome && o.logo) };
+  }
 
   const getVehicles = () => read(KEYS.vehicles, []);
   const saveVehicles = (v) => write(KEYS.vehicles, v);
@@ -905,10 +912,29 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     });
   }
 
+  // Migração demo: garante a identidade da oficina-piloto EUROVIX no config LOCAL
+  // (idempotente). Só quando já há demo (seedv) e a identidade está em branco —
+  // assim navegadores demo antigos não regridem para a marca em branco. Tenant real
+  // (nuvem) nunca passa por aqui: começa em branco e preenche no onboarding.
+  function ensureMarcaDemo() {
+    if (!read(KEYS.seedv, false)) return;
+    const c = read(KEYS.config, {}) || {};
+    if (c.oficina && (c.oficina.nome || '').trim()) return;
+    write(KEYS.config, { ...c, oficina: {
+      nome: 'EUROVIX REPARAÇÃO AUTOMOTIVA LTDA', cnpj: '45.979.822/0001-02',
+      endereco: 'R. Maria de Lourdes Garcia, 303 — Monte Belo, Vitória/ES · CEP 29053-310',
+      cidade: 'Vitória/ES', fone: '(27) 99730-6440 (WhatsApp)', email: 'contato@eurovix.com.br',
+      pixChave: 'configure-sua-chave@pix (demo)', site: 'eurovix.vercel.app',
+      horario: 'Seg–Sex 9h–18h · Sáb 9h–13h',
+      logo: 'assets/img/brand/logo-oficial-branco.png', logoDoc: 'assets/img/brand/logo-oficial-preto.png',
+    } });
+  }
+
   if (!CLOUD) { // na nuvem o banco é a verdade: sem seeds/migração local
     seed();
     seedAgenda();
     ensureClients();
+    ensureMarcaDemo();
   }
 
   return {
@@ -931,6 +957,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     getVehicles, upsertVehicle,
     normTel, normPlaca, getClientes, upsertCliente, clientePorTelefone, clientePorConvite,
     ativarCliente, loginCliente, garagemDe, conviteUrl, waLink,
+    marca,
     getAllOS, saveAllOS, getOS, novaOS, novoItem, itemDeIsta, updateOS, setStatus,
     getAgendamentos, addAgendamento, setAgendamentoStatus, agendarPublico,
     pendencias, chatSend,

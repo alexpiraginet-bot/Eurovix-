@@ -13,19 +13,25 @@
   let cfg = WERK.getConfig();
   const sev = { critico: 'CRÍTICO', preventivo: 'PREVENTIVO', ok: 'OK' };
 
-  const header = (titulo, sub) => `
+  const header = (titulo, sub) => {
+    const m = (WERK.marca && WERK.marca()) || cfg.oficina || {};
+    const brand = m.logoDoc
+      ? `<img src="${m.logoDoc}" alt="${m.nome || ''}" style="height:46px;width:auto">`
+      : `<b style="font-size:22px;font-weight:800;letter-spacing:.01em;color:#0A0A0A">${m.nome || m.displayNome || 'Sua oficina'}</b>`;
+    return `
     <div class="doc-head">
       <div>
-        <img src="assets/img/brand/logo-oficial-preto.png" alt="EUROVIX" style="height:46px;width:auto">
-        <small>Oficina Especializada BMW · WERK OS</small>
+        ${brand}
+        <small>${[m.cidade, 'powered by LexOS'].filter(Boolean).join(' · ')}</small>
       </div>
       <div class="dtitle"><b>${titulo}</b><span>${sub}</span></div>
     </div>`;
+  };
 
   const footer = (extra) => `
     <div class="foot">
       <span>${cfg.oficina.nome} · CNPJ ${cfg.oficina.cnpj}<br>${cfg.oficina.endereco} · ${cfg.oficina.fone}</span>
-      <span style="text-align:right">${extra || ''}<br>Documento gerado pelo WERK OS em ${new Date().toLocaleString('pt-BR')}</span>
+      <span style="text-align:right">${extra || ''}<br>Documento gerado pelo LexOS em ${new Date().toLocaleString('pt-BR')}</span>
     </div>`;
 
   const veicGrid = (os) => `
@@ -71,7 +77,7 @@
     if (!cli) return '';
     const url = WERK.conviteUrl(cli);
     return `
-      <h2>Seu acesso ao app EUROVIX</h2>
+      <h2>Seu acesso ao app da ${cfg.oficina.nome || 'oficina'}</h2>
       <div class="grid">
         <div class="kv"><b>Como entrar</b>${cli.senha
           ? 'Acesso ativo — entre com seu telefone e a senha que você criou.'
@@ -110,7 +116,7 @@
         <p class="muted" style="margin-top:14px">Declaro que acompanhei a inspeção de entrada e reconheço o estado do veículo acima descrito, registrado em fotos com carimbo de data/hora.</p>
         <div class="sig-row">
           <div class="sig">${typeof c.assinatura === 'string' && c.assinatura.startsWith('data:') ? `<img src="${c.assinatura}">` : ''}${os.cliente}<br>Cliente</div>
-          <div class="sig">Recepção EUROVIX<br>Check-in digital</div>
+          <div class="sig">Recepção ${cfg.oficina.nome || ''}<br>Check-in digital</div>
         </div>` + footer('Blindagem jurídica: fotos + assinatura + timestamp');
     },
 
@@ -225,10 +231,10 @@
     const os = WERK.getOS(q.get('os'));
     if (tipo === 'prontuario') {
       box.innerHTML = render.prontuario();
-      document.title = `Prontuário ${q.get('vin')} — EUROVIX`;
+      document.title = `Prontuário ${q.get('vin')} — ${cfg.oficina.nome || 'oficina'}`;
     } else if (os && render[tipo]) {
       box.innerHTML = render[tipo](os);
-      document.title = `${tipo.toUpperCase()} OS #${os.numero} — EUROVIX`;
+      document.title = `${tipo.toUpperCase()} OS #${os.numero} — ${cfg.oficina.nome || 'oficina'}`;
     } else {
       box.innerHTML = header('Documento não encontrado', WERK.cloud ? 'verifique o número da OS — e se você está logado (painel ou app)' : 'verifique o número da OS') + footer();
     }

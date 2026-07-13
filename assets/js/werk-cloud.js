@@ -1065,7 +1065,7 @@
     normTel: local.normTel, normPlaca: local.normPlaca,
     conviteUrl: local.conviteUrl, waLink: local.waLink,
     /* — leituras síncronas do espelho — */
-    getAllOS, getOS, getVehicles, getClientes, getConfig,
+    getAllOS, getOS, getVehicles, getClientes, getConfig, marca: local.marca,
     clientePorTelefone, garagemDe, pendencias,
     /* — escritas otimistas (espelho + push assíncrono) — */
     updateOS, setStatus, chatSend, upsertVehicle, upsertCliente, saveConfig, saveAllOS, registrarPagamento,
