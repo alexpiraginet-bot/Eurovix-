@@ -12,6 +12,11 @@
   const main = $('#wkMain');
   const I = (n, s) => EVX.icon(n, s || 16);
   const bnome = () => { try { return (WERK.marca && WERK.marca().displayNome) || 'a oficina'; } catch (_) { return 'a oficina'; } };
+  // Buffer em memória (não persistido) da última leitura anexada por OS: permite
+  // "aprofundar com IA" depois de uma leitura local (dicionário), sem reanexar.
+  const laudoBuf = {};
+  // Carrega o banco OBD-II mundial cedo, para as estatísticas do dicionário já aparecerem.
+  try { if (WERK && WERK.carregarSeedObd) WERK.carregarSeedObd(); } catch (_) {}
 
   /* ---------- infra: toast, modal, hash ---------- */
   function toast(t, s) {
@@ -64,9 +69,13 @@
     img.src = URL.createObjectURL(file);
   }
 
-  // ---- ISTA: extrai a MEMÓRIA DE FALHAS de um PDF no navegador (pdf.js) ----
+  // ---- Scanner: extrai a MEMÓRIA DE FALHAS de um PDF no navegador (pdf.js) ----
   // Manda só o texto relevante à IA em vez das páginas do PDF como imagem → ~10× menos
   // tokens de entrada (o PDF inteiro seria tokenizado; o texto filtrado, não).
+  // Reconhece os dois padrões: hex proprietário prefixado com "0x" (BMW ISTA) E
+  // código SAE/OBD-II (P/C/B/U + 4 díg. — Autel, Launch, ELM327, genéricos).
+  const RE_COD = /[0-9A-Fa-f]{5,6}|[PBCU][0-3][0-9A-F]{3}/;              // núcleo do código
+  const RE_COD_LINHA = new RegExp('^► (' + RE_COD.source + ') · (.*)$', 'i');
   async function pdfFalhasTexto(file) {
     if (!window.pdfjsLib) return '';
     try {
@@ -80,22 +89,41 @@
         raw += items.map(it => it.str).join('') + '\n';
       }
       if (raw.replace(/\s/g, '').length < 400) return ''; // PDF escaneado (imagem) → sem texto útil
-      // No ISTA cada código de falha vem prefixado com "0x" → uma linha por falha.
-      const linhas = raw.replace(/[ \t]{2,}/g, ' ').replace(/0x([0-9A-Fa-f]{5,6})/g, '\n► $1 · ').split(/\r?\n/);
+      // Marca uma linha por falha: hex com "0x" (BMW) e SAE/OBD-II avulso (genérico).
+      const linhas = raw
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/0x([0-9A-Fa-f]{5,6})/g, '\n► $1 · ')
+        .replace(/([^0-9A-Za-z]|^)([PBCU][0-3][0-9A-F]{3})(?![0-9A-Za-z])/g, '$1\n► $2 · ')
+        .split(/\r?\n/);
       const keep = [];
       for (let i = 0; i < Math.min(30, linhas.length); i++) { const s = linhas[i].trim(); if (s && !/^► /.test(s)) keep.push(s.slice(0, 200)); } // cabeçalho do veículo
       const vistos = new Set();
       for (const l of linhas) {
-        const m = /^► ([0-9A-Fa-f]{5,6}) · (.*)$/.exec(l.trim());
+        const m = RE_COD_LINHA.exec(l.trim());
         if (!m) continue;
         const cod = m[1].toUpperCase(), desc = m[2].trim();
-        if (/^n\/a/i.test(desc) || !/[a-zà-ú]{3}/i.test(desc)) continue; // descarta codificação/ruído sem prosa
+        const ehSae = /^[PBCU][0-3][0-9A-F]{3}$/i.test(cod);
+        // hex proprietário exige prosa (descarta valores de codificação/ruído); código
+        // SAE entra mesmo sem descrição — o dicionário/IA preenche o significado.
+        if (!ehSae && (/^n\/a/i.test(desc) || !/[a-zà-ú]{3}/i.test(desc))) continue;
         if (vistos.has(cod)) continue; vistos.add(cod);
         keep.push('► ' + cod + ' · ' + desc.slice(0, 220));
       }
       if (!vistos.size) return ''; // formato não reconhecido → deixa o fallback mandar o PDF (imagem)
       return keep.join('\n').slice(0, 40000);
     } catch (_) { return ''; }
+  }
+  // Lista os códigos das linhas ► já extraídas (para tentar a leitura local sem IA).
+  function codigosDoTexto(texto) {
+    const out = []; const seen = new Set();
+    for (const l of String(texto || '').split(/\r?\n/)) {
+      const m = RE_COD_LINHA.exec(l.trim());
+      if (!m) continue;
+      const c = m[1].toUpperCase();
+      if (seen.has(c)) continue; seen.add(c);
+      out.push(c);
+    }
+    return out;
   }
   function lerArquivoDataUrl(file) { return new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(file); }); }
   function fotoLaudo(file) { // comprime a foto do laudo p/ menos tokens, mantendo legível
@@ -734,10 +762,10 @@
             </div>
           </div>
           <div class="wk-panel">
-            <h3>${I('scan')} Diagnóstico ISTA — perito IA <span style="font-size:10px;color:var(--txt-3)">pode anexar o PDF inteiro — extraio só a memória de falhas no aparelho (leitura barata) e priorizo</span></h3>
-            ${(() => { const ev = [...os.eventos].reverse().find(e => e.tipo === 'ista'); return (ev && ev.laudo) ? renderLaudoIsta(ev.laudo, os) : '<p style="font-size:12px;color:var(--txt-3);margin-bottom:8px">Anexe o laudo do ISTA (memória de falhas). A IA transcreve, traduz, separa causa-raiz de consequência e sugere as medições — você revisa antes de orçar.</p>'; })()}
+            <h3>${I('scan')} Diagnóstico do scanner — perito IA <span style="font-size:10px;color:var(--txt-3)">qualquer aparelho (ISTA · Autel · Launch · Thinkcar · OBD-II) — foto da tela ou PDF; extraio só a memória de falhas no navegador (leitura barata) e priorizo</span></h3>
+            ${(() => { const ev = [...os.eventos].reverse().find(e => e.tipo === 'ista'); return (ev && ev.laudo) ? renderLaudoIsta(ev.laudo, os) : '<p style="font-size:12px;color:var(--txt-3);margin-bottom:8px">Anexe a leitura do scanner (foto da tela do aparelho ou PDF). Leio os códigos, traduzo, separo causa-raiz de consequência e sugiro as medições — você revisa antes de orçar. Códigos já conhecidos são decodificados pelo dicionário local, sem custo de IA.</p>'; })()}
             <label class="btn btn-secondary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;font-size:12px;margin-top:6px">
-              📎 Anexar laudo do ISTA (foto/PDF)
+              📎 Anexar leitura do scanner (foto/PDF)
               <input id="istaFile" type="file" accept="image/*,application/pdf" multiple hidden>
             </label>
             <span id="istaStatus" style="font-size:11px;color:var(--txt-3);margin-left:8px"></span>
@@ -798,11 +826,12 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
   function renderLaudoIsta(l, os) {
     l = l || {};
-    if (l.eh_ista === false) return `<p style="font-size:12px;color:var(--warn);margin-bottom:8px">${esc(l.resumo_executivo || 'O anexo não parece um diagnóstico ISTA/BMW.')}</p>`;
+    if (l.eh_ista === false) return `<p style="font-size:12px;color:var(--warn);margin-bottom:8px">${esc(l.resumo_executivo || 'O anexo não parece um laudo de scanner.')}</p>`;
     os = os || {};
     const vin = os.vin || '';
+    const ehBmw = /bmw|mini/i.test(os.veiculo || '') || /^(WBA|WBS|WBY|WBX|4US|5UX|5YM|WMW|WME)/i.test(vin);
     const podeLancar = os.status === 'diagnostico' || os.status === 'fila';
-    const istaKey = c => c.codigo || String(c.termo_peca || c.descricao || 'Peça do diagnóstico ISTA').slice(0, 90);
+    const istaKey = c => c.codigo || String(c.termo_peca || c.descricao || 'Peça do diagnóstico').slice(0, 90);
     const lancados = new Set((os.itens || []).filter(i => i.origem && i.origem.indexOf('ista:') === 0).map(i => i.origem.slice(5)));
     const sevCor = { critica: 'var(--red)', alta: '#ff8a3d', media: 'var(--warn)', baixa: 'var(--txt-3)' };
     const aviso = (l.requer_confirmacao_profissional && (l.avisos_seguranca || []).length)
@@ -824,7 +853,9 @@
         ${c.causa_provavel ? `<div style="font-size:10.5px;color:var(--txt-2);margin-top:3px">Causa provável: ${esc(c.causa_provavel)}</div>` : ''}
         ${c.exige_medicao && c.medicao ? `<div style="font-size:10.5px;color:var(--accent,#5aa0ff);margin-top:3px">🔧 Medir antes: ${esc(c.medicao)}</div>` : ''}
         <div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          ${(vin || c.termo_peca) ? `<a href="#" class="ista-peca" data-realoem="${esc(vin || '')}" data-termo="${esc(c.termo_peca || '')}" style="font-size:10.5px;color:#ff9d3d;text-decoration:none;font-weight:600">🔧 buscar peça no RealOEM${c.termo_peca ? ' · ' + esc(c.termo_peca) : ''}</a>` : ''}
+          ${(ehBmw && (vin || c.termo_peca))
+            ? `<a href="#" class="ista-peca" data-realoem="${esc(vin || '')}" data-termo="${esc(c.termo_peca || '')}" style="font-size:10.5px;color:#ff9d3d;text-decoration:none;font-weight:600">🔧 buscar peça no RealOEM${c.termo_peca ? ' · ' + esc(c.termo_peca) : ''}</a>`
+            : (c.termo_peca ? `<a href="https://www.google.com/search?q=${encodeURIComponent(c.termo_peca + ' ' + (os.veiculo || '') + ' peça')}" target="_blank" rel="noopener" style="font-size:10.5px;color:#ff9d3d;text-decoration:none;font-weight:600">🔧 buscar peça · ${esc(c.termo_peca)}</a>` : '')}
           ${botaoDvi}
         </div>
       </div>`;
@@ -843,7 +874,19 @@
       ${pranchaPecas(l, vin)}
       ${(l.proximos_passos || []).length ? `<div style="font-size:11px;color:var(--txt-2)"><b>Próximos passos:</b><ul style="margin:4px 0 0;padding-left:16px">${l.proximos_passos.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : ''}
       ${l.codigos_omitidos > 0 ? `<p style="font-size:10.5px;color:var(--warn);margin-top:6px">+${l.codigos_omitidos} código(s) além dos ${(l.codigos || []).length} priorizados acima — o laudo é extenso; anexe as páginas restantes em separado se precisar de todos.</p>` : ''}
-      <p style="font-size:10px;color:var(--txt-3);margin-top:8px">Confiança da leitura: ${Math.round((l.confianca || 0) * 100)}% · ${l.modo === 'demo' ? 'modo demonstração' : 'IA'} · <b>revise antes de orçar</b></p>`;
+      ${l.modo === 'dicionario' ? `<button data-ista-ia style="margin-top:8px;background:none;border:1px solid var(--line-strong);border-radius:8px;padding:7px 12px;font-size:11px;color:var(--accent,#5aa0ff);cursor:pointer;font-weight:600">🧠 aprofundar com IA (causa-raiz)</button>` : ''}
+      <p style="font-size:10px;color:var(--txt-3);margin-top:8px">Confiança da leitura: ${Math.round((l.confianca || 0) * 100)}% · ${l.modo === 'demo' ? 'modo demonstração' : l.modo === 'dicionario' ? '📕 dicionário local — sem custo de IA' : 'IA'} · <b>revise antes de orçar</b>${dicResumo()}</p>`;
+  }
+  // Resumo curto do estado do dicionário (aprendidos + banco mundial) para o rodapé do laudo.
+  function dicResumo() {
+    try {
+      if (!WERK.dicStats) return '';
+      const s = WERK.dicStats();
+      const partes = [];
+      if (s.aprendidos) partes.push(s.aprendidos + ' aprendido' + (s.aprendidos > 1 ? 's' : ''));
+      if (s.banco) partes.push((s.banco >= 1000 ? (s.banco / 1000).toFixed(1).replace('.0', '') + ' mil' : s.banco) + ' no banco mundial');
+      return partes.length ? ` · 📕 dicionário: ${partes.join(' + ')}` : '';
+    } catch (_) { return ''; }
   }
   // ---- Prancha de peças 2D (estilo catálogo ETK) — desenho esquemático das peças do diagnóstico ----
   function glyphKind(c) {
@@ -1183,14 +1226,46 @@
       views.os(os.numero);
     });
 
-    // Diagnóstico ISTA → perito IA: lê os anexos (foto/PDF) e grava o laudo na OS.
+    // Diagnóstico do scanner → perito IA. Local-first: se todos os códigos já são
+    // conhecidos, decodifica pelo dicionário (custo ZERO); só cai na IA quando há
+    // código inédito — e aí a IA ENSINA o dicionário para a próxima sair de graça.
+    const gravarLaudo = (laudo) => {
+      const via = laudo.modo === 'dicionario' ? 'dicionário local' : laudo.modo === 'demo' ? 'demonstração' : 'IA';
+      const resumo = (laudo.resumo_executivo || 'Laudo lido').slice(0, 140);
+      WERK.updateOS(os.numero, () => {}, { tipo: 'ista', titulo: 'Diagnóstico do scanner lido (' + via + ')', desc: resumo, ator: os.tecnico, laudo });
+    };
+    async function lerScanner(arquivos, texto, opts) {
+      opts = opts || {};
+      const ctx = { modelo: os.veiculo, placa: os.placa, vin: os.vin, km: os.km };
+      laudoBuf[os.numero] = { arquivos, texto, ctx };   // guarda p/ "aprofundar com IA"
+      // 1) leitura local pelo dicionário (sem IA) quando dá para cobrir todos os códigos
+      if (!opts.forcarIa && texto && WERK.lerLocal) {
+        const codes = codigosDoTexto(texto);
+        if (codes.length) {
+          const local = await WERK.lerLocal(codes, ctx);
+          if (local && local.ok) {
+            gravarLaudo(local);
+            toast('Lido pelo dicionário — sem custo de IA', local.requer_confirmacao_profissional ? '⚠️ Há sistema de segurança — confirme antes de orçar.' : codes.length + ' código(s) decodificados localmente.');
+            return local;
+          }
+        }
+      }
+      // 2) IA (transcreve o que o dicionário não cobre) — e aprende com o resultado
+      const laudo = await WERK.analisarIsta(arquivos, ctx, texto);
+      if (!laudo || !laudo.ok) return laudo;
+      let novos = 0;
+      try { if (WERK.dicAprender && Array.isArray(laudo.codigos)) novos = (WERK.dicAprender(laudo.codigos) || {}).novos || 0; } catch (_) {}
+      gravarLaudo(laudo);
+      toast('Diagnóstico analisado pela IA', laudo.requer_confirmacao_profissional ? '⚠️ Há sistema de segurança — confirme antes de orçar.' : (novos ? novos + ' código(s) novos aprendidos — a próxima leitura desses sai sem IA.' : 'Códigos decifrados e priorizados na OS.'));
+      return laudo;
+    }
     const istaFile = $('#istaFile');
     if (istaFile) istaFile.addEventListener('change', async () => {
       const files = [...(istaFile.files || [])].slice(0, 6);
       if (!files.length) return;
       const status = $('#istaStatus');
       const setStatus = (t) => { if (status) status.textContent = t; };
-      setStatus('⏳ Preparando o laudo…');
+      setStatus('⏳ Preparando a leitura…');
       try {
         const arquivos = []; let texto = '';
         for (const f of files) {
@@ -1205,14 +1280,25 @@
             arquivos.push(await lerArquivoDataUrl(f));
           }
         }
-        setStatus('⏳ Lendo o laudo com a IA…');
-        const laudo = await WERK.analisarIsta(arquivos, { modelo: os.veiculo, placa: os.placa, vin: os.vin, km: os.km }, texto);
+        setStatus('⏳ Lendo os códigos…');
+        const laudo = await lerScanner(arquivos, texto);
         if (!laudo || !laudo.ok) { setStatus('⚠️ ' + ((laudo && laudo.erro) || 'Não consegui ler o laudo.')); return; }
-        const resumo = (laudo.resumo_executivo || 'Laudo lido').slice(0, 140);
-        WERK.updateOS(os.numero, () => {}, { tipo: 'ista', titulo: 'Diagnóstico ISTA lido pela IA', desc: resumo, ator: os.tecnico, laudo });
-        toast('Diagnóstico ISTA analisado', laudo.requer_confirmacao_profissional ? '⚠️ Há sistema de segurança — confirme antes de orçar.' : 'Códigos decifrados e priorizados na OS.');
+        setStatus('');
         views.os(os.numero);
       } catch (e) { setStatus('⚠️ Falha ao ler o arquivo.'); }
+    });
+    // "aprofundar com IA": depois de uma leitura local, roda a IA (causa-raiz) reusando o buffer.
+    const istaIa = $('[data-ista-ia]');
+    if (istaIa) istaIa.addEventListener('click', async () => {
+      const buf = laudoBuf[os.numero];
+      if (!buf) { toast('Reanexe a leitura', 'A tela recarregou desde a leitura local — anexe o laudo de novo para aprofundar com IA.'); return; }
+      const rearm = () => { istaIa.disabled = false; istaIa.textContent = '🧠 aprofundar com IA (causa-raiz)'; };
+      istaIa.disabled = true; istaIa.textContent = '⏳ IA lendo…';
+      try {
+        const laudo = await lerScanner(buf.arquivos, buf.texto, { forcarIa: true });
+        if (!laudo || !laudo.ok) { toast('IA indisponível', (laudo && laudo.erro) || 'Não consegui aprofundar agora.'); rearm(); return; }
+        views.os(os.numero);
+      } catch (_) { rearm(); }
     });
 
     // RealOEM: abre o catálogo BMW e copia o VIN pra colar na busca por VIN (sem API — é só linkar).
@@ -1927,10 +2013,46 @@
         </div>
         <button class="btn btn-secondary" id="cf-sair">Sair do WERK OS</button>
       </div>` : ''}
+      <div class="wk-panel">
+        <h3>📕 Dicionário de códigos <span style="font-size:10px;color:var(--txt-3)">— aprende a cada laudo lido pela IA para baratear as próximas leituras</span></h3>
+        <p style="font-size:12px;color:var(--txt-2);margin-bottom:6px" id="cf-dic-stats">Carregando…</p>
+        <p style="font-size:11px;color:var(--txt-3);margin-bottom:10px">Vem semeado com o banco OBD-II mundial (SAE J2012 — códigos genéricos P/motor e U/rede que qualquer scanner emite). Códigos genéricos C/B e os proprietários (hex BMW etc.) entram sozinhos conforme a IA lê os laudos reais da oficina. Códigos já conhecidos são decodificados localmente, sem custo de IA.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-secondary" id="cf-dic-ver" style="font-size:12px">Ver códigos aprendidos</button>
+          <button type="button" class="btn btn-secondary" id="cf-dic-limpar" style="font-size:12px">Limpar aprendidos</button>
+        </div>
+      </div>
       <div class="wk-actions" style="justify-content:space-between">
         <button class="btn btn-secondary" id="cf-seed15">🚗 Carga de teste: +15 OS</button>\n        <button class="btn btn-secondary" id="cf-reset">${WERK.cloud ? '↺ Limpar cache local' : '↺ Resetar demo (limpa localStorage)'}</button>
         <button class="btn btn-primary" id="cf-save">Salvar configurações</button>
       </div>`;
+    // Dicionário de códigos: estatísticas + visualizador dos aprendidos.
+    (function wireDic() {
+      const alvo = $('#cf-dic-stats'); if (!alvo || !WERK.dicStats) { if (alvo) alvo.textContent = ''; return; }
+      const pinta = () => {
+        const s = WERK.dicStats();
+        const banco = s.banco >= 1000 ? (s.banco / 1000).toFixed(1).replace('.0', '') + ' mil' : s.banco;
+        alvo.innerHTML = `<b>${s.aprendidos}</b> código(s) aprendido(s) da sua oficina · <b>${banco || '—'}</b> no banco OBD-II mundial`;
+      };
+      pinta();
+      if (WERK.carregarSeedObd) WERK.carregarSeedObd().then(pinta).catch(() => {}); // atualiza quando o banco chega
+      const ver = $('#cf-dic-ver');
+      if (ver) ver.addEventListener('click', () => {
+        let dic = {}; try { dic = JSON.parse(localStorage.getItem('evx.ista.dic') || '{}'); } catch (_) {}
+        const chaves = Object.keys(dic).sort();
+        const linhas = chaves.length ? chaves.map(k => {
+          const d = dic[k] || {};
+          return `<div style="border-bottom:1px solid var(--line);padding:7px 0;font-size:12px"><code style="color:var(--warn);font-weight:700">${esc(k)}</code> <span style="color:var(--txt-3);font-size:10px">${esc(d.sistema || '')}${d.vezes > 1 ? ' · ×' + d.vezes : ''}</span><div style="color:var(--txt-2);font-size:11px;margin-top:2px">${esc(d.descricao || '')}</div></div>`;
+        }).join('') : '<p style="font-size:12px;color:var(--txt-3)">Nenhum código aprendido ainda. Assim que a IA ler um laudo, os códigos entram aqui e as próximas leituras deles saem sem custo.</p>';
+        modal(`<h3 style="margin-bottom:10px">📕 Códigos aprendidos (${chaves.length})</h3><div style="max-height:60vh;overflow:auto">${linhas}</div><div class="wk-actions" style="margin-top:14px"><button class="btn btn-secondary" onclick="document.getElementById('wkModal').classList.remove('open')">Fechar</button></div>`);
+      });
+      const limpar = $('#cf-dic-limpar');
+      if (limpar) limpar.addEventListener('click', () => {
+        if (!confirm('Limpar os códigos aprendidos? O banco OBD-II mundial continua. A IA volta a aprender do zero os códigos proprietários.')) return;
+        try { localStorage.removeItem('evx.ista.dic'); } catch (_) {}
+        pinta(); toast('Dicionário aprendido limpo', 'O banco mundial segue ativo; os proprietários serão reaprendidos.');
+      });
+    })();
     // Uploads de logo (guardados em buffer até salvar).
     let logoBuf = c.oficina.logo || null, logoDocBuf = c.oficina.logoDoc || null, iconBuf = c.oficina.icon || null;
     const wireLogo = (inputId, prevId, phId, rmId, set) => {
