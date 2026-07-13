@@ -71,29 +71,30 @@
     if (!window.pdfjsLib) return '';
     try {
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/vendor/pdf.worker.min.js';
-      const buf = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-      let full = '';
+      const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+      // Concatena os itens SEM espaço extra: o ISTA fragmenta os glifos do código
+      // (ex.: "8", "040D2") — só juntando sem espaço o código sobrevive inteiro.
+      let raw = '';
       for (let i = 1; i <= pdf.numPages; i++) {
-        const tc = await (await pdf.getPage(i)).getTextContent();
-        let lastY = null, line = '';
-        for (const it of tc.items) {
-          const y = it.transform[5];
-          if (lastY !== null && Math.abs(y - lastY) > 3) { if (line.trim()) full += line.trim() + '\n'; line = ''; }
-          line += it.str + ' '; lastY = y;
-        }
-        if (line.trim()) full += line.trim() + '\n';
+        const items = (await (await pdf.getPage(i)).getTextContent()).items;
+        raw += items.map(it => it.str).join('') + '\n';
       }
-      if (full.replace(/\s/g, '').length < 400) return ''; // PDF escaneado (imagem) → sem texto útil
-      const linhas = full.split(/\r?\n/);
-      const codeRe = /\b([0-9A-F]{5,6}|[PBCU][0-9A-F]{4})\b/;
-      const headerRe = /fehlerspeicher|mem[óo]ria de falha|c[óo]digo[s]? de (diagn|falha)|fault memory|lista de ac|st[öo]rung|klemme 30|unterspann|subtens/i;
-      const keep = new Set();
-      for (let i = 0; i < Math.min(35, linhas.length); i++) keep.add(i); // cabeçalho do veículo
-      linhas.forEach((l, i) => { if ((codeRe.test(l) && l.length < 400) || headerRe.test(l)) for (let j = Math.max(0, i - 1); j <= Math.min(linhas.length - 1, i + 1); j++) keep.add(j); });
-      let sel = [...keep].sort((a, b) => a - b).map(i => linhas[i]).join('\n');
-      if (sel.replace(/\s/g, '').length < 200) sel = full;
-      return sel.slice(0, 55000);
+      if (raw.replace(/\s/g, '').length < 400) return ''; // PDF escaneado (imagem) → sem texto útil
+      // No ISTA cada código de falha vem prefixado com "0x" → uma linha por falha.
+      const linhas = raw.replace(/[ \t]{2,}/g, ' ').replace(/0x([0-9A-Fa-f]{5,6})/g, '\n► $1 · ').split(/\r?\n/);
+      const keep = [];
+      for (let i = 0; i < Math.min(30, linhas.length); i++) { const s = linhas[i].trim(); if (s && !/^► /.test(s)) keep.push(s.slice(0, 200)); } // cabeçalho do veículo
+      const vistos = new Set();
+      for (const l of linhas) {
+        const m = /^► ([0-9A-Fa-f]{5,6}) · (.*)$/.exec(l.trim());
+        if (!m) continue;
+        const cod = m[1].toUpperCase(), desc = m[2].trim();
+        if (/^n\/a/i.test(desc) || !/[a-zà-ú]{3}/i.test(desc)) continue; // descarta codificação/ruído sem prosa
+        if (vistos.has(cod)) continue; vistos.add(cod);
+        keep.push('► ' + cod + ' · ' + desc.slice(0, 220));
+      }
+      if (!vistos.size) return ''; // formato não reconhecido → deixa o fallback mandar o PDF (imagem)
+      return keep.join('\n').slice(0, 40000);
     } catch (_) { return ''; }
   }
   function lerArquivoDataUrl(file) { return new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(file); }); }
