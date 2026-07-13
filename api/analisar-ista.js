@@ -62,7 +62,7 @@ async function handler(req, res) {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model, max_tokens: 4000, messages: [{ role: 'user', content }] }),
+      body: JSON.stringify({ model, max_tokens: 8000, messages: [{ role: 'user', content }] }),
     });
     if (!r.ok) {
       const detalhe = await r.text().catch(() => '');
@@ -98,6 +98,7 @@ function instrucao(ctxTxt) {
     '7) NUNCA gere número de peça, referência OEM, preço, mão de obra ou tempo. Não é estimável do laudo — orçamento é da oficina.',
     '8) PRIVACIDADE: não repita o VIN inteiro (devolva chassi mascarado ou null). Ignore nome/endereço/telefone/e-mail do cabeçalho. Não use o odômetro do freeze-frame como km atual.',
     '9) Se o anexo NÃO for um diagnóstico BMW/ISTA (selfie, doc aleatório, scanner de outra marca), eh_ista:false e o resto vazio.',
+    '10) LAUDO GRANDE: se houver muitos códigos, liste NO MÁXIMO os 20 mais relevantes — causa-raiz e críticos de segurança PRIMEIRO, depois por severidade (crítica→alta→média→baixa). Informe quantos ficaram de fora em "codigos_omitidos" (int, 0 se listou todos). Mantenha "descricao", "medicao", "causa_provavel" e "acao" concisos (1 frase cada) para o JSON caber inteiro.',
     '',
     'RESPONDA SOMENTE com um objeto JSON válido (sem prosa/markdown/cercas), EXATAMENTE assim:',
     '{',
@@ -108,6 +109,7 @@ function instrucao(ctxTxt) {
     '  "requer_confirmacao_profissional": <bool>, "avisos_seguranca": [<str>],',
     '  "codigos": [{"codigo":"<exato>","formato":"hex_bmw|sae_p|desconhecido","modulo":<str|null>,"descricao":"<transcrito+traduzido>","sistema":"motor|transmissao|freios/estabilidade|direcao|airbag/seguranca|eletrica|arrefecimento|conforto|carroceria|outro","severidade":"baixa|media|alta|critica","tipo":"raiz|consequente|indefinido","critico_seguranca":<bool>,"caractere_ambiguo":<bool>,"exige_medicao":<bool>,"medicao":<str|null>,"termo_peca":<str|null — termo curto p/ buscar a peça no catálogo, ex. "bobina de ignição"/"Zündspule"; só o nome do componente, sem nº de peça>,"causa_provavel":"<condicional>","acao":"<próxima ação>"}],',
     '  "sistemas_afetados": [<str>], "prioridades": [<str, do mais crítico ao cosmético>], "proximos_passos": [<medições/testes ANTES de orçar>],',
+    '  "codigos_omitidos": <int — quantos códigos ficaram de fora do array (0 se listou todos)>,',
     '  "observacoes": "<ressalvas, o que ficou ilegível/ambíguo>", "confianca": <0 a 1>',
     '}',
   ].join('\n');
@@ -115,10 +117,37 @@ function instrucao(ctxTxt) {
 
 function extrairJson(t) {
   if (!t) return null;
-  let s = String(t).trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
-  const a = s.indexOf('{'), b = s.lastIndexOf('}');
-  if (a < 0 || b < 0 || b < a) return null;
-  try { return JSON.parse(s.slice(a, b + 1)); } catch (_) { return null; }
+  let s = String(t).trim().replace(/^```(?:json)?/i, '').replace(/```\s*$/, '').trim();
+  const a = s.indexOf('{');
+  if (a < 0) return null;
+  s = s.slice(a);
+  // 1) tentativa direta: do 1º { ao último }
+  const b = s.lastIndexOf('}');
+  if (b > 0) { try { return JSON.parse(s.slice(0, b + 1)); } catch (_) { /* segue p/ reparo */ } }
+  // 2) reparo de truncamento (max_tokens estourado): fecha string/estruturas abertas
+  try { const rep = repararJson(s); if (rep) return JSON.parse(rep); } catch (_) {}
+  return null;
+}
+// Fecha um JSON cortado no meio: termina string aberta, remove token pendente e
+// completa os colchetes/chaves que ficaram abertos. O normalizador é tolerante a
+// objetos de código parciais, então salvamos o laudo em vez de perder tudo.
+function repararJson(s) {
+  const stack = [];
+  let inStr = false, esc = false, out = '';
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    out += ch;
+    if (inStr) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') inStr = false; continue; }
+    if (ch === '"') inStr = true;
+    else if (ch === '{' || ch === '[') stack.push(ch);
+    else if (ch === '}' || ch === ']') stack.pop();
+  }
+  if (inStr) out += '"';                        // fecha a string cortada
+  out = out.replace(/[\s,]*$/, '');             // tira vírgula/espaço solto no fim
+  if (/"\s*:\s*$/.test(out)) out += 'null';     // "chave": <cortado> → null
+  out = out.replace(/,\s*"[^"]*"\s*$/, '');     // ..., "chaveSemValor" → descarta
+  for (let k = stack.length - 1; k >= 0; k--) out += (stack[k] === '{' ? '}' : ']');
+  return out;
 }
 
 // ------------ coercers / portões de segurança ------------
@@ -241,6 +270,7 @@ function normalizar(p, nAnexos) {
     requer_confirmacao_profissional: requerConf,
     avisos_seguranca: avisos,
     codigos,
+    codigos_omitidos: Math.max(0, parseInt(p.codigos_omitidos, 10) || 0),
     sistemas_afetados: arrStr(p.sistemas_afetados, 10, 60),
     prioridades: arrStr(p.prioridades, 10, 200),
     proximos_passos: arrStr(p.proximos_passos || p.proximosPassos, 12, 220),
@@ -251,4 +281,6 @@ function normalizar(p, nAnexos) {
 }
 
 module.exports = handler;
+// Vercel: laudo de PDF grande (dezenas de páginas) pode levar ~1 min — dá folga.
+module.exports.config = { maxDuration: 120 };
 module.exports._internals = { normalizar, extrairJson, coerceCodigos, coerceSev, coerceTipo, coerceSistema, coerceFormato, coerceKm, coerceConf, maskVin, SEVS, SISTEMAS, SIST_CRITICOS };

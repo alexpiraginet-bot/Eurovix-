@@ -794,6 +794,7 @@
       ${codigos ? `<div style="margin-bottom:8px">${codigos}</div>` : '<p style="font-size:11.5px;color:var(--txt-3);margin-bottom:8px">Nenhum código legível no anexo.</p>'}
       ${pranchaPecas(l, vin)}
       ${(l.proximos_passos || []).length ? `<div style="font-size:11px;color:var(--txt-2)"><b>Próximos passos:</b><ul style="margin:4px 0 0;padding-left:16px">${l.proximos_passos.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : ''}
+      ${l.codigos_omitidos > 0 ? `<p style="font-size:10.5px;color:var(--warn);margin-top:6px">+${l.codigos_omitidos} código(s) além dos ${(l.codigos || []).length} priorizados acima — o laudo é extenso; anexe as páginas restantes em separado se precisar de todos.</p>` : ''}
       <p style="font-size:10px;color:var(--txt-3);margin-top:8px">Confiança da leitura: ${Math.round((l.confianca || 0) * 100)}% · ${l.modo === 'demo' ? 'modo demonstração' : 'IA'} · <b>revise antes de orçar</b></p>`;
   }
   // ---- Prancha de peças 2D (estilo catálogo ETK) — desenho esquemático das peças do diagnóstico ----
