@@ -194,7 +194,7 @@
 
   function osStateCls(o) {
     if (o.status === 'entregue' || o.status === 'pronto') return 'done';
-    if (o.status === 'aprovacao' && o.itens.some(i => i.aprovacao === 'pendente')) return 'approve';
+    if (o.status === 'aprovacao' && (o.itens || []).some(i => i.aprovacao === 'pendente')) return 'approve';
     return 'live';
   }
   function osBadge(o) {
@@ -220,8 +220,8 @@
       <div class="os-card" data-os="${o.numero}" role="button" tabindex="0">
         <span class="os-dot ${osStateCls(o)}"></span>
         <div class="os-info">
-          <b>OS #${o.numero} · ${o.itens[0] ? o.itens[0].titulo.slice(0, 34) : o.sintoma.slice(0, 34)}</b>
-          <span>${o.veiculo} · ${o.placa}</span>
+          <b>OS #${o.numero} · ${(o.itens && o.itens[0] ? o.itens[0].titulo : (o.sintoma || 'Check-in')).slice(0, 34)}</b>
+          <span>${o.veiculo || ''} · ${o.placa || ''}</span>
         </div>
         ${osBadge(o)}
       </div>`;
@@ -327,22 +327,28 @@
       renderInicio();
       toast('Veículo alterado', `Mostrando ${vehicle().modelo} (${vehicle().placa}).`, 'ok');
     });
-    if (v && window.EVXTwin) EVXTwin.mount('#twin3d', { saude: v.saude, modelo: v.modelo, compact: true });
+    // Efeitos colaterais pós-render: NUNCA podem derrubar a tela já montada
+    // (um erro de WebGL/three.js aqui não pode virar tela de falha).
+    try {
+      if (v && window.EVXTwin) EVXTwin.mount('#twin3d', { saude: v.saude, modelo: v.modelo, compact: true });
+    } catch (e) { console.error('EVXTwin.mount falhou (segue sem o twin)', e); }
     // Alternador 3D: monta o modelo BMW real só na 1ª vez que a aba é aberta (lazy — sem custo no load).
-    if (v && window.WERK3D && WERK3D.embedReal) {
-      const card = $('[data-view="inicio"]').querySelector('.d3-card');
-      if (card) card.querySelectorAll('[data-d3]').forEach(btn => btn.addEventListener('click', () => {
-        const which = btn.dataset.d3;
-        card.querySelectorAll('.d3-tab').forEach(t => t.classList.toggle('on', t === btn));
-        card.querySelectorAll('.d3-pane').forEach(p => p.classList.toggle('on', p.dataset.pane === which));
-        if (which === 'real') {
-          const box = card.querySelector('#twinReal');
-          if (box && !box.dataset.loaded) {
-            try { WERK3D.embedReal(box, v.modelo); box.dataset.loaded = '1'; } catch (_) {}
+    try {
+      if (v && window.WERK3D && WERK3D.embedReal) {
+        const card = $('[data-view="inicio"]').querySelector('.d3-card');
+        if (card) card.querySelectorAll('[data-d3]').forEach(btn => btn.addEventListener('click', () => {
+          const which = btn.dataset.d3;
+          card.querySelectorAll('.d3-tab').forEach(t => t.classList.toggle('on', t === btn));
+          card.querySelectorAll('.d3-pane').forEach(p => p.classList.toggle('on', p.dataset.pane === which));
+          if (which === 'real') {
+            const box = card.querySelector('#twinReal');
+            if (box && !box.dataset.loaded) {
+              try { WERK3D.embedReal(box, v.modelo); box.dataset.loaded = '1'; } catch (_) {}
+            }
           }
-        }
-      }));
-    }
+        }));
+      }
+    } catch (e) { console.error('alternador 3D falhou (segue sem ele)', e); }
     bindCommon($('[data-view="inicio"]'));
   }
 
@@ -742,7 +748,7 @@
   function renderPerfil() {
     const u = state.user;
     const initials = u.nome.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
-    const garantias = myOS().flatMap(o => o.itens.filter(i => i.garantia).map(i => ({ os: o.numero, item: i })));
+    const garantias = myOS().flatMap(o => (o.itens || []).filter(i => i.garantia).map(i => ({ os: o.numero, item: i })));
     const cofres = garagem();
 
     $('[data-view="perfil"]').innerHTML = `
@@ -875,19 +881,41 @@
     });
   }
 
+  // Rede de segurança: um erro de render NUNCA pode deixar a tela em branco.
+  // Em vez de sumir tudo, mostramos um cartão de recuperação com Recarregar/Sair.
+  function renderFalha(host, tab, err) {
+    try { console.error('EUROVIX · falha ao renderizar a aba "' + tab + '":', err); } catch (_) {}
+    const det = (err && (err.message || String(err))) || 'erro desconhecido';
+    host.innerHTML = `
+      <div class="empty-state">
+        ${EVX.icon('alert', 40)}
+        <p>Não foi possível carregar esta tela agora.<br>Tente recarregar — seus dados estão seguros.</p>
+        <button class="btn btn-primary" id="recuperarBtn">Recarregar</button>
+        <button class="btn btn-secondary" id="sairFalhaBtn" style="margin-top:10px">Sair da conta</button>
+        <p style="margin-top:14px;font-size:10.5px;color:var(--ink-3);word-break:break-word">detalhe técnico: ${String(det).slice(0, 160).replace(/[<>]/g, '')}</p>
+      </div>`;
+    const rb = host.querySelector('#recuperarBtn'); if (rb) rb.addEventListener('click', () => location.reload());
+    const sb = host.querySelector('#sairFalhaBtn'); if (sb) sb.addEventListener('click', logout);
+  }
   function renderTab(tab) {
-    if (tab === 'inicio') renderInicio();
-    else if (tab === 'servicos') renderServicos();
-    else if (tab === 'os') renderOS();
-    else if (tab === 'agenda') renderAgenda();
-    else if (tab === 'perfil') renderPerfil();
+    const host = $(`[data-view="${tab}"]`);
+    try {
+      if (tab === 'inicio') renderInicio();
+      else if (tab === 'servicos') renderServicos();
+      else if (tab === 'os') renderOS();
+      else if (tab === 'agenda') renderAgenda();
+      else if (tab === 'perfil') renderPerfil();
+    } catch (err) {
+      if (host) renderFalha(host, tab, err);
+    }
   }
 
   function renderAll() {
     if (!state.user) return;
-    renderTab(state.tab);
-    renderNotifs();
-    $('#osPip').classList.toggle('show', osAtivas().some(o => osStateCls(o) === 'approve'));
+    renderTab(state.tab); // já é à prova de erro (try/catch interno)
+    try { renderNotifs(); } catch (e) { console.error('renderNotifs falhou', e); }
+    try { $('#osPip').classList.toggle('show', osAtivas().some(o => osStateCls(o) === 'approve')); }
+    catch (e) { console.error('osPip falhou', e); }
   }
 
   /* ============================================================
