@@ -64,6 +64,48 @@
     img.src = URL.createObjectURL(file);
   }
 
+  // ---- ISTA: extrai a MEMÓRIA DE FALHAS de um PDF no navegador (pdf.js) ----
+  // Manda só o texto relevante à IA em vez das páginas do PDF como imagem → ~10× menos
+  // tokens de entrada (o PDF inteiro seria tokenizado; o texto filtrado, não).
+  async function pdfFalhasTexto(file) {
+    if (!window.pdfjsLib) return '';
+    try {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/vendor/pdf.worker.min.js';
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      let full = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const tc = await (await pdf.getPage(i)).getTextContent();
+        let lastY = null, line = '';
+        for (const it of tc.items) {
+          const y = it.transform[5];
+          if (lastY !== null && Math.abs(y - lastY) > 3) { if (line.trim()) full += line.trim() + '\n'; line = ''; }
+          line += it.str + ' '; lastY = y;
+        }
+        if (line.trim()) full += line.trim() + '\n';
+      }
+      if (full.replace(/\s/g, '').length < 400) return ''; // PDF escaneado (imagem) → sem texto útil
+      const linhas = full.split(/\r?\n/);
+      const codeRe = /\b([0-9A-F]{5,6}|[PBCU][0-9A-F]{4})\b/;
+      const headerRe = /fehlerspeicher|mem[óo]ria de falha|c[óo]digo[s]? de (diagn|falha)|fault memory|lista de ac|st[öo]rung|klemme 30|unterspann|subtens/i;
+      const keep = new Set();
+      for (let i = 0; i < Math.min(35, linhas.length); i++) keep.add(i); // cabeçalho do veículo
+      linhas.forEach((l, i) => { if ((codeRe.test(l) && l.length < 400) || headerRe.test(l)) for (let j = Math.max(0, i - 1); j <= Math.min(linhas.length - 1, i + 1); j++) keep.add(j); });
+      let sel = [...keep].sort((a, b) => a - b).map(i => linhas[i]).join('\n');
+      if (sel.replace(/\s/g, '').length < 200) sel = full;
+      return sel.slice(0, 55000);
+    } catch (_) { return ''; }
+  }
+  function lerArquivoDataUrl(file) { return new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(file); }); }
+  function fotoLaudo(file) { // comprime a foto do laudo p/ menos tokens, mantendo legível
+    return new Promise((res) => {
+      const img = new Image();
+      img.onload = () => { const c = document.createElement('canvas'); const k = Math.min(1, 1500 / Math.max(img.width, img.height)); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.72)); URL.revokeObjectURL(img.src); };
+      img.onerror = () => res(null);
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
   /* ---------- assinatura (canvas) ---------- */
   function sigPad(canvas) {
     const ctx = canvas.getContext('2d');
@@ -691,7 +733,7 @@
             </div>
           </div>
           <div class="wk-panel">
-            <h3>${I('scan')} Diagnóstico ISTA — perito IA <span style="font-size:10px;color:var(--txt-3)">foto ou PDF → a IA lê, decifra os códigos e prioriza</span></h3>
+            <h3>${I('scan')} Diagnóstico ISTA — perito IA <span style="font-size:10px;color:var(--txt-3)">pode anexar o PDF inteiro — extraio só a memória de falhas no aparelho (leitura barata) e priorizo</span></h3>
             ${(() => { const ev = [...os.eventos].reverse().find(e => e.tipo === 'ista'); return (ev && ev.laudo) ? renderLaudoIsta(ev.laudo, os) : '<p style="font-size:12px;color:var(--txt-3);margin-bottom:8px">Anexe o laudo do ISTA (memória de falhas). A IA transcreve, traduz, separa causa-raiz de consequência e sugere as medições — você revisa antes de orçar.</p>'; })()}
             <label class="btn btn-secondary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;font-size:12px;margin-top:6px">
               📎 Anexar laudo do ISTA (foto/PDF)
@@ -1146,18 +1188,30 @@
       const files = [...(istaFile.files || [])].slice(0, 6);
       if (!files.length) return;
       const status = $('#istaStatus');
-      if (status) status.textContent = '⏳ Lendo o laudo com a IA…';
+      const setStatus = (t) => { if (status) status.textContent = t; };
+      setStatus('⏳ Preparando o laudo…');
       try {
-        const arquivos = await Promise.all(files.map(f => new Promise((res, rej) => {
-          const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(f);
-        })));
-        const laudo = await WERK.analisarIsta(arquivos, { modelo: os.veiculo, placa: os.placa, vin: os.vin, km: os.km });
-        if (!laudo || !laudo.ok) { if (status) status.textContent = '⚠️ ' + ((laudo && laudo.erro) || 'Não consegui ler o laudo.'); return; }
+        const arquivos = []; let texto = '';
+        for (const f of files) {
+          if (f.type === 'application/pdf') {
+            setStatus('⏳ Extraindo a memória de falhas do PDF (no aparelho)…');
+            const t = await pdfFalhasTexto(f);
+            if (t) texto += (texto ? '\n\n——\n\n' : '') + t;   // só o texto das falhas vai à IA (barato)
+            else arquivos.push(await lerArquivoDataUrl(f));      // PDF escaneado (imagem): manda o arquivo
+          } else if (/^image\//.test(f.type)) {
+            arquivos.push((await fotoLaudo(f)) || await lerArquivoDataUrl(f)); // foto comprimida
+          } else {
+            arquivos.push(await lerArquivoDataUrl(f));
+          }
+        }
+        setStatus('⏳ Lendo o laudo com a IA…');
+        const laudo = await WERK.analisarIsta(arquivos, { modelo: os.veiculo, placa: os.placa, vin: os.vin, km: os.km }, texto);
+        if (!laudo || !laudo.ok) { setStatus('⚠️ ' + ((laudo && laudo.erro) || 'Não consegui ler o laudo.')); return; }
         const resumo = (laudo.resumo_executivo || 'Laudo lido').slice(0, 140);
         WERK.updateOS(os.numero, () => {}, { tipo: 'ista', titulo: 'Diagnóstico ISTA lido pela IA', desc: resumo, ator: os.tecnico, laudo });
         toast('Diagnóstico ISTA analisado', laudo.requer_confirmacao_profissional ? '⚠️ Há sistema de segurança — confirme antes de orçar.' : 'Códigos decifrados e priorizados na OS.');
         views.os(os.numero);
-      } catch (e) { if (status) status.textContent = '⚠️ Falha ao ler o arquivo.'; }
+      } catch (e) { setStatus('⚠️ Falha ao ler o arquivo.'); }
     });
 
     // RealOEM: abre o catálogo BMW e copia o VIN pra colar na busca por VIN (sem API — é só linkar).
