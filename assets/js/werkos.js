@@ -114,7 +114,9 @@
   const views = {};
   function go(route) { location.hash = '#/' + route; }
   function route() {
-    if (WERK.cloud && !WERK.authUser()) { renderStaffLock(); return; } // produção: painel só para a equipe
+    // Produção: painel SÓ para STAFF — exige sessão E papel de equipe. Uma sessão
+    // persistida qualquer (cliente, ativação stale, conta sem equipe) NÃO entra.
+    if (WERK.cloud && !(WERK.authUser() && WERK.staffPerfil())) { renderStaffLock(); return; }
     const [v, param] = (location.hash.replace(/^#\//, '') || 'kanban').split('/');
     $$('.wk-nav button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
     (views[v] || views.kanban)(param);
@@ -124,17 +126,40 @@
 
   function renderStaffLock() {
     $$('.wk-nav button').forEach(b => b.classList.remove('on'));
-    main.innerHTML = head('WERK OS — acesso da equipe', 'Sistema em produção: entre com seu usuário staff (criado no Supabase).') + `
-      <div class="wk-panel" style="max-width:440px">
-        <div class="wfield"><label>E-mail</label><input id="st-email" type="email" placeholder="voce@eurovix.com.br" autocomplete="username"></div>
-        <div class="wfield" style="margin-top:10px"><label>Senha</label><input id="st-senha" type="password" autocomplete="current-password"></div>
-        <div class="hintline err" id="stErr" style="display:none;margin-top:8px">E-mail ou senha inválidos — ou o usuário ainda não foi cadastrado como staff (SETUP-NUVEM.md, passo 4).</div>
-        <button class="btn btn-primary" style="margin-top:14px;width:100%" id="stEntrar">Entrar no WERK OS</button>
-        <p style="font-size:10.5px;color:var(--txt-3);margin-top:10px">O app do cliente não usa esta tela — o acesso dele nasce no check-in.</p>
+    const u = WERK.cloud ? WERK.authUser() : null;
+    // Tem sessão mas não é staff (cliente logado, ativação de outra conta, etc.) → não é login inválido.
+    if (u && !WERK.staffPerfil()) {
+      main.innerHTML = `
+        <div class="wk-lock">
+          <div class="wk-lock-card">
+            <div class="wk-lock-mark"><span>Lex</span>OS</div>
+            <h2>Acesso restrito à equipe</h2>
+            <p>Você está conectado como <b>${esc(u.email || '—')}</b>, mas esta conta não faz parte da equipe de nenhuma oficina.</p>
+            <p class="wk-lock-sub">Se você é da equipe, peça ao administrador para incluir este e-mail em <b>Equipe</b>. Para usar outra conta, saia primeiro.</p>
+            <button class="btn btn-primary" id="stSair">Sair e entrar com outra conta</button>
+            <a class="wk-lock-alt" href="app.html">Sou cliente — ir para o app →</a>
+          </div>
+        </div>`;
+      $('#stSair').addEventListener('click', async () => { await WERK.logoutAuth(); location.reload(); });
+      return;
+    }
+    main.innerHTML = `
+      <div class="wk-lock">
+        <div class="wk-lock-card">
+          <div class="wk-lock-mark"><span>Lex</span>OS</div>
+          <h2>Painel da oficina</h2>
+          <p class="wk-lock-sub">Entre com seu usuário de equipe para abrir o painel da sua oficina.</p>
+          <div class="wfield"><label>E-mail</label><input id="st-email" type="email" placeholder="voce@suaoficina.com.br" autocomplete="username"></div>
+          <div class="wfield" style="margin-top:12px"><label>Senha</label><input id="st-senha" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+          <div class="hintline err" id="stErr" style="display:none;margin-top:10px">E-mail ou senha inválidos — ou este usuário ainda não foi incluído na equipe da oficina.</div>
+          <button class="btn btn-primary" style="margin-top:16px;width:100%" id="stEntrar">Entrar no painel</button>
+          <a class="wk-lock-alt" href="app.html">O app do cliente é por aqui →</a>
+        </div>
       </div>`;
     const entrar = async () => {
-      const u = await WERK.loginStaff($('#st-email').value.trim(), $('#st-senha').value);
-      if (u) route(); else $('#stErr').style.display = 'block';
+      const btn = $('#stEntrar'); btn.disabled = true; const t = btn.textContent; btn.textContent = 'Entrando…';
+      const u2 = await WERK.loginStaff($('#st-email').value.trim(), $('#st-senha').value);
+      if (u2) { renderBrand(); route(); } else { $('#stErr').style.display = 'block'; btn.disabled = false; btn.textContent = t; }
     };
     $('#stEntrar').addEventListener('click', entrar);
     $('#st-senha').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
@@ -1962,6 +1987,20 @@
     }
     const banner = $('#wkSetupBanner');
     if (banner) banner.hidden = !!m.configurada;
+    // Chip de conta: quem está logado + oficina + sair (só na nuvem, com staff).
+    const acc = $('#wkAccount');
+    if (acc) {
+      const u = WERK.cloud ? WERK.authUser() : null;
+      const perfil = WERK.staffPerfil && WERK.staffPerfil();
+      if (u && perfil) {
+        const em = u.email || '';
+        const av = ((m.displayNome || em || '?').trim()[0] || '?').toUpperCase();
+        acc.innerHTML = `<span class="av">${esc(av)}</span><span class="who"><b>${esc(m.displayNome)}</b><small>${esc(em)}${perfil.papel ? ' · ' + esc(perfil.papel) : ''}</small></span><button class="out" id="wkSair" title="Sair da conta" aria-label="Sair">⎋</button>`;
+        acc.hidden = false;
+        const out = $('#wkSair');
+        if (out) out.addEventListener('click', async () => { if (confirm('Sair desta conta?')) { await WERK.logoutAuth(); location.reload(); } });
+      } else { acc.hidden = true; acc.innerHTML = ''; }
+    }
   }
 
   /* Tempo real entre abas: aprovações/mudanças feitas no app

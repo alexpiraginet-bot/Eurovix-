@@ -443,6 +443,7 @@ html[data-theme="light"] .kcard:hover{border-color:var(--red-border)}
 .wk-setup-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
   margin:0 0 2px;padding:12px 18px;background:linear-gradient(90deg,var(--red-soft),transparent);
   border:1px solid var(--red-border);border-bottom:0;text-decoration:none;color:var(--txt);font-size:13px}
+.wk-setup-banner[hidden]{display:none}
 .wk-setup-banner:hover{background:linear-gradient(90deg,rgba(230,57,40,.2),transparent)}
 .wk-setup-banner b{color:var(--txt)}
 .wk-setup-cta{flex:none;font-weight:800;color:var(--red);white-space:nowrap}
@@ -461,3 +462,29 @@ html[data-theme="light"] .kcard:hover{border-color:var(--red-border)}
 .wk-logo-rm:hover{color:var(--red)}
 .wk-logo-slot.square{width:104px}
 .wk-logo-slot.square img{max-width:82px;max-height:82px}
+
+/* ---- Tela de acesso/trava do painel (login staff + conta sem equipe) ---- */
+.wk-lock{min-height:calc(100dvh - 40px);display:flex;align-items:center;justify-content:center;padding:24px}
+.wk-lock-card{width:100%;max-width:400px;background:linear-gradient(180deg,var(--card,#12181f),var(--navy));
+  border:1px solid var(--line-strong);border-radius:20px;padding:30px 26px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.wk-lock-mark{font-family:var(--font-display);font-weight:800;font-size:22px;letter-spacing:.02em;color:var(--txt);margin-bottom:18px}
+.wk-lock-mark span{color:var(--red)}
+.wk-lock-card h2{font-family:var(--font-display);font-size:19px;font-weight:800;margin:0 0 6px;color:var(--txt);text-wrap:balance}
+.wk-lock-card p{font-size:13px;color:var(--txt-2);margin:0 0 6px;line-height:1.5}
+.wk-lock-card p b{color:var(--txt)}
+.wk-lock-sub{font-size:12px !important;color:var(--txt-3) !important;margin-bottom:16px !important}
+.wk-lock-card .wfield label{font-size:11px;color:var(--txt-2);font-weight:600;display:block;margin-bottom:6px}
+.wk-lock-card .wfield input{width:100%}
+.wk-lock-alt{display:inline-block;margin-top:16px;font-size:12px;color:var(--txt-3);text-decoration:none}
+.wk-lock-alt:hover{color:var(--red)}
+/* Chip de conta logada na sidebar (quem/qual oficina) */
+.wk-account{display:flex;align-items:center;gap:9px;margin:0 0 12px;padding:9px 11px;border:1px solid var(--line);
+  border-radius:11px;background:var(--navy)}
+.wk-account .av{flex:none;width:28px;height:28px;border-radius:50%;background:var(--red);color:#fff;font-weight:800;
+  font-size:12px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display)}
+.wk-account .who{flex:1;min-width:0;line-height:1.3}
+.wk-account .who b{display:block;font-size:11.5px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wk-account .who small{display:block;font-size:10px;color:var(--txt-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wk-account .out{flex:none;background:none;border:none;color:var(--txt-3);cursor:pointer;font-size:15px;padding:2px;line-height:1}
+.wk-account .out:hover{color:var(--red)}
+.wk-account[hidden]{display:none}
