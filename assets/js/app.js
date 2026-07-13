@@ -26,10 +26,18 @@
   const loginView = $('#loginView');
   const conviteView = $('#conviteView');
   const CONVITE = new URLSearchParams(location.search).get('convite');
+  const PREVIEW = new URLSearchParams(location.search).has('preview');
 
   Promise.all([WERK.ready, new Promise(r => setTimeout(r, 1400))]).then(() => {
     splash.classList.add('hide');
     if (WERK.cloud) $('#loginForm .login-demo').style.display = 'none'; // produção: sem conta demo
+    // ?preview=1 (com EVX_ENV zerado no app.html) entra direto na conta demo local,
+    // para mostrar o app do cliente ao vivo mesmo em produção (dados fictícios).
+    if (PREVIEW && !WERK.cloud) {
+      doLogin(EVX.DEMO_USER.telefone, 'bmw2026').then(() =>
+        toast('Modo demonstração', 'Dados fictícios — explore o app, o 3D e a garagem à vontade.', 'ok'));
+      return;
+    }
     if (CONVITE) { handleConvite(CONVITE); return; }
     const session = EVX.getSession();
     const autentico = !WERK.cloud || !!WERK.authUser(); // nuvem exige sessão auth válida
