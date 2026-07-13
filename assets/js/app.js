@@ -704,6 +704,30 @@
       <a class="btn btn-secondary" style="width:100%;margin-top:10px" href="agendamento.html">+ Novo agendamento</a>`;
   }
 
+  /* Modal do modelo 3D real da BMW — abre por veículo na garagem.
+     Lazy: monta o embed só ao abrir e remove ao fechar (1 iframe por vez). */
+  function open3dModal(v) {
+    if (!(window.WERK3D && WERK3D.embedReal) || !v) return;
+    const shell = document.getElementById('shell') || document.body;
+    const ov = document.createElement('div');
+    ov.className = 'd3-modal';
+    ov.innerHTML = `
+      <div class="d3-modal-card">
+        <div class="d3-modal-head">
+          <div><b>${v.modelo}</b><span>${v.placa || ''} · modelo 3D real</span></div>
+          <button class="d3-modal-x" type="button" aria-label="Fechar">✕</button>
+        </div>
+        <div class="d3-modal-stage"></div>
+      </div>`;
+    shell.appendChild(ov);
+    try { WERK3D.embedReal(ov.querySelector('.d3-modal-stage'), v.modelo); } catch (_) {}
+    const close = () => { document.removeEventListener('keydown', onKey); ov.remove(); };
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    ov.querySelector('.d3-modal-x').addEventListener('click', close);
+    ov.addEventListener('click', e => { if (e.target === ov) close(); });
+    document.addEventListener('keydown', onKey);
+  }
+
   /* ============================================================
      Perfil (garantias, cofre, veículos, sair)
      ============================================================ */
@@ -755,6 +779,17 @@
           </button>`).join('') || '<div style="padding:14px 16px;font-size:12px;color:var(--txt-3)">Nenhum veículo vinculado — ele entra aqui no próximo check-in.</div>'}
       </div>
 
+      ${window.WERK3D && WERK3D.embedReal && garagem().length ? `
+      <div class="sec-label">Meu BMW em 3D</div>
+      <div class="plist">
+        ${garagem().map((v, i) => `
+          <button class="prow" data-veic3d="${i}">
+            ${EVX.icon('car', 20)}
+            <div><b>${v.modelo}</b><span>${v.placa} · ver o modelo real em 3D</span></div>
+            <span class="chev">›</span>
+          </button>`).join('')}
+      </div>` : ''}
+
       <div class="sec-label">Histórico do veículo — transferível</div>
       <div class="plist">
         ${garagem().map(v => `
@@ -784,6 +819,9 @@
     }));
     $$('.prow[data-cofre]').forEach(b => b.addEventListener('click', () => {
       toast('Cofre digital', `"${b.dataset.cofre}" abre como PDF na versão integrada (storage por VIN).`, 'ok');
+    }));
+    $$('.prow[data-veic3d]').forEach(b => b.addEventListener('click', () => {
+      open3dModal(garagem()[+b.dataset.veic3d]);
     }));
   }
 

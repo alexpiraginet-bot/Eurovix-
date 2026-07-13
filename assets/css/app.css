@@ -183,6 +183,20 @@ body.app-body{
 .d3-pane.on{display:block}
 .d3-note{font-size:10px;color:var(--ink-3);padding:8px 14px;border-top:1px solid var(--line)}
 
+/* Modal 3D — modelo BMW real por veículo (garagem do Perfil) */
+.d3-modal{position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+  padding:18px;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);animation:d3fade .2s ease}
+@keyframes d3fade{from{opacity:0}to{opacity:1}}
+.d3-modal-card{width:100%;max-width:390px;background:var(--paper);border:1px solid var(--line);
+  border-radius:16px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.d3-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border-bottom:1px solid var(--line)}
+.d3-modal-head b{font-family:var(--font-display);font-size:14px;color:var(--ink);display:block}
+.d3-modal-head span{font-size:11px;color:var(--ink-3)}
+.d3-modal-x{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--paper);
+  color:var(--ink-2);font-size:14px;cursor:pointer;flex:none;transition:all .18s}
+.d3-modal-x:hover{border-color:var(--line-strong);color:var(--ink)}
+.d3-modal-stage{height:340px}
+
 /* Ações rápidas */
 .quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:16px}
 .qbtn{
