@@ -124,7 +124,7 @@
           ${os.itens.map(i => `<tr>
             <td><span class="sev ${i.severidade}"></span><b>${sev[i.severidade]}</b></td>
             <td><b>${i.titulo}</b></td><td>${i.nota || '—'}</td>
-            <td>${i.midia ? '📷 arquivada' : '—'}</td></tr>`).join('')}
+            <td>${i.midia === 'ista' ? '🧾 laudo ISTA' : i.midia ? '📷 arquivada' : '—'}</td></tr>`).join('')}
         </table>
         <p class="muted" style="margin-top:10px">🔴 crítico/segurança — intervenção imediata recomendada · 🟡 preventivo — planejar · 🟢 ok — sem ação. Toda mídia fica vinculada ao VIN no prontuário vitalício.</p>
         ` + footer(`Técnico responsável: ${os.tecnico}`);

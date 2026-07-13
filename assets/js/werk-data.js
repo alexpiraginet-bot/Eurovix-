@@ -433,6 +433,41 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     };
   }
 
+  // ISTA → DVI: converte um código do laudo em item de orçamento (o mecânico revisa depois).
+  function istaCategoria(cod) {
+    const t = ((cod.termo_peca || '') + ' ' + (cod.descricao || '') + ' ' + (cod.sistema || '')).toLowerCase();
+    if (/bomba.*[áa]gua|termostat|arrefec|water\s?pump/.test(t)) return 'bomba_agua';
+    if (/pastilha|freio\s*diant/.test(t)) return 'freio_d';
+    if (/disco/.test(t)) return 'disco_d';
+    if (/vela|bobina|igni/.test(t)) return 'vela';
+    if (/[óo]leo|filtro de [óo]leo/.test(t)) return 'oleo';
+    if (/amortec/.test(t)) return 'amortecedor';
+    if (/bieleta|barra estabiliz/.test(t)) return 'bieleta';
+    if (/correia|tensor/.test(t)) return 'correia';
+    if (/fluido|dot\s?4|sangria/.test(t)) return 'fluido_freio';
+    return 'outro';
+  }
+  function istaTitulo(cod) {
+    return String(cod.termo_peca || cod.descricao || cod.codigo || 'Peça do diagnóstico ISTA').slice(0, 90);
+  }
+  function itemDeIsta(os, cod, config) {
+    cod = cod || {};
+    config = config || getConfig();
+    const titulo = istaTitulo(cod);
+    const severidade = cod.critico_seguranca ? 'critico'
+      : (cod.severidade === 'critica' || cod.severidade === 'alta') ? 'critico' : 'preventivo';
+    const partes = [];
+    if (cod.codigo) partes.push('ISTA ' + cod.codigo + (cod.modulo ? ' (' + cod.modulo + ')' : ''));
+    if (cod.descricao && cod.descricao !== titulo) partes.push(cod.descricao);
+    if (cod.causa_provavel) partes.push('Causa provável: ' + cod.causa_provavel);
+    if (cod.exige_medicao && cod.medicao) partes.push('Medir antes: ' + cod.medicao);
+    if (cod.acao) partes.push('Ação: ' + cod.acao);
+    partes.push('Lançado do laudo ISTA — revise peça, nível e preço antes de enviar ao cliente.');
+    const it = novoItem(os, { titulo, severidade, nota: partes.join(' · '), midia: 'ista', categoria: istaCategoria(cod) }, config);
+    it.origem = 'ista:' + (cod.codigo || titulo);
+    return it;
+  }
+
   /* ---------- Totais ---------- */
   function itemPreco(item, nivel) {
     const nv = item.niveis[nivel || item.nivelEscolhido || 'original'];
@@ -896,7 +931,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     getVehicles, upsertVehicle,
     normTel, normPlaca, getClientes, upsertCliente, clientePorTelefone, clientePorConvite,
     ativarCliente, loginCliente, garagemDe, conviteUrl, waLink,
-    getAllOS, saveAllOS, getOS, novaOS, novoItem, updateOS, setStatus,
+    getAllOS, saveAllOS, getOS, novaOS, novoItem, itemDeIsta, updateOS, setStatus,
     getAgendamentos, addAgendamento, setAgendamentoStatus, agendarPublico,
     pendencias, chatSend,
     pixPayload, brl, fdt, fd,

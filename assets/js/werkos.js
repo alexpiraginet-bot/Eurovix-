@@ -646,7 +646,7 @@
           </div>
           <div class="wk-panel">
             <h3>${I('scan')} Diagnóstico ISTA — perito IA <span style="font-size:10px;color:var(--txt-3)">foto ou PDF → a IA lê, decifra os códigos e prioriza</span></h3>
-            ${(() => { const ev = [...os.eventos].reverse().find(e => e.tipo === 'ista'); return (ev && ev.laudo) ? renderLaudoIsta(ev.laudo, os.vin) : '<p style="font-size:12px;color:var(--txt-3);margin-bottom:8px">Anexe o laudo do ISTA (memória de falhas). A IA transcreve, traduz, separa causa-raiz de consequência e sugere as medições — você revisa antes de orçar.</p>'; })()}
+            ${(() => { const ev = [...os.eventos].reverse().find(e => e.tipo === 'ista'); return (ev && ev.laudo) ? renderLaudoIsta(ev.laudo, os) : '<p style="font-size:12px;color:var(--txt-3);margin-bottom:8px">Anexe o laudo do ISTA (memória de falhas). A IA transcreve, traduz, separa causa-raiz de consequência e sugere as medições — você revisa antes de orçar.</p>'; })()}
             <label class="btn btn-secondary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;font-size:12px;margin-top:6px">
               📎 Anexar laudo do ISTA (foto/PDF)
               <input id="istaFile" type="file" accept="image/*,application/pdf" multiple hidden>
@@ -707,15 +707,25 @@
 
   // Render do laudo ISTA analisado pela IA. Escapa tudo (conteúdo vem da IA/OCR).
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
-  function renderLaudoIsta(l, vin) {
+  function renderLaudoIsta(l, os) {
     l = l || {};
     if (l.eh_ista === false) return `<p style="font-size:12px;color:var(--warn);margin-bottom:8px">${esc(l.resumo_executivo || 'O anexo não parece um diagnóstico ISTA/BMW.')}</p>`;
+    os = os || {};
+    const vin = os.vin || '';
+    const podeLancar = os.status === 'diagnostico' || os.status === 'fila';
+    const istaKey = c => c.codigo || String(c.termo_peca || c.descricao || 'Peça do diagnóstico ISTA').slice(0, 90);
+    const lancados = new Set((os.itens || []).filter(i => i.origem && i.origem.indexOf('ista:') === 0).map(i => i.origem.slice(5)));
     const sevCor = { critica: 'var(--red)', alta: '#ff8a3d', media: 'var(--warn)', baixa: 'var(--txt-3)' };
     const aviso = (l.requer_confirmacao_profissional && (l.avisos_seguranca || []).length)
       ? `<div style="background:rgba(255,60,60,.1);border:1px solid var(--red);border-radius:9px;padding:9px 11px;font-size:11.5px;color:#ffb4b4;margin-bottom:10px">⚠️ ${esc((l.avisos_seguranca || []).join(' '))}</div>` : '';
     const recap = l.recaptura_necessaria
       ? `<div style="background:rgba(255,176,49,.1);border:1px solid var(--warn);border-radius:9px;padding:8px 11px;font-size:11px;color:#ffd89a;margin-bottom:10px">📷 ${esc(l.motivo_recaptura || 'Reenvie uma captura mais nítida do laudo.')}</div>` : '';
-    const codigos = (l.codigos || []).map(c => `
+    const codigos = (l.codigos || []).map((c, ci) => {
+      const launched = lancados.has(istaKey(c));
+      const botaoDvi = launched
+        ? `<${podeLancar ? 'button class="ista-add" disabled' : 'span class="ista-add" style="cursor:default;opacity:.8"'}>✓ no DVI</${podeLancar ? 'button' : 'span'}>`
+        : (podeLancar ? `<button class="ista-add" data-ista-add="${ci}">➕ lançar no DVI</button>` : '');
+      return `
       <div style="border:1px solid var(--line-strong);border-radius:9px;padding:9px 11px;margin-bottom:6px;background:var(--navy)">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">
           <code style="font-size:12.5px;color:${sevCor[c.severidade] || 'var(--txt)'};font-weight:700">${esc(c.codigo)}</code>
@@ -724,12 +734,22 @@
         <div style="font-size:11.5px;color:var(--txt);margin-top:3px">${esc(c.descricao)}</div>
         ${c.causa_provavel ? `<div style="font-size:10.5px;color:var(--txt-2);margin-top:3px">Causa provável: ${esc(c.causa_provavel)}</div>` : ''}
         ${c.exige_medicao && c.medicao ? `<div style="font-size:10.5px;color:var(--accent,#5aa0ff);margin-top:3px">🔧 Medir antes: ${esc(c.medicao)}</div>` : ''}
-        ${(vin || c.termo_peca) ? `<div style="margin-top:5px"><a href="#" class="ista-peca" data-realoem="${esc(vin || '')}" data-termo="${esc(c.termo_peca || '')}" style="font-size:10.5px;color:#ff9d3d;text-decoration:none;font-weight:600">🔧 buscar peça no RealOEM${c.termo_peca ? ' · ' + esc(c.termo_peca) : ''}</a></div>` : ''}
-      </div>`).join('');
+        <div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          ${(vin || c.termo_peca) ? `<a href="#" class="ista-peca" data-realoem="${esc(vin || '')}" data-termo="${esc(c.termo_peca || '')}" style="font-size:10.5px;color:#ff9d3d;text-decoration:none;font-weight:600">🔧 buscar peça no RealOEM${c.termo_peca ? ' · ' + esc(c.termo_peca) : ''}</a>` : ''}
+          ${botaoDvi}
+        </div>
+      </div>`;
+    }).join('');
+    const lancaveis = (l.codigos || []).filter(c => c && (c.termo_peca || c.descricao || c.codigo));
+    const pendentes = lancaveis.filter(c => !lancados.has(istaKey(c))).length;
+    const bulk = (podeLancar && lancaveis.length)
+      ? (pendentes ? `<button class="ista-add-all" data-ista-all>➕ Lançar ${pendentes} peça${pendentes > 1 ? 's' : ''} no DVI / orçamento</button>`
+                   : '<p style="font-size:10.5px;color:var(--ok);margin:0 0 8px;font-weight:600">✓ Todas as peças do laudo já estão no DVI</p>') : '';
     return `
       ${aviso}${recap}
       <p style="font-size:12px;color:var(--txt);margin-bottom:8px">${esc(l.resumo_executivo)}</p>
       ${l.causa_raiz_provavel ? `<p style="font-size:11.5px;color:var(--txt-2);margin-bottom:8px">🎯 <b>Causa-raiz provável:</b> ${esc(l.causa_raiz_provavel)}</p>` : ''}
+      ${bulk}
       ${codigos ? `<div style="margin-bottom:8px">${codigos}</div>` : '<p style="font-size:11.5px;color:var(--txt-3);margin-bottom:8px">Nenhum código legível no anexo.</p>'}
       ${pranchaPecas(l, vin)}
       ${(l.proximos_passos || []).length ? `<div style="font-size:11px;color:var(--txt-2)"><b>Próximos passos:</b><ul style="margin:4px 0 0;padding-left:16px">${l.proximos_passos.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : ''}
@@ -821,7 +841,7 @@
           <span class="sev-badge ${i.severidade}">${sevIcon[i.severidade]} ${i.severidade}</span>
           <b>${i.titulo}</b>
           ${i.aprovacao ? `<span class="ap-badge ${i.aprovacao}">${i.aprovacao}</span>` : ''}
-          ${i.midia ? (i.midia === 'demo' ? '<span class="ap-badge aprovado">📷 mídia ok</span>' : `<img src="${i.midia}" alt="" style="width:44px;height:33px;object-fit:cover;border-radius:6px;border:1px solid var(--line-strong)">`) : '<span class="ap-badge pendente">⚠ sem mídia</span>'}
+          ${i.midia ? (i.midia === 'demo' ? '<span class="ap-badge aprovado">📷 mídia ok</span>' : i.midia === 'ista' ? '<span class="ap-badge aprovado">🧾 laudo ISTA</span>' : `<img src="${i.midia}" alt="" style="width:44px;height:33px;object-fit:cover;border-radius:6px;border:1px solid var(--line-strong)">`) : '<span class="ap-badge pendente">⚠ sem mídia</span>'}
         </div>
         ${i.nota ? `<div class="di-nota">${i.nota}</div>` : ''}
         ${i.severidade !== 'ok' ? `
@@ -1106,6 +1126,33 @@
       el.addEventListener('click', go);
       const tag = el.tagName.toLowerCase();
       if (tag !== 'a' && tag !== 'button') el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') go(e); });
+    });
+
+    // ISTA → DVI: lançar as peças do laudo como itens do orçamento (o mecânico revisa depois).
+    const laudoAtual = () => { const ev = [...(os.eventos || [])].reverse().find(e => e.tipo === 'ista'); return (ev && ev.laudo) || null; };
+    const istaKeyH = c => c.codigo || String(c.termo_peca || c.descricao || 'Peça do diagnóstico ISTA').slice(0, 90);
+    function lancarCodigos(codes) {
+      codes = (codes || []).filter(Boolean);
+      if (!codes.length) return;
+      const cfg = WERK.getConfig();
+      const atual = (WERK.getOS && WERK.getOS(os.numero)) || os;
+      const ja = new Set((atual.itens || []).filter(i => i.origem && i.origem.indexOf('ista:') === 0).map(i => i.origem.slice(5)));
+      const add = [];
+      codes.forEach(c => { const k = istaKeyH(c); if (ja.has(k)) return; ja.add(k); add.push(c); });
+      if (!add.length) { toast('Nada a lançar', 'Essas peças já estavam no DVI.'); return; }
+      WERK.updateOS(os.numero, o => { add.forEach(c => o.itens.push(WERK.itemDeIsta(o, c, cfg))); },
+        { tipo: 'update', titulo: 'Peças lançadas do ISTA', desc: add.length + ' item(ns) adicionados ao DVI a partir do laudo.', ator: os.tecnico });
+      toast(add.length + (add.length > 1 ? ' peças no DVI' : ' peça no DVI'), 'Revise peça, nível e preço antes de enviar ao cliente.');
+      views.os(os.numero);
+    }
+    $$('[data-ista-add]').forEach(b => b.addEventListener('click', () => {
+      const l = laudoAtual(); if (!l) return;
+      lancarCodigos([(l.codigos || [])[+b.dataset.istaAdd]]);
+    }));
+    const istaAll = $('[data-ista-all]');
+    if (istaAll) istaAll.addEventListener('click', () => {
+      const l = laudoAtual(); if (!l) return;
+      lancarCodigos((l.codigos || []).filter(c => c && (c.termo_peca || c.descricao || c.codigo)));
     });
 
     $$('[data-quote]').forEach(b => b.addEventListener('click', () => {
