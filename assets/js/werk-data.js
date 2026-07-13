@@ -798,6 +798,41 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     return _analisarAssistida(fotos, ctx);
   }
 
+  // Perito de diagnóstico ISTA: manda os anexos (fotos/PDF) para a função
+  // serverless /api/analisar-ista (usa a ANTHROPIC_API_KEY). Sem chave/endpoint
+  // (demo local), devolve um laudo de exemplo para o painel poder mostrar a tela.
+  async function analisarIsta(arquivos, ctx) {
+    ctx = ctx || {};
+    try {
+      const r = await fetch('/api/analisar-ista', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ arquivos, ctx }),
+      });
+      if (r.ok) { const d = await r.json(); if (d && d.ok) return d; }
+    } catch (_) { /* sem endpoint / offline → laudo demo */ }
+    return _istaDemo(ctx);
+  }
+  function _istaDemo(ctx) {
+    return {
+      ok: true, modo: 'demo', eh_ista: true, legivel: true, recaptura_necessaria: false, motivo_recaptura: null,
+      veiculo: { modelo: (ctx && ctx.modelo) || 'BMW', chassi: null, km: null },
+      resumo_executivo: 'Exemplo (modo demonstração — a IA real roda em produção com a chave da Vercel). Padrão clássico: subtensão de alimentação parece ser a causa comum de vários códigos em módulos diferentes; há um código de airbag que exige confirmação do técnico.',
+      causa_raiz_provavel: 'Subtensão de alimentação (bateria/IBS ou aterramento) — hipótese a confirmar antes de mexer nos módulos afetados.',
+      requer_confirmacao_profissional: true,
+      avisos_seguranca: ['Código de airbag/SRS presente — não liberar o veículo; confirmar com o técnico BMW e medir antes de qualquer ação.'],
+      codigos: [
+        { codigo: '00A6B2', formato: 'hex_bmw', modulo: 'DME', descricao: 'Subtensão de alimentação detectada', sistema: 'eletrica', severidade: 'alta', tipo: 'raiz', critico_seguranca: false, caractere_ambiguo: false, exige_medicao: true, medicao: 'Teste de bateria/IBS, tensão de repouso e saída do alternador.', causa_provavel: 'Bateria fraca ou aterramento ruim indica subtensão geral.', acao: 'Medir e tratar a alimentação antes dos demais códigos.' },
+        { codigo: '480A02', formato: 'hex_bmw', modulo: 'DSC', descricao: 'Sem comunicação com módulo (barramento)', sistema: 'freios/estabilidade', severidade: 'alta', tipo: 'consequente', critico_seguranca: true, caractere_ambiguo: false, exige_medicao: true, medicao: 'Reverificar após corrigir a alimentação; checar conector/barramento.', causa_provavel: 'Provável consequência da subtensão — pode limpar sozinho.', acao: 'Reavaliar depois de tratar a causa-raiz.' },
+        { codigo: '801C33', formato: 'hex_bmw', modulo: 'ACSM', descricao: 'Airbag: interrupção no circuito', sistema: 'airbag/seguranca', severidade: 'critica', tipo: 'indefinido', critico_seguranca: true, caractere_ambiguo: false, exige_medicao: true, medicao: 'Inspeção do circuito/conector do airbag pelo técnico — sistema de segurança.', causa_provavel: 'Circuito de airbag — não concluir sem inspeção física.', acao: 'Confirmação profissional obrigatória antes de qualquer ação.' },
+      ],
+      sistemas_afetados: ['elétrica', 'freios/estabilidade', 'airbag/segurança'],
+      prioridades: ['1) Tratar a subtensão (causa-raiz)', '2) Reavaliar códigos consequentes', '3) Inspeção do airbag pelo técnico'],
+      proximos_passos: ['Teste de bateria/IBS e tensão de repouso', 'Reler a memória de falhas após corrigir a alimentação', 'Inspeção física do circuito de airbag'],
+      observacoes: 'Modo demonstração — em produção a IA lê o laudo real que você anexar.', confianca: 0.7, anexos: 0,
+    };
+  }
+
   // Base local mínima de placas-demo (além dos veículos já cadastrados).
   const PLACA_DEMO = {
     'PONTO123': { vin: '', modelo: 'VW Golf GTI Mk7', anoModelo: 2019, cor: 'Branco', combustivel: 'Gasolina' },
@@ -855,7 +890,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     _aplicarPagamento: aplicarPagamento, // interno: só o registrarPagamento (local e do adaptador) deve usar
     KEYS, STATUS, statusIdx, CATEGORIAS, ETK, SUPPLIERS, AW_TABLE,
     validateVIN, decodeVIN, fixVIN, checkRecalls,
-    analisarFotos, consultarPlaca, sugerirOrcamento,
+    analisarFotos, analisarIsta, consultarPlaca, sugerirOrcamento,
     motorDePecas, itemPreco, totalOS, custoOS,
     getConfig, saveConfig,
     getVehicles, upsertVehicle,

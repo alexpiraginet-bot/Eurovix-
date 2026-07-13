@@ -1058,7 +1058,7 @@
     KEYS: local.KEYS, STATUS: local.STATUS, statusIdx: local.statusIdx,
     CATEGORIAS: local.CATEGORIAS, ETK: local.ETK, SUPPLIERS: local.SUPPLIERS, AW_TABLE: local.AW_TABLE,
     validateVIN: local.validateVIN, decodeVIN: local.decodeVIN, fixVIN: local.fixVIN, checkRecalls: local.checkRecalls,
-    analisarFotos: local.analisarFotos, consultarPlaca: local.consultarPlaca, sugerirOrcamento: local.sugerirOrcamento,
+    analisarFotos: local.analisarFotos, analisarIsta: local.analisarIsta, consultarPlaca: local.consultarPlaca, sugerirOrcamento: local.sugerirOrcamento,
     motorDePecas: local.motorDePecas, itemPreco: local.itemPreco, totalOS: local.totalOS, custoOS: local.custoOS,
     novoItem: local.novoItem, pixPayload: local.pixPayload,
     brl: local.brl, fdt: local.fdt, fd: local.fd,
