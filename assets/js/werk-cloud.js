@@ -1060,7 +1060,7 @@
     validateVIN: local.validateVIN, decodeVIN: local.decodeVIN, fixVIN: local.fixVIN, checkRecalls: local.checkRecalls,
     analisarFotos: local.analisarFotos, analisarIsta: local.analisarIsta, consultarPlaca: local.consultarPlaca, sugerirOrcamento: local.sugerirOrcamento,
     motorDePecas: local.motorDePecas, itemPreco: local.itemPreco, totalOS: local.totalOS, custoOS: local.custoOS,
-    novoItem: local.novoItem, pixPayload: local.pixPayload,
+    novoItem: local.novoItem, itemDeIsta: local.itemDeIsta, pixPayload: local.pixPayload,
     brl: local.brl, fdt: local.fdt, fd: local.fd,
     normTel: local.normTel, normPlaca: local.normPlaca,
     conviteUrl: local.conviteUrl, waLink: local.waLink,
