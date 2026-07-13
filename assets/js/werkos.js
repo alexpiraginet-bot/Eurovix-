@@ -324,9 +324,9 @@
           <h3>${I('scan')} Identificação por VIN <span style="font-size:10px;color:var(--txt-3);font-weight:400">— OCR da placa/etiqueta na integração; digitação validada aqui</span></h3>
           <div class="wk-grid2">
             <div class="wfield">
-              <label>VIN (chassi — 17 caracteres)</label>
-              <input id="ck-vin" maxlength="17" placeholder="WBA5U710X07L90210" style="text-transform:uppercase" value="${ck.vin || ''}">
-              <div class="hintline" id="vinHint">Dígito verificador (posição 9) validado em tempo real — ISO 3779.</div>
+              <label>VIN (chassi) <span style="font-weight:400;color:var(--txt-3);text-transform:none;letter-spacing:0">— opcional por ora</span></label>
+              <input id="ck-vin" maxlength="17" placeholder="WBA5U710X07L90210 (opcional)" style="text-transform:uppercase" value="${ck.vin || ''}">
+              <div class="hintline" id="vinHint">Se preencher, valido o dígito verificador (ISO 3779). Sem VIN, o check-in segue normalmente — dá pra completar depois.</div>
             </div>
             <div class="wfield">
               <label>Placa</label>
@@ -384,13 +384,17 @@
         } finally { btn.disabled = false; btn.classList.remove('loading'); btn.innerHTML = orig; }
       });
       $('#ckNext1').addEventListener('click', () => {
-        const v = WERK.validateVIN(vinInput.value);
-        if (!v.ok) { hint.className = 'hintline err'; hint.textContent = '✗ ' + (v.motivo || 'VIN inválido'); vinInput.focus(); return; }
-        if (!$('#ck-cli').value.trim()) { $('#ck-cli').focus(); return; }
+        const raw = (vinInput.value || '').trim().toUpperCase();
+        const v = WERK.validateVIN(raw);
+        // VIN é OPCIONAL (até haver leitura automática da placa/etiqueta): se ficou
+        // vazio ou não confere, alerta mas NÃO bloqueia o check-in.
+        if (raw && !v.ok) { hint.className = 'hintline err'; hint.textContent = '⚠ ' + (v.motivo || 'VIN não confere') + ' — seguindo sem validar; ajuste depois se precisar.'; }
+        if (!$('#ck-cli').value.trim()) { toast('Falta o cliente', 'Informe ao menos o nome do cliente.'); $('#ck-cli').focus(); return; }
+        const vin = v.ok ? v.vin : raw;
         Object.assign(ck, {
-          vin: v.vin, placa: $('#ck-placa').value.toUpperCase(), cliente: $('#ck-cli').value.trim(),
+          vin, placa: $('#ck-placa').value.toUpperCase(), cliente: $('#ck-cli').value.trim(),
           telefone: $('#ck-tel').value, tecnico: $('#ck-tec').value.split(' — ')[0], sintoma: $('#ck-sintoma').value.trim(),
-          decoded: WERK.decodeVIN(v.vin),
+          decoded: WERK.decodeVIN(vin),
         });
         ck.step = 2; renderCheckin();
       });
@@ -583,7 +587,8 @@
           },
           ator: 'Recepção',
         });
-        WERK.upsertVehicle({ vin: ck.vin, ...ck.decoded, placa: ck.placa, km: +ck.odometro, cliente: ck.cliente, telefone: ck.telefone });
+        // sem VIN não grava no prontuário por VIN (evita colidir vários "sem chassi" na mesma chave)
+        if (ck.vin) WERK.upsertVehicle({ vin: ck.vin, ...ck.decoded, placa: ck.placa, km: +ck.odometro, cliente: ck.cliente, telefone: ck.telefone });
         ck.clienteRec = await WERK.upsertCliente({ nome: ck.cliente, telefone: ck.telefone });
         ck.osNum = os.numero; ck.step = 4; renderCheckin();
       });

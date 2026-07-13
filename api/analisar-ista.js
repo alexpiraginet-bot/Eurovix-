@@ -74,7 +74,7 @@ async function handler(req, res) {
     const data = await r.json();
     const texto = (data.content || []).filter(b => b && b.type === 'text').map(b => b.text).join('\n');
     const parsed = extrairJson(texto);
-    if (!parsed) { res.status(200).json({ ok: false, erro: 'Resposta da IA sem JSON legível.', _debug: { len: String(texto || '').length, head: maskVin(String(texto || '')).slice(0, 700), tail: maskVin(String(texto || '')).slice(-500), stop: data.stop_reason, blocos: (data.content || []).map(b => b && b.type), usage: data.usage } }); return; }
+    if (!parsed) { res.status(200).json({ ok: false, erro: 'Resposta da IA sem JSON legível.' }); return; }
     res.status(200).json(normalizar(parsed, anexos.length));
   } catch (e) {
     res.status(200).json({ ok: false, erro: 'Erro ao chamar a IA: ' + (e && e.message ? e.message : String(e)) });
