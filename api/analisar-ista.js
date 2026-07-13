@@ -62,7 +62,9 @@ async function handler(req, res) {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model, max_tokens: 8000, messages: [{ role: 'user', content }] }),
+      // thinking OFF: é transcrição do laudo, não raciocínio — sem isso o modelo
+      // gastava todo o orçamento "pensando" no PDF grande e não sobrava p/ o JSON.
+      body: JSON.stringify({ model, max_tokens: 8000, thinking: { type: 'disabled' }, messages: [{ role: 'user', content }] }),
     });
     if (!r.ok) {
       const detalhe = await r.text().catch(() => '');
@@ -72,7 +74,7 @@ async function handler(req, res) {
     const data = await r.json();
     const texto = (data.content || []).filter(b => b && b.type === 'text').map(b => b.text).join('\n');
     const parsed = extrairJson(texto);
-    if (!parsed) { res.status(200).json({ ok: false, erro: 'Resposta da IA sem JSON legível.', _debug: { len: String(texto || '').length, head: maskVin(String(texto || '')).slice(0, 700), tail: maskVin(String(texto || '')).slice(-500), stop: data.stop_reason } }); return; }
+    if (!parsed) { res.status(200).json({ ok: false, erro: 'Resposta da IA sem JSON legível.', _debug: { len: String(texto || '').length, head: maskVin(String(texto || '')).slice(0, 700), tail: maskVin(String(texto || '')).slice(-500), stop: data.stop_reason, blocos: (data.content || []).map(b => b && b.type), usage: data.usage } }); return; }
     res.status(200).json(normalizar(parsed, anexos.length));
   } catch (e) {
     res.status(200).json({ ok: false, erro: 'Erro ao chamar a IA: ' + (e && e.message ? e.message : String(e)) });
