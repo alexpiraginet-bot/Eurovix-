@@ -331,7 +331,13 @@
     injectStyle(); opts = opts || {};
     const uid = opts.uid || bmwUid(modelStr);
     container.classList.add('wk3d-real'); container.innerHTML = '';
-    const src = 'https://sketchfab.com/models/' + uid + '/embed?ui_theme=dark&ui_infos=0&ui_watermark=1&ui_controls=1&autospin=0.2&preload=1&transparent=1';
+    // autostart=1 → inicia sozinho (sem clique). ui_controls=0 + flags → sem a
+    // barra/botões da Sketchfab por cima do carro (só o modelo, limpo e visível).
+    // A atribuição CC continua na legenda abaixo. autospin gentil.
+    const src = 'https://sketchfab.com/models/' + uid + '/embed'
+      + '?autostart=1&preload=1&ui_theme=dark&transparent=1&dnt=1&autospin=0.25'
+      + '&ui_infos=0&ui_controls=0&ui_watermark=0&ui_hint=0&ui_ar=0&ui_vr=0'
+      + '&ui_fullscreen=0&ui_help=0&ui_settings=0&ui_annotations=0&ui_inspector=0';
     const ifr = document.createElement('iframe');
     ifr.title = 'Modelo 3D BMW'; ifr.src = src; ifr.loading = 'lazy';
     ifr.setAttribute('frameborder', '0'); ifr.setAttribute('allowfullscreen', '');

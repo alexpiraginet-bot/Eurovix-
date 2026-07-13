@@ -177,6 +177,27 @@
       saude: st ? st.saude : DEFAULT_SAUDE,
     };
   }
+  // Cor declarada do veículo → hex (para o "swatch" ao lado do 3D). Aceita nome
+  // (Preto Safira, Branco Alpino…) ou já um hex. É a cor EXATA do carro do cliente.
+  function corHex(nome) {
+    const s = String(nome || '').trim();
+    if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(s)) return s;
+    const t = s.toLowerCase();
+    const MAP = [
+      [/safira|preto|black|negro|carbon|carbono/, '#0c0d12'],
+      [/branco alpino|alpine|branco|white|mineral branco/, '#eceff3'],
+      [/prata|glaciar|glacier|silver/, '#c4cad2'],
+      [/cinza|mineral|grey|gray|graphite|grafite|chumbo/, '#5f6672'],
+      [/azul|blue|estoril|portim|misano|marina|tanzan/, '#1f52a8'],
+      [/vermelh|red|melbourne|imola|toronto/, '#a8121d'],
+      [/verde|green|san remo|verdant/, '#2c5a3a'],
+      [/laranja|orange|sunset|valencia/, '#d1651f'],
+      [/amarelo|yellow|austin/, '#e3b23a'],
+      [/bronze|marrom|brown|dourado|gold|sumatra/, '#7a5a34'],
+    ];
+    for (const [re, hex] of MAP) if (re.test(t)) return hex;
+    return '#8a8f98';
+  }
   function vehicle() {
     const g = garagem();
     if (!g.length) return null;
@@ -258,21 +279,16 @@
         </div>
       </div>
 
+      ${window.WERK3D && WERK3D.embedReal ? `
       <div class="sec-label">Seu BMW em 3D <a data-goto="os">minhas OS</a></div>
       <div class="d3-card">
-        ${window.WERK3D && WERK3D.embedReal ? `<div class="d3-tabs">
-          <button class="d3-tab on" data-d3="insp">Inspeção DVI</button>
-          <button class="d3-tab" data-d3="real">Modelo real</button>
-        </div>` : ''}
-        <div class="d3-pane on" data-pane="insp">
-          <div id="twin3d" style="height:236px"></div>
-          <p class="d3-note">Arraste para girar · toque nos pontos para ver o status de cada item (DVI).</p>
+        <div id="twinReal" class="d3-real"></div>
+        <div class="d3-meta">
+          <span class="d3-swatch" style="background:${corHex(v.cor)}" title="Cor do veículo"></span>
+          <div><b>${v.modelo}</b>${v.cor ? `<span>Cor do veículo: ${v.cor}</span>` : ''}</div>
+          <span class="d3-hint">arraste para girar</span>
         </div>
-        ${window.WERK3D && WERK3D.embedReal ? `<div class="d3-pane" data-pane="real">
-          <div id="twinReal" style="height:280px"></div>
-          <p class="d3-note">Modelo 3D real do seu ${v.modelo} — arraste para girar e dê zoom (demonstração).</p>
-        </div>` : ''}
-      </div>
+      </div>` : ''}
 
       <div class="sec-label">Saúde do veículo</div>
       <div class="health-grid">
@@ -327,28 +343,14 @@
       renderInicio();
       toast('Veículo alterado', `Mostrando ${vehicle().modelo} (${vehicle().placa}).`, 'ok');
     });
-    // Efeitos colaterais pós-render: NUNCA podem derrubar a tela já montada
-    // (um erro de WebGL/three.js aqui não pode virar tela de falha).
-    try {
-      if (v && window.EVXTwin) EVXTwin.mount('#twin3d', { saude: v.saude, modelo: v.modelo, compact: true });
-    } catch (e) { console.error('EVXTwin.mount falhou (segue sem o twin)', e); }
-    // Alternador 3D: monta o modelo BMW real só na 1ª vez que a aba é aberta (lazy — sem custo no load).
+    // Modelo 3D real: monta JÁ ao abrir a tela (autostart no embed) — o cliente
+    // não precisa tocar. Nunca pode derrubar a tela já montada (try/catch).
     try {
       if (v && window.WERK3D && WERK3D.embedReal) {
-        const card = $('[data-view="inicio"]').querySelector('.d3-card');
-        if (card) card.querySelectorAll('[data-d3]').forEach(btn => btn.addEventListener('click', () => {
-          const which = btn.dataset.d3;
-          card.querySelectorAll('.d3-tab').forEach(t => t.classList.toggle('on', t === btn));
-          card.querySelectorAll('.d3-pane').forEach(p => p.classList.toggle('on', p.dataset.pane === which));
-          if (which === 'real') {
-            const box = card.querySelector('#twinReal');
-            if (box && !box.dataset.loaded) {
-              try { WERK3D.embedReal(box, v.modelo); box.dataset.loaded = '1'; } catch (_) {}
-            }
-          }
-        }));
+        const box = document.getElementById('twinReal');
+        if (box) WERK3D.embedReal(box, v.modelo);
       }
-    } catch (e) { console.error('alternador 3D falhou (segue sem ele)', e); }
+    } catch (e) { console.error('modelo 3D real falhou (segue sem ele)', e); }
     bindCommon($('[data-view="inicio"]'));
   }
 
