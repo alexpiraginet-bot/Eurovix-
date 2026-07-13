@@ -106,7 +106,7 @@ function instrucao(ctxTxt) {
     '  "resumo_executivo": "<2-4 frases claras p/ o consultor repassar>",',
     '  "causa_raiz_provavel": <str|null — hipótese a confirmar>,',
     '  "requer_confirmacao_profissional": <bool>, "avisos_seguranca": [<str>],',
-    '  "codigos": [{"codigo":"<exato>","formato":"hex_bmw|sae_p|desconhecido","modulo":<str|null>,"descricao":"<transcrito+traduzido>","sistema":"motor|transmissao|freios/estabilidade|direcao|airbag/seguranca|eletrica|arrefecimento|conforto|carroceria|outro","severidade":"baixa|media|alta|critica","tipo":"raiz|consequente|indefinido","critico_seguranca":<bool>,"caractere_ambiguo":<bool>,"exige_medicao":<bool>,"medicao":<str|null>,"causa_provavel":"<condicional>","acao":"<próxima ação>"}],',
+    '  "codigos": [{"codigo":"<exato>","formato":"hex_bmw|sae_p|desconhecido","modulo":<str|null>,"descricao":"<transcrito+traduzido>","sistema":"motor|transmissao|freios/estabilidade|direcao|airbag/seguranca|eletrica|arrefecimento|conforto|carroceria|outro","severidade":"baixa|media|alta|critica","tipo":"raiz|consequente|indefinido","critico_seguranca":<bool>,"caractere_ambiguo":<bool>,"exige_medicao":<bool>,"medicao":<str|null>,"termo_peca":<str|null — termo curto p/ buscar a peça no catálogo, ex. "bobina de ignição"/"Zündspule"; só o nome do componente, sem nº de peça>,"causa_provavel":"<condicional>","acao":"<próxima ação>"}],',
     '  "sistemas_afetados": [<str>], "prioridades": [<str, do mais crítico ao cosmético>], "proximos_passos": [<medições/testes ANTES de orçar>],',
     '  "observacoes": "<ressalvas, o que ficou ilegível/ambíguo>", "confianca": <0 a 1>',
     '}',
@@ -194,6 +194,7 @@ function coerceCodigos(v) {
       caractere_ambiguo: boolish(el.caractere_ambiguo, false),
       exige_medicao: boolish(el.exige_medicao, false),
       medicao: strOrNull(el.medicao, 300),
+      termo_peca: strOrNull(el.termo_peca || el.termoPeca, 80),
       causa_provavel: str(el.causa_provavel || el.causa, 300),
       acao: str(el.acao || el.recomendacao, 300),
     });
