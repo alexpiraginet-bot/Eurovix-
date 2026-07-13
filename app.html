@@ -54,6 +54,7 @@
         Demonstração — <button type="button" id="demoBtn">entrar com a conta demo</button><br>
         <span style="font-size:11px">((27) 99900-0000 · senha: bmw2026)</span>
       </div>
+      <a class="login-preview" href="?preview=1">▶ Ver demonstração ao vivo do app</a>
     </form>
   </div>
 
@@ -158,6 +159,9 @@
 </aside>
 
 <script src="assets/js/env.js"></script>
+<!-- ?preview=1 → força o MODO DEMONSTRAÇÃO (dados locais fictícios) mesmo em produção,
+     para mostrar o app do cliente (3D, garagem etc.) sem precisar de conta real. -->
+<script>if(new URLSearchParams(location.search).has('preview'))window.EVX_ENV={};</script>
 <script src="assets/js/theme.js"></script>
 <script src="assets/vendor/three.min.js"></script>
 <script src="assets/js/twin3d.js"></script>
