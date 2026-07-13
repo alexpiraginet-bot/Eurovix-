@@ -32,6 +32,11 @@ async function handler(req, res) {
   body = body || {};
   const ctx = body.ctx || {};
 
+  // texto = seção de memória de falhas já extraída do PDF no navegador (pdf.js).
+  // Enviar só isso, em vez das páginas do PDF como imagem, corta ~10× o custo de
+  // entrada (o PDF inteiro é tokenizado; o texto filtrado, não).
+  const textoExtraido = (typeof body.texto === 'string') ? body.texto.slice(0, 60000) : '';
+
   let brutos = body.arquivos || body.arquivo || [];
   if (!Array.isArray(brutos)) brutos = [brutos];
   const anexos = [];
@@ -43,9 +48,10 @@ async function handler(req, res) {
     anexos.push({ media_type: m[1], data: m[2], pdf: m[1] === 'application/pdf' });
     if (anexos.length >= 6) break;
   }
-  if (!anexos.length) { res.status(200).json({ ok: false, erro: 'Nenhum anexo válido (envie foto JPG/PNG ou PDF do ISTA).' }); return; }
+  if (!anexos.length && !textoExtraido) { res.status(200).json({ ok: false, erro: 'Nenhum anexo válido (envie foto JPG/PNG, PDF do ISTA ou o texto da memória de falhas).' }); return; }
 
   const content = [];
+  if (textoExtraido) content.push({ type: 'text', text: 'MEMÓRIA DE FALHAS extraída do laudo ISTA (texto do PDF, seção de códigos + cabeçalho do veículo). Transcreva/traduza a partir DESTE texto:\n\n' + textoExtraido });
   for (const a of anexos) {
     if (a.pdf) content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: a.data } });
     else content.push({ type: 'image', source: { type: 'base64', media_type: a.media_type, data: a.data } });
@@ -57,7 +63,9 @@ async function handler(req, res) {
   ].filter(Boolean).join(' · ');
   content.push({ type: 'text', text: instrucao(ctxTxt) });
 
-  const model = process.env.ANTHROPIC_MODEL_ISTA || 'claude-sonnet-5';
+  // Haiku por padrão (mais barato); com o texto já extraído, dá conta da transcrição.
+  // Para máxima profundidade de diagnóstico, defina ANTHROPIC_MODEL_ISTA=claude-sonnet-5.
+  const model = process.env.ANTHROPIC_MODEL_ISTA || 'claude-haiku-4-5';
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -75,7 +83,7 @@ async function handler(req, res) {
     const texto = (data.content || []).filter(b => b && b.type === 'text').map(b => b.text).join('\n');
     const parsed = extrairJson(texto);
     if (!parsed) { res.status(200).json({ ok: false, erro: 'Resposta da IA sem JSON legível.' }); return; }
-    res.status(200).json(normalizar(parsed, anexos.length));
+    res.status(200).json(normalizar(parsed, anexos.length || (textoExtraido ? 1 : 0)));
   } catch (e) {
     res.status(200).json({ ok: false, erro: 'Erro ao chamar a IA: ' + (e && e.message ? e.message : String(e)) });
   }

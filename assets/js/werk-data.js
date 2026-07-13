@@ -844,13 +844,13 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
   // Perito de diagnóstico ISTA: manda os anexos (fotos/PDF) para a função
   // serverless /api/analisar-ista (usa a ANTHROPIC_API_KEY). Sem chave/endpoint
   // (demo local), devolve um laudo de exemplo para o painel poder mostrar a tela.
-  async function analisarIsta(arquivos, ctx) {
+  async function analisarIsta(arquivos, ctx, texto) {
     ctx = ctx || {};
     try {
       const r = await fetch('/api/analisar-ista', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ arquivos, ctx }),
+        body: JSON.stringify({ arquivos: arquivos || [], texto: texto || '', ctx }),
       });
       if (r.ok) { const d = await r.json(); if (d && d.ok) return d; }
     } catch (_) { /* sem endpoint / offline → laudo demo */ }
