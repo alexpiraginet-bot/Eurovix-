@@ -731,8 +731,87 @@
       <p style="font-size:12px;color:var(--txt);margin-bottom:8px">${esc(l.resumo_executivo)}</p>
       ${l.causa_raiz_provavel ? `<p style="font-size:11.5px;color:var(--txt-2);margin-bottom:8px">🎯 <b>Causa-raiz provável:</b> ${esc(l.causa_raiz_provavel)}</p>` : ''}
       ${codigos ? `<div style="margin-bottom:8px">${codigos}</div>` : '<p style="font-size:11.5px;color:var(--txt-3);margin-bottom:8px">Nenhum código legível no anexo.</p>'}
+      ${pranchaPecas(l, vin)}
       ${(l.proximos_passos || []).length ? `<div style="font-size:11px;color:var(--txt-2)"><b>Próximos passos:</b><ul style="margin:4px 0 0;padding-left:16px">${l.proximos_passos.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>` : ''}
       <p style="font-size:10px;color:var(--txt-3);margin-top:8px">Confiança da leitura: ${Math.round((l.confianca || 0) * 100)}% · ${l.modo === 'demo' ? 'modo demonstração' : 'IA'} · <b>revise antes de orçar</b></p>`;
+  }
+  // ---- Prancha de peças 2D (estilo catálogo ETK) — desenho esquemático das peças do diagnóstico ----
+  function glyphKind(c) {
+    const t = ((c.termo_peca || '') + ' ' + (c.descricao || '') + ' ' + (c.sistema || '') + ' ' + (c.modulo || '')).toLowerCase();
+    if (/airbag|\bsrs\b|acsm|pretensor|cinto|pyro/.test(t)) return 'airbag';
+    if (/bateria|\bibs\b|\bbms\b|aliment|subtens|tens[aã]o|12\s?v|\bvolt/.test(t)) return 'bateria';
+    if (/freio|\bdsc\b|\babs\b|disco|pastilha|pin[çc]a|caliper|est[aá]bil/.test(t)) return 'freio';
+    if (/bobina|vela|igni[çc]|spark|coil/.test(t)) return 'bobina';
+    if (/bomba|pump|combust[ií]vel|[óo]leo|arrefec|[áa]gua/.test(t)) return 'bomba';
+    if (/conector|chicote|cabo|\bfio\b|plug|terminal|contato|corros/.test(t)) return 'conector';
+    if (/sensor|sonda|lambda|\bnox\b|rota[çc]|temperat|press[aã]o/.test(t)) return 'sensor';
+    if (/m[óo]dulo|unidade|\becu\b|\bdme\b|\bdde\b|\begs\b|central|control/.test(t)) return 'modulo';
+    return 'generic';
+  }
+  function glyphSVG(kind, a) {
+    switch (kind) {
+      case 'bateria': return `<rect x="-34" y="-18" width="68" height="38" rx="5"/><line x1="-34" y1="-4" x2="34" y2="-4"/><rect x="-22" y="-25" width="9" height="8" rx="1.5"/><rect x="13" y="-25" width="9" height="8" rx="1.5"/><path d="M-19 4 h9 M-14.5 -0.5 v9"/><path d="M6 4 h9"/><circle cx="17.5" cy="-29" r="5" fill="${a}" stroke="none"/>`;
+      case 'sensor': return `<rect x="-8" y="-4" width="16" height="26" rx="6"/><polygon points="-10,-4 10,-4 7,-12 -7,-12"/><line x1="0" y1="-12" x2="0" y2="-20"/><path d="M0 22 q0 10 15 12 q13 2 18 -5" fill="none"/><rect x="29" y="26" width="13" height="9" rx="2" fill="${a}" stroke="none"/>`;
+      case 'modulo': return `<rect x="-34" y="-20" width="62" height="38" rx="4"/><rect x="-28" y="-14" width="50" height="18" rx="2" opacity=".5"/><line x1="-26" y1="18" x2="-26" y2="24"/><line x1="-18" y1="18" x2="-18" y2="24"/><line x1="-10" y1="18" x2="-10" y2="24"/><line x1="-2" y1="18" x2="-2" y2="24"/><line x1="6" y1="18" x2="6" y2="24"/><line x1="14" y1="18" x2="14" y2="24"/><rect x="28" y="-10" width="11" height="18" rx="2" fill="${a}" stroke="none"/><circle cx="-28" cy="-16" r="1.6"/><circle cx="22" cy="-16" r="1.6"/>`;
+      case 'freio': return `<circle r="27"/><circle r="9"/><circle cx="0" cy="-14" r="1.7"/><circle cx="13" cy="7" r="1.7"/><circle cx="-13" cy="7" r="1.7"/><line x1="0" y1="-27" x2="0" y2="-20" opacity=".6"/><line x1="23" y1="13" x2="17" y2="10" opacity=".6"/><line x1="-23" y1="13" x2="-17" y2="10" opacity=".6"/><rect x="-13" y="-34" width="26" height="13" rx="3" fill="${a}" stroke="none"/>`;
+      case 'airbag': return `<circle r="25"/><path d="M0 -9 V-25"/><path d="M0 0 L20 12" opacity=".8"/><path d="M0 0 L-20 12" opacity=".8"/><circle r="9" fill="${a}" stroke="none"/>`;
+      case 'bobina': return `<rect x="-9" y="-24" width="18" height="22" rx="3"/><rect x="-11" y="-2" width="22" height="6" rx="2" fill="${a}" stroke="none"/><rect x="-4" y="4" width="8" height="9"/><line x1="0" y1="13" x2="0" y2="22"/><path d="M-3 22 h6"/>`;
+      case 'bomba': return `<circle r="20"/><circle r="6"/><path d="M0 -6 A6 6 0 0 1 5 3" opacity=".7"/><path d="M0 6 A6 6 0 0 1 -5 -3" opacity=".7"/><rect x="16" y="-6" width="12" height="12" rx="2" fill="${a}" stroke="none"/><rect x="-6" y="-30" width="12" height="10" rx="2"/>`;
+      case 'conector': return `<rect x="-20" y="-14" width="32" height="28" rx="4"/><line x1="12" y1="-7" x2="24" y2="-7"/><line x1="12" y1="0" x2="24" y2="0"/><line x1="12" y1="7" x2="24" y2="7"/><rect x="-25" y="-5" width="5" height="10" rx="1.5" fill="${a}" stroke="none"/><path d="M-20 -8 q-14 0 -18 8" fill="none" opacity=".7"/><path d="M-20 8 q-12 2 -16 10" fill="none" opacity=".7"/>`;
+      default: return `<rect x="-28" y="-18" width="56" height="36" rx="6"/><polygon points="18,-18 28,-18 28,-8" fill="${a}" stroke="none"/><line x1="-18" y1="-6" x2="12" y2="-6" opacity=".55"/><line x1="-18" y1="4" x2="6" y2="4" opacity=".55"/>`;
+    }
+  }
+  function carSVG() {
+    return `<path d="M-42 10 C-42 2 -36 0 -30 0 L-20 0 C-16 -12 -8 -16 2 -16 C12 -16 18 -10 22 -2 L34 0 C40 1 42 4 42 10 L42 12 L-42 12 Z"/><circle cx="-22" cy="12" r="8"/><circle cx="22" cy="12" r="8"/><circle cx="-22" cy="12" r="3.4"/><circle cx="22" cy="12" r="3.4"/><path class="win" d="M-15 -1 L-5 -12 L9 -12 L17 -2 Z"/>`;
+  }
+  function pranchaPecas(l, vin) {
+    l = l || {};
+    const sevCor = { critica: 'var(--red)', alta: '#ff8a3d', media: 'var(--warn)', baixa: 'var(--txt-3)' };
+    let parts = (l.codigos || []).filter(c => c && c.termo_peca);
+    if (!parts.length) parts = (l.codigos || []).filter(c => c && (c.codigo || c.descricao));
+    if (!parts.length) return '';
+    const DRAW_MAX = 8;
+    const drawn = parts.slice(0, DRAW_MAX);
+    const rest = parts.length - drawn.length;
+    const realVin = vin || '';
+    const vinMask = realVin ? '••••' + esc(realVin.slice(-4)) : '—';
+    const sysCount = {};
+    parts.forEach(c => { const s = (c.sistema || '').trim(); if (s) sysCount[s] = (sysCount[s] || 0) + 1; });
+    const domSys = Object.keys(sysCount).sort((x, y) => sysCount[y] - sysCount[x])[0] || 'multissistema';
+    const n = drawn.length;
+    const cols = n <= 1 ? 1 : n <= 4 ? 2 : 3;
+    const rows = Math.ceil(n / cols);
+    const W = 680, cellW = W / cols, cellTop = 150, cellH = 152, botBand = 48;
+    const H = cellTop + rows * cellH + botBand;
+    const carX = W / 2, carY = 66;
+    let bodySvg = '';
+    drawn.forEach((c, i) => {
+      const col = i % cols, row = Math.floor(i / cols);
+      const cx = Math.round(col * cellW + cellW / 2);
+      const cy = Math.round(cellTop + row * cellH + 62);
+      const a = sevCor[c.severidade] || 'var(--txt-2)';
+      const termo = c.termo_peca || c.descricao || c.codigo || 'peça';
+      const termoShort = termo.length > 30 ? termo.slice(0, 29) + '…' : termo;
+      const modtag = [c.modulo, c.sistema].filter(Boolean).join(' · ');
+      const bx = cx - 48, by = cy - 40;
+      bodySvg += `<line class="prancha-leader" x1="${carX}" y1="${carY + 22}" x2="${bx}" y2="${by}"/>`;
+      bodySvg += `<g class="prancha-part" data-realoem="${esc(realVin)}" data-termo="${esc(c.termo_peca || '')}" role="button" tabindex="0" aria-label="Abrir ${esc(termo)} no RealOEM" style="cursor:pointer">`;
+      bodySvg += `<g class="prancha-glyph" transform="translate(${cx},${cy})" style="--acc:${a}">${glyphSVG(glyphKind(c), a)}</g>`;
+      bodySvg += `<text class="prancha-label" x="${cx}" y="${cy + 46}" text-anchor="middle">${esc(termoShort)}</text>`;
+      if (modtag) bodySvg += `<text class="prancha-sub" x="${cx}" y="${cy + 59}" text-anchor="middle">${esc(modtag.length > 34 ? modtag.slice(0, 33) + '…' : modtag)}</text>`;
+      bodySvg += `<g class="prancha-balloon"><circle cx="${bx}" cy="${by}" r="12" fill="${a}"/><text class="prancha-bnum" x="${bx}" y="${by + 1}" text-anchor="middle" dominant-baseline="middle">${i + 1}</text></g>`;
+      bodySvg += `</g>`;
+    });
+    const car = `<g class="prancha-car" transform="translate(${carX},${carY})">${carSVG()}<text class="prancha-vin" x="0" y="34" text-anchor="middle">VIN ${vinMask}</text></g>`;
+    const tb = `<g class="prancha-tb" transform="translate(${W - 190},${H - 44})"><rect x="0" y="0" width="186" height="40" rx="4"/><text class="prancha-tbk" x="10" y="14">EUROVIX · PRANCHA DE PEÇAS</text><text class="prancha-tbv" x="10" y="27">Sistema: ${esc(domSys)}</text><text class="prancha-tbs" x="10" y="36">Ref. catálogo BMW ETK · RealOEM</text></g>`;
+    const svg = `<svg class="prancha-svg" viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Prancha de peças do diagnóstico"><rect class="prancha-bg" x="1" y="1" width="${W - 2}" height="${H - 2}" rx="10"/>${car}${bodySvg}${tb}</svg>`;
+    const legend = parts.map((c, i) => {
+      const a = sevCor[c.severidade] || 'var(--txt-3)';
+      const termo = c.termo_peca || c.descricao || c.codigo || 'peça';
+      const sub = [c.modulo, c.sistema].filter(Boolean).join(' · ') + (c.tipo === 'raiz' ? ' · 🎯 causa-raiz' : '');
+      return `<button class="prancha-row" data-realoem="${esc(realVin)}" data-termo="${esc(c.termo_peca || '')}"><span class="prancha-rn" style="background:${a}">${i + 1}</span><span class="prancha-rt"><b>${esc(termo)}</b><small>${esc(sub)}</small></span><span class="prancha-ro">RealOEM ↗</span></button>`;
+    }).join('');
+    return `<div class="prancha"><div class="prancha-head"><span>🔧 Prancha de peças <em>— clique numa peça pra abrir o desenho no RealOEM</em></span>${realVin ? `<button class="prancha-cat" data-realoem="${esc(realVin)}" data-termo="">Catálogo completo ↗</button>` : ''}</div><div class="prancha-plate">${svg}</div><div class="prancha-legend">${legend}</div>${rest > 0 ? `<p class="prancha-more">+${rest} peça(s) listada(s) acima, não desenhada(s) na prancha.</p>` : ''}<p class="prancha-foot">Desenho esquemático da EUROVIX para orientar a busca — o número e o preço oficiais da peça vêm do RealOEM (catálogo BMW ETK). O VIN é copiado ao abrir.</p></div>`;
   }
   function diagItemHTML(os, i) {
     const nv = i.niveis[i.nivelEscolhido || 'original'];
@@ -1015,14 +1094,19 @@
     });
 
     // RealOEM: abre o catálogo BMW e copia o VIN pra colar na busca por VIN (sem API — é só linkar).
-    document.querySelectorAll('[data-realoem]').forEach(el => el.addEventListener('click', (e) => {
-      e.preventDefault();
-      const vin = el.getAttribute('data-realoem') || '';
-      const termo = el.getAttribute('data-termo') || '';
-      if (vin && navigator.clipboard) { try { navigator.clipboard.writeText(vin); } catch (_) {} }
-      window.open('https://www.realoem.com/bmw/enUS/select', '_blank', 'noopener');
-      toast('RealOEM aberto', vin ? ('VIN copiado — cole na busca por VIN' + (termo ? '; depois procure: ' + termo : '') + '.') : 'Selecione o modelo no RealOEM.');
-    }));
+    document.querySelectorAll('[data-realoem]').forEach(el => {
+      const go = (e) => {
+        e.preventDefault();
+        const vin = el.getAttribute('data-realoem') || '';
+        const termo = el.getAttribute('data-termo') || '';
+        if (vin && navigator.clipboard) { try { navigator.clipboard.writeText(vin); } catch (_) {} }
+        window.open('https://www.realoem.com/bmw/enUS/select', '_blank', 'noopener');
+        toast('RealOEM aberto', vin ? ('VIN copiado — cole na busca por VIN' + (termo ? '; depois procure: ' + termo : '') + '.') : 'Selecione o modelo no RealOEM.');
+      };
+      el.addEventListener('click', go);
+      const tag = el.tagName.toLowerCase();
+      if (tag !== 'a' && tag !== 'button') el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') go(e); });
+    });
 
     $$('[data-quote]').forEach(b => b.addEventListener('click', () => {
       const el = $('#q-' + b.dataset.quote);

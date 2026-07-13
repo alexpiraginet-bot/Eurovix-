@@ -387,3 +387,46 @@ html[data-theme="light"] .kcard:hover{border-color:var(--red-border)}
 .ck-ia-orc .orc-row small{display:block;font-size:10.5px;color:var(--txt-3)}
 .ck-ia-orc .orc-row b{font-family:ui-monospace,'JetBrains Mono',monospace;color:var(--txt);white-space:nowrap}
 .ck-ia-orc .orc-foot{font-size:10.5px;color:var(--txt-3);margin-top:2px}
+
+/* ---- Prancha de peças (estilo catálogo ETK) — desenho 2D das peças do diagnóstico ---- */
+.prancha{margin:12px 0 10px;border:1px solid var(--line-strong);border-radius:12px;background:var(--navy);overflow:hidden}
+.prancha-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  padding:9px 12px;border-bottom:1px solid var(--line);font-size:12px;font-weight:700;color:var(--txt)}
+.prancha-head em{font-style:normal;font-weight:500;color:var(--txt-3);font-size:11px}
+.prancha-cat{font:inherit;font-size:11px;font-weight:700;color:#ff9d3d;background:rgba(255,157,61,.1);
+  border:1px solid rgba(255,157,61,.4);border-radius:20px;padding:4px 11px;cursor:pointer;transition:background .12s}
+.prancha-cat:hover{background:rgba(255,157,61,.2)}
+.prancha-plate{padding:8px;background:
+  linear-gradient(var(--line) 1px,transparent 1px) 0 0/22px 22px,
+  linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/22px 22px,var(--ink)}
+.prancha-svg{display:block;width:100%;height:auto}
+.prancha-bg{fill:none;stroke:var(--line-strong);stroke-dasharray:2 5}
+.prancha-leader{stroke:var(--line-strong);stroke-width:1;stroke-dasharray:3 4;opacity:.6}
+.prancha-glyph{fill:none;stroke:var(--txt-2);stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round;transition:stroke .15s}
+.prancha-label{fill:var(--txt);font-size:12px;font-weight:600;font-family:var(--font-display,inherit)}
+.prancha-sub{fill:var(--txt-3);font-size:10px}
+.prancha-bnum{fill:#fff;font-size:13px;font-weight:800;font-family:var(--font-display,inherit)}
+.prancha-balloon circle{stroke:var(--ink);stroke-width:2}
+.prancha-part:hover .prancha-glyph,.prancha-part:focus-visible .prancha-glyph{stroke:var(--acc);stroke-width:2.1}
+.prancha-part:hover .prancha-label,.prancha-part:focus-visible .prancha-label{fill:#fff}
+.prancha-part:focus-visible{outline:none}
+.prancha-part:focus-visible .prancha-balloon circle{stroke:#fff;stroke-width:2.4}
+.prancha-car path,.prancha-car circle{fill:none;stroke:var(--txt-2);stroke-width:1.7;stroke-linejoin:round}
+.prancha-car .win{fill:var(--line);stroke:var(--txt-3);stroke-width:1.2}
+.prancha-vin{fill:var(--txt-2);font-size:11px;font-weight:600;font-family:ui-monospace,'JetBrains Mono',monospace}
+.prancha-tb rect{fill:var(--navy);stroke:var(--line-strong);stroke-width:1}
+.prancha-tbk{fill:var(--txt-2);font-size:8.5px;font-weight:800;letter-spacing:.05em}
+.prancha-tbv{fill:var(--txt);font-size:9px;font-weight:600}
+.prancha-tbs{fill:var(--txt-3);font-size:7.5px}
+.prancha-legend{display:grid;gap:1px;background:var(--line);border-top:1px solid var(--line)}
+.prancha-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:9px 12px;background:var(--navy);border:none;cursor:pointer;font:inherit;color:var(--txt);transition:background .12s}
+.prancha-row:hover{background:var(--card,#12181f)}
+.prancha-rn{flex:none;width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:800;
+  display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-display,inherit)}
+.prancha-rt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.prancha-rt b{font-size:12.5px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prancha-rt small{font-size:10px;color:var(--txt-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prancha-ro{flex:none;font-size:10.5px;font-weight:700;color:#ff9d3d}
+.prancha-more{font-size:10.5px;color:var(--txt-3);padding:7px 12px 0;margin:0}
+.prancha-foot{font-size:9.5px;color:var(--txt-3);line-height:1.45;padding:8px 12px 10px;margin:0}
