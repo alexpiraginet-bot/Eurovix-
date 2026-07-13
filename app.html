@@ -159,9 +159,10 @@
 </aside>
 
 <script src="assets/js/env.js"></script>
-<!-- ?preview=1 → força o MODO DEMONSTRAÇÃO (dados locais fictícios) mesmo em produção,
-     para mostrar o app do cliente (3D, garagem etc.) sem precisar de conta real. -->
+<!-- ?preview=1 (legado) e ?demo=1 → MODO DEMONSTRAÇÃO (dados locais fictícios) mesmo
+     em produção, para mostrar o app do cliente (3D, garagem etc.) sem conta real. -->
 <script>if(new URLSearchParams(location.search).has('preview'))window.EVX_ENV={};</script>
+<script src="assets/js/demo.js"></script>
 <script src="assets/js/theme.js"></script>
 <script src="assets/js/werk-3d.js"></script>
 <script src="assets/js/data.js"></script>

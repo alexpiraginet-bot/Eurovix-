@@ -46,7 +46,7 @@
   const loginView = $('#loginView');
   const conviteView = $('#conviteView');
   const CONVITE = new URLSearchParams(location.search).get('convite');
-  const PREVIEW = new URLSearchParams(location.search).has('preview');
+  const PREVIEW = new URLSearchParams(location.search).has('preview') || !!window.EVX_DEMO; // ?demo=1 também
 
   renderBrand(); // marca cedo (splash) no modo local; recarregada após WERK.ready p/ nuvem
   Promise.all([WERK.ready, new Promise(r => setTimeout(r, 1400))]).then(() => {

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<script>document.documentElement.setAttribute("data-theme","dark");</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LexOS — Acessos de demonstração</title>
+<meta name="description" content="Entre no LexOS com dados fictícios: oficina completa, mecânico e cliente. Ambiente isolado só para teste e demonstração.">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="icon" type="image/png" href="assets/img/brand/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<style>
+  body{ background:radial-gradient(1200px 600px at 50% -10%, rgba(30,79,160,.14), transparent 60%), var(--ink); min-height:100vh; }
+  .wrap{ max-width:1040px; margin:0 auto; padding:56px 20px 90px; }
+  .top{ text-align:center; margin-bottom:40px; }
+  .wordmark{ font-family:var(--font-display); font-weight:900; font-size:34px; letter-spacing:.01em; color:var(--txt); }
+  .wordmark b{ color:var(--red); }
+  .eyebrow{ font-family:var(--font-display); font-size:11px; font-weight:700; letter-spacing:.28em; text-transform:uppercase; color:var(--red); margin-top:14px; }
+  .lede{ color:var(--txt-2); max-width:640px; margin:12px auto 0; font-size:15px; }
+  .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:8px; }
+  @media(max-width:820px){ .grid{ grid-template-columns:1fr; } }
+  .card{ position:relative; display:flex; flex-direction:column; background:linear-gradient(180deg,var(--card-2),var(--card)); border:1px solid var(--line); border-radius:var(--radius); padding:22px 20px; transition:border-color .18s, transform .18s; }
+  .card:hover{ border-color:var(--line-strong); transform:translateY(-2px); }
+  .card .ic{ font-size:26px; line-height:1; }
+  .card .kind{ font-family:var(--font-display); font-size:10px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--txt-3); margin:14px 0 6px; }
+  .card h2{ font-family:var(--font-display); font-weight:800; font-size:19px; color:var(--txt); line-height:1.15; }
+  .card p{ color:var(--txt-2); font-size:13px; margin-top:8px; flex:1; }
+  .chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+  .chip{ font-size:10.5px; font-weight:600; color:var(--txt-2); background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:999px; padding:3px 9px; }
+  .cred{ margin-top:12px; font-size:11.5px; color:var(--txt-3); background:var(--navy); border:1px dashed var(--line-strong); border-radius:var(--radius-sm); padding:8px 11px; }
+  .cred b{ color:var(--txt-2); font-weight:600; }
+  .go{ margin-top:16px; display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:var(--font-display); font-weight:700; font-size:13.5px; text-decoration:none; padding:12px 16px; border-radius:12px; background:var(--red); color:#fff; transition:filter .15s; }
+  .go:hover{ filter:brightness(1.08); }
+  .go.alt{ background:transparent; color:var(--txt); border:1px solid var(--line-strong); }
+  .secondary{ margin-top:22px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+  .secondary a{ text-decoration:none; font-size:12.5px; font-weight:600; color:var(--txt-2); border:1px solid var(--line); border-radius:999px; padding:8px 15px; transition:border-color .15s,color .15s; }
+  .secondary a:hover{ border-color:var(--line-strong); color:var(--txt); }
+  .note{ margin-top:40px; text-align:center; color:var(--txt-3); font-size:12.5px; line-height:1.7; }
+  .note b{ color:var(--txt-2); font-weight:600; }
+  .note a{ color:var(--blue-light); text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="wordmark">Lex<b>OS</b></div>
+    <div class="eyebrow">Acessos de demonstração</div>
+    <p class="lede">Entre em cada papel com um clique. Tudo roda com <b>dados fictícios já criados</b>, em um ambiente <b>isolado da sua conta real</b> — nada é salvo na nuvem. Perfeito para testar e apresentar.</p>
+  </header>
+
+  <div class="grid">
+    <!-- OFICINA (a oficina como um todo) -->
+    <div class="card">
+      <div class="ic">📋</div>
+      <div class="kind">Oficina · visão completa</div>
+      <h2>Painel da oficina</h2>
+      <p>A oficina inteira: quadro kanban, agenda, check-in digital, veículos &amp; prontuário, clientes, equipe, gestão &amp; DRE e configurações. Já vem com carros e ordens de serviço fictícias em andamento.</p>
+      <div class="chips"><span class="chip">BMW M135i</span><span class="chip">X1</span><span class="chip">Série 3</span><span class="chip">+15 OS</span></div>
+      <a class="go" href="werkos.html?demo=1&amp;papel=gestor">Entrar como Oficina →</a>
+    </div>
+
+    <!-- MECÂNICO -->
+    <div class="card">
+      <div class="ic">🔧</div>
+      <div class="kind">Equipe · bancada</div>
+      <h2>Mecânico</h2>
+      <p>O dia a dia da bancada: quadro de serviços, agenda, check-in, veículos e o motor de peças. Sem financeiro e sem equipe — só o operacional que o mecânico usa.</p>
+      <div class="chips"><span class="chip">Quadro</span><span class="chip">Check-in</span><span class="chip">Diagnóstico</span><span class="chip">Peças</span></div>
+      <a class="go" href="werkos.html?demo=1&amp;papel=mecanico">Entrar como Mecânico →</a>
+    </div>
+
+    <!-- CLIENTE -->
+    <div class="card">
+      <div class="ic">👤</div>
+      <div class="kind">Cliente · app</div>
+      <h2>App do cliente</h2>
+      <p>A garagem do cliente com BMW M135i e X1, acompanhamento das OS em tempo real, modelo 3D do carro e aprovação do orçamento item a item. Entra sozinho.</p>
+      <div class="cred">Login manual: <b>(27) 99900-0000</b> · senha <b>bmw2026</b></div>
+      <a class="go" href="app.html?demo=1">Entrar como Cliente →</a>
+    </div>
+  </div>
+
+  <div class="secondary">
+    <a href="werkos.html?demo=1&amp;papel=admin">👑 Admin (equipe + tudo)</a>
+    <a href="werkos.html?demo=1&amp;papel=consultor">🎧 Consultor (atendimento)</a>
+    <a href="app.html?convite=demo-marcelo">📲 Cliente novo (criar senha por convite)</a>
+  </div>
+
+  <p class="note">
+    🧪 <b>Ambiente de demonstração.</b> Os dados são fictícios e ficam só neste navegador, separados da sua conta real — nada é enviado à nuvem.<br>
+    Você sai da demonstração pelo rótulo <b>🧪</b> no rodapé de cada tela, ou aqui: <a href="werkos.html?demo=0">encerrar demonstração</a>.<br>
+    <a href="index.html">← Voltar ao site</a> · <a href="painel.html">Página do LexOS</a>
+  </p>
+</div>
+</body>
+</html>

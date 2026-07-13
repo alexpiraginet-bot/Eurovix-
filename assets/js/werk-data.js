@@ -9,16 +9,28 @@
 var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este global quando EVX_ENV está preenchido
 
   const CLOUD = typeof window !== 'undefined' && !!(window.EVX_ENV && window.EVX_ENV.SUPABASE_URL && window.EVX_ENV.SUPABASE_ANON_KEY);
+  // Modo demonstração (assets/js/demo.js zerou EVX_ENV e marcou EVX_DEMO): roda
+  // 100% local, mas em um NAMESPACE isolado (evx.demo.*) para nunca misturar com
+  // o cache da nuvem da conta real. Sair da demo devolve o modo normal intacto.
+  const DEMO = typeof window !== 'undefined' && !!window.EVX_DEMO;
+  const KB = DEMO ? 'evx.demo.werk' : 'evx.werk';
+  const demoPapel = () => (DEMO && window.EVX_DEMO && window.EVX_DEMO.papel) || 'gestor';
+  // Equipe fictícia exibida na view "Equipe" durante a demonstração.
+  const DEMO_TEAM = [
+    { auth_user: 'demo-gestor',    email: 'gestor.demo@lexos.app',    nome: 'Ana Ribeiro',    papel: 'gestor' },
+    { auth_user: 'demo-mecanico',  email: 'mecanico.demo@lexos.app',  nome: 'Bruno Tavares',  papel: 'mecanico' },
+    { auth_user: 'demo-consultor', email: 'consultor.demo@lexos.app', nome: 'Carla Nunes',     papel: 'consultor' },
+  ];
 
   const KEYS = {
-    os: 'evx.werk.os',
-    vehicles: 'evx.werk.vehicles',
-    clients: 'evx.werk.clients',
-    config: 'evx.werk.config',
-    agendamentos: 'evx.werk.agendamentos',
-    seedv: 'evx.werk.seed.v1',
-    seedAgenda: 'evx.werk.seed.agenda.v1',
-    seq: 'evx.werk.seq',
+    os: KB + '.os',
+    vehicles: KB + '.vehicles',
+    clients: KB + '.clients',
+    config: KB + '.config',
+    agendamentos: KB + '.agendamentos',
+    seedv: KB + '.seed.v1',
+    seedAgenda: KB + '.seed.agenda.v1',
+    seq: KB + '.seq',
   };
 
   /* ============================================================
@@ -858,7 +870,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
      dado do cliente; por isso o adaptador de nuvem o delega ao
      módulo local sem tabela dedicada.
      ============================================================ */
-  const KDIC = 'evx.ista.dic';         // aprendidos (localStorage): { "8040D2": {descricao, sistema, …} }
+  const KDIC = (DEMO ? 'evx.demo' : 'evx') + '.ista.dic'; // aprendidos: { "8040D2": {descricao, sistema, …} }
   let _seedObd = null;                 // banco mundial já carregado (lazy)
   let _seedObdPromise = null;
 
@@ -938,6 +950,8 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     const banco = _seedObd ? Object.keys(_seedObd).length : 0;
     return { aprendidos, banco, total: aprendidos + banco };
   }
+  function dicDump() { return { ...dicAprendidos() }; }   // cópia p/ o visualizador em Configurações
+  function dicLimpar() { write(KDIC, {}); return { aprendidos: 0 }; }
 
   // Decodifica uma lista de códigos SÓ com o dicionário (sem IA). Devolve o que
   // conseguiu + o que ficou de fora, para o painel decidir se cai na IA.
@@ -1103,11 +1117,14 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
   }
 
   return {
-    ready: Promise.resolve(), cloud: false, online: true,
-    authUser: () => null, loginStaff: async () => null, logoutAuth: () => {},
-    /* equipe: no demo não há login — a view Equipe explica e desabilita */
-    staffPerfil: () => null,
-    staffListar: async () => ({ ok: true, lista: [] }),
+    ready: Promise.resolve(), cloud: false, online: true, isDemo: DEMO,
+    // No modo demonstração o painel ganha uma persona (Gestor/Mecânico/Consultor)
+    // para exercitar os papéis; fora dele, o módulo local não tem login (demo puro).
+    authUser: () => (DEMO ? { email: demoPapel() + '.demo@lexos.app', demo: true } : null),
+    loginStaff: async () => (DEMO ? { papel: demoPapel() } : null),
+    logoutAuth: () => {},
+    staffPerfil: () => (DEMO ? { papel: demoPapel(), demo: true } : null),
+    staffListar: async () => (DEMO ? { ok: true, lista: DEMO_TEAM } : { ok: true, lista: [] }),
     staffCriar: async () => ({ ok: false, erro: 'Gestão de equipe disponível apenas no modo nuvem.' }),
     staffEditar: async () => ({ ok: false, erro: 'Gestão de equipe disponível apenas no modo nuvem.' }),
     staffRemover: async () => ({ ok: false, erro: 'Gestão de equipe disponível apenas no modo nuvem.' }),
@@ -1117,7 +1134,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     KEYS, STATUS, statusIdx, CATEGORIAS, ETK, SUPPLIERS, AW_TABLE,
     validateVIN, decodeVIN, fixVIN, checkRecalls,
     analisarFotos, analisarIsta, consultarPlaca, sugerirOrcamento,
-    carregarSeedObd, dicGet, dicAprender, dicStats, decodeLocal, lerLocal,
+    carregarSeedObd, dicGet, dicAprender, dicStats, decodeLocal, lerLocal, dicDump, dicLimpar,
     motorDePecas, itemPreco, totalOS, custoOS,
     getConfig, saveConfig,
     getVehicles, upsertVehicle,

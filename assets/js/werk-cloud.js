@@ -1060,7 +1060,7 @@
     validateVIN: local.validateVIN, decodeVIN: local.decodeVIN, fixVIN: local.fixVIN, checkRecalls: local.checkRecalls,
     analisarFotos: local.analisarFotos, analisarIsta: local.analisarIsta, consultarPlaca: local.consultarPlaca, sugerirOrcamento: local.sugerirOrcamento,
     /* — dicionário de códigos (cache de aprendizado por navegador; delegado ao módulo local) — */
-    carregarSeedObd: local.carregarSeedObd, dicGet: local.dicGet, dicAprender: local.dicAprender, dicStats: local.dicStats, decodeLocal: local.decodeLocal, lerLocal: local.lerLocal,
+    carregarSeedObd: local.carregarSeedObd, dicGet: local.dicGet, dicAprender: local.dicAprender, dicStats: local.dicStats, decodeLocal: local.decodeLocal, lerLocal: local.lerLocal, dicDump: local.dicDump, dicLimpar: local.dicLimpar,
     motorDePecas: local.motorDePecas, itemPreco: local.itemPreco, totalOS: local.totalOS, custoOS: local.custoOS,
     novoItem: local.novoItem, itemDeIsta: local.itemDeIsta, pixPayload: local.pixPayload,
     brl: local.brl, fdt: local.fdt, fd: local.fd,
@@ -1083,7 +1083,7 @@
     /* — estado — */
     authUser: () => user,
     minhaOficina: () => oficinaId, // multi-tenant: oficina do staff atual (null em modo legado/cliente/anon)
-    cloud: true,
+    cloud: true, isDemo: false,    // nuvem nunca é demo (demo.js zera EVX_ENV → este adaptador nem carrega)
     get online() { return online; },
   };
 
