@@ -459,3 +459,5 @@ html[data-theme="light"] .kcard:hover{border-color:var(--red-border)}
 .wk-logo-rm{align-self:flex-start;background:none;border:none;color:var(--txt-3);font-size:11px;
   cursor:pointer;text-decoration:underline;padding:0}
 .wk-logo-rm:hover{color:var(--red)}
+.wk-logo-slot.square{width:104px}
+.wk-logo-slot.square img{max-width:82px;max-height:82px}

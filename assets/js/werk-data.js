@@ -210,6 +210,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
       horario: 'Seg–Sex 8h–18h · Sáb 8h–12h',
       logo: null,      // fundo escuro (painel/app do cliente)
       logoDoc: null,   // fundo claro (documentos impressos)
+      icon: null,      // símbolo quadrado — vira o ícone do app instalado (PWA)
     },
     tecnicos: [
       { id: 't1', nome: 'Régis Souza',  espec: 'Motor / Powertrain' },
@@ -231,7 +232,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
   function marca() {
     const o = getConfig().oficina || {};
     const nome = (o.nome || '').trim();
-    return { ...o, nome, displayNome: nome || 'Sua oficina', temLogo: !!o.logo, temLogoDoc: !!o.logoDoc, configurada: !!(nome && o.logo) };
+    return { ...o, nome, displayNome: nome || 'Sua oficina', temLogo: !!o.logo, temLogoDoc: !!o.logoDoc, temIcon: !!o.icon, configurada: !!(nome && o.logo) };
   }
 
   const getVehicles = () => read(KEYS.vehicles, []);
@@ -927,6 +928,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
       pixChave: 'configure-sua-chave@pix (demo)', site: 'eurovix.vercel.app',
       horario: 'Seg–Sex 9h–18h · Sáb 9h–13h',
       logo: 'assets/img/brand/logo-oficial-branco.png', logoDoc: 'assets/img/brand/logo-oficial-preto.png',
+      icon: 'assets/img/brand/app-icon-dark.png',
     } });
   }
 

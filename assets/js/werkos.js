@@ -1802,7 +1802,17 @@
             </label>
             <button type="button" class="wk-logo-rm" id="cf-logodoc-rm"${c.oficina.logoDoc ? '' : ' hidden'}>remover</button>
           </div>
+          <div class="wk-idlogo">
+            <label class="wk-idlabel">Ícone do app (quadrado)</label>
+            <label class="wk-logo-slot square" id="cf-icon-slot">
+              <img id="cf-icon-prev" alt="ícone"${c.oficina.icon ? ` src="${c.oficina.icon}"` : ' hidden'}>
+              <span id="cf-icon-ph"${c.oficina.icon ? ' hidden' : ''}>＋ ícone<br><small>app instalado</small></span>
+              <input id="cf-icon" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+            </label>
+            <button type="button" class="wk-logo-rm" id="cf-icon-rm"${c.oficina.icon ? '' : ' hidden'}>remover</button>
+          </div>
         </div>
+        <p style="font-size:10.5px;color:var(--txt-3);margin:8px 0 0">📲 Logo e ícone viram a marca do <b>app instalável</b> (mobile e desktop). Sem ícone quadrado, o app usa o logo ou as iniciais da oficina.</p>
         <div class="wk-grid2" style="margin-top:14px">
           <div class="wfield"><label>Nome da oficina (razão social)</label><input id="cf-nome" value="${esc(c.oficina.nome)}" placeholder="Ex.: Sua Oficina Automotiva LTDA"></div>
           <div class="wfield"><label>CNPJ</label><input id="cf-cnpj" value="${esc(c.oficina.cnpj)}" placeholder="00.000.000/0001-00"></div>
@@ -1836,7 +1846,7 @@
         <button class="btn btn-primary" id="cf-save">Salvar configurações</button>
       </div>`;
     // Uploads de logo (guardados em buffer até salvar).
-    let logoBuf = c.oficina.logo || null, logoDocBuf = c.oficina.logoDoc || null;
+    let logoBuf = c.oficina.logo || null, logoDocBuf = c.oficina.logoDoc || null, iconBuf = c.oficina.icon || null;
     const wireLogo = (inputId, prevId, phId, rmId, set) => {
       const input = $('#' + inputId), prev = $('#' + prevId), ph = $('#' + phId), rm = $('#' + rmId);
       if (input) input.addEventListener('change', () => {
@@ -1848,6 +1858,7 @@
     };
     wireLogo('cf-logo', 'cf-logo-prev', 'cf-logo-ph', 'cf-logo-rm', v => { logoBuf = v; });
     wireLogo('cf-logodoc', 'cf-logodoc-prev', 'cf-logodoc-ph', 'cf-logodoc-rm', v => { logoDocBuf = v; });
+    wireLogo('cf-icon', 'cf-icon-prev', 'cf-icon-ph', 'cf-icon-rm', v => { iconBuf = v; });
 
     $('#cf-save').addEventListener('click', () => {
       const c2 = WERK.getConfig();
@@ -1864,7 +1875,7 @@
       o.horario = $('#cf-horario').value.trim();
       o.pixChave = $('#cf-pix').value.trim();
       o.site = $('#cf-site').value.trim();
-      o.logo = logoBuf; o.logoDoc = logoDocBuf;
+      o.logo = logoBuf; o.logoDoc = logoDocBuf; o.icon = iconBuf;
       WERK.saveConfig(c2);
       renderBrand();
       toast('Identidade salva', 'Sua marca já vale no painel, no app do cliente e nos documentos.');
