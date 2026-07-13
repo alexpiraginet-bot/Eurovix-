@@ -66,7 +66,8 @@
       border:1px solid rgba(120,150,200,.25);border-radius:8px;padding:5px 9px;}
     .wk3d__reset:hover{color:#fff;border-color:rgba(150,180,235,.5);}
     .wk3d-real{position:relative;width:100%;height:100%;min-height:280px;border-radius:12px;overflow:hidden;background:#0a0e16;}
-    .wk3d-real iframe{width:100%;height:100%;border:0;display:block;}
+    /* acabamento neutro/"matcap": sem cor — padrão para todos os carros */
+    .wk3d-real iframe{width:100%;height:100%;border:0;display:block;filter:grayscale(1) contrast(1.04) brightness(1.03);}
     .wk3d-attrib{position:absolute;left:8px;bottom:8px;z-index:2;font:600 9.5px/1.3 system-ui,sans-serif;
       color:#8fa0bd;background:rgba(10,14,22,.74);border:1px solid rgba(120,150,200,.2);
       border-radius:7px;padding:4px 8px;pointer-events:auto;}

@@ -180,7 +180,7 @@
 
   const fromDbCliente = (r) => ({
     id: r.id,
-    nome: r.nome,
+    nome: r.nome || '',
     telefone: r.telefone || r.telefone_norm || '',
     senha: r.ativado_em ? '✓' : null,   // marcador de "acesso ativo": a senha real vive no Supabase Auth
     convite: r.convite,
