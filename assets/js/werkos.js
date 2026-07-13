@@ -615,7 +615,8 @@
       <a class="quote-btn" href="documento.html?tipo=orcamento&os=${os.numero}" target="_blank">📄 Orçamento</a>
       <a class="quote-btn" href="documento.html?tipo=os&os=${os.numero}" target="_blank">📄 OS completa</a>
       ${os.pagamento ? `<a class="quote-btn" href="documento.html?tipo=fatura&os=${os.numero}" target="_blank">📄 Fatura</a>` : ''}
-      ${os.itens.some(i => i.garantia) ? `<a class="quote-btn" href="documento.html?tipo=garantia&os=${os.numero}" target="_blank">📄 Garantia</a>` : ''}`;
+      ${os.itens.some(i => i.garantia) ? `<a class="quote-btn" href="documento.html?tipo=garantia&os=${os.numero}" target="_blank">📄 Garantia</a>` : ''}
+      ${os.vin ? `<button class="quote-btn" data-realoem="${os.vin}" title="Abre o catálogo BMW no VIN deste carro e copia o VIN">🔧 Peças (RealOEM)</button>` : ''}`;
 
     main.innerHTML = head(`OS #${os.numero}`, '', `<button class="btn btn-secondary" onclick="location.hash='#/kanban'">← Kanban</button>`) + `
       <div class="os-head-row">
@@ -645,7 +646,7 @@
           </div>
           <div class="wk-panel">
             <h3>${I('scan')} Diagnóstico ISTA — perito IA <span style="font-size:10px;color:var(--txt-3)">foto ou PDF → a IA lê, decifra os códigos e prioriza</span></h3>
-            ${(() => { const ev = [...os.eventos].reverse().find(e => e.tipo === 'ista'); return (ev && ev.laudo) ? renderLaudoIsta(ev.laudo) : '<p style="font-size:12px;color:var(--txt-3);margin-bottom:8px">Anexe o laudo do ISTA (memória de falhas). A IA transcreve, traduz, separa causa-raiz de consequência e sugere as medições — você revisa antes de orçar.</p>'; })()}
+            ${(() => { const ev = [...os.eventos].reverse().find(e => e.tipo === 'ista'); return (ev && ev.laudo) ? renderLaudoIsta(ev.laudo, os.vin) : '<p style="font-size:12px;color:var(--txt-3);margin-bottom:8px">Anexe o laudo do ISTA (memória de falhas). A IA transcreve, traduz, separa causa-raiz de consequência e sugere as medições — você revisa antes de orçar.</p>'; })()}
             <label class="btn btn-secondary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;font-size:12px;margin-top:6px">
               📎 Anexar laudo do ISTA (foto/PDF)
               <input id="istaFile" type="file" accept="image/*,application/pdf" multiple hidden>
@@ -706,7 +707,7 @@
 
   // Render do laudo ISTA analisado pela IA. Escapa tudo (conteúdo vem da IA/OCR).
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
-  function renderLaudoIsta(l) {
+  function renderLaudoIsta(l, vin) {
     l = l || {};
     if (l.eh_ista === false) return `<p style="font-size:12px;color:var(--warn);margin-bottom:8px">${esc(l.resumo_executivo || 'O anexo não parece um diagnóstico ISTA/BMW.')}</p>`;
     const sevCor = { critica: 'var(--red)', alta: '#ff8a3d', media: 'var(--warn)', baixa: 'var(--txt-3)' };
@@ -723,6 +724,7 @@
         <div style="font-size:11.5px;color:var(--txt);margin-top:3px">${esc(c.descricao)}</div>
         ${c.causa_provavel ? `<div style="font-size:10.5px;color:var(--txt-2);margin-top:3px">Causa provável: ${esc(c.causa_provavel)}</div>` : ''}
         ${c.exige_medicao && c.medicao ? `<div style="font-size:10.5px;color:var(--accent,#5aa0ff);margin-top:3px">🔧 Medir antes: ${esc(c.medicao)}</div>` : ''}
+        ${(vin || c.termo_peca) ? `<div style="margin-top:5px"><a href="#" class="ista-peca" data-realoem="${esc(vin || '')}" data-termo="${esc(c.termo_peca || '')}" style="font-size:10.5px;color:#ff9d3d;text-decoration:none;font-weight:600">🔧 buscar peça no RealOEM${c.termo_peca ? ' · ' + esc(c.termo_peca) : ''}</a></div>` : ''}
       </div>`).join('');
     return `
       ${aviso}${recap}
@@ -1011,6 +1013,16 @@
         views.os(os.numero);
       } catch (e) { if (status) status.textContent = '⚠️ Falha ao ler o arquivo.'; }
     });
+
+    // RealOEM: abre o catálogo BMW e copia o VIN pra colar na busca por VIN (sem API — é só linkar).
+    document.querySelectorAll('[data-realoem]').forEach(el => el.addEventListener('click', (e) => {
+      e.preventDefault();
+      const vin = el.getAttribute('data-realoem') || '';
+      const termo = el.getAttribute('data-termo') || '';
+      if (vin && navigator.clipboard) { try { navigator.clipboard.writeText(vin); } catch (_) {} }
+      window.open('https://www.realoem.com/bmw/enUS/select', '_blank', 'noopener');
+      toast('RealOEM aberto', vin ? ('VIN copiado — cole na busca por VIN' + (termo ? '; depois procure: ' + termo : '') + '.') : 'Selecione o modelo no RealOEM.');
+    }));
 
     $$('[data-quote]').forEach(b => b.addEventListener('click', () => {
       const el = $('#q-' + b.dataset.quote);
