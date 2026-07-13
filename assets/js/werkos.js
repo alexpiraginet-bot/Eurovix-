@@ -11,6 +11,7 @@
   const $$ = (s, el) => [...(el || document).querySelectorAll(s)];
   const main = $('#wkMain');
   const I = (n, s) => EVX.icon(n, s || 16);
+  const bnome = () => { try { return (WERK.marca && WERK.marca().displayNome) || 'a oficina'; } catch (_) { return 'a oficina'; } };
 
   /* ---------- infra: toast, modal, hash ---------- */
   function toast(t, s) {
@@ -43,6 +44,21 @@
       c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
       cb(c.toDataURL('image/jpeg', 0.55));
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
+  }
+
+  // Logo da oficina → dataURL PNG (preserva transparência; até 400px no maior lado).
+  function logoToDataURL(file, cb) {
+    if (file && file.type === 'image/svg+xml') { const r = new FileReader(); r.onload = () => cb(r.result); r.readAsDataURL(file); return; }
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      const k = Math.min(1, 400 / Math.max(img.width, img.height));
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      cb(c.toDataURL('image/png'));
       URL.revokeObjectURL(img.src);
     };
     img.src = URL.createObjectURL(file);
@@ -554,7 +570,7 @@
       const url = rec ? WERK.conviteUrl(rec) : '';
       const ativo = !!(rec && rec.senha);
       const primeiro = (ck.cliente || 'Cliente').split(' ')[0];
-      const msgWa = `Olá, ${primeiro}! Seu ${ck.decoded.modelo} deu entrada na EUROVIX (OS #${ck.osNum}). ` +
+      const msgWa = `Olá, ${primeiro}! Seu ${ck.decoded.modelo} deu entrada na ${bnome()} (OS #${ck.osNum}). ` +
         (ativo ? `Acompanhe tudo pelo app — login: seu telefone. ${url}` : `Crie seu acesso e acompanhe tudo pelo app: ${url}`);
       body.innerHTML = `
         <div class="wk-panel" style="text-align:center;padding:40px 20px">
@@ -823,7 +839,7 @@
       bodySvg += `</g>`;
     });
     const car = `<g class="prancha-car" transform="translate(${carX},${carY})">${carSVG()}<text class="prancha-vin" x="0" y="34" text-anchor="middle">VIN ${vinMask}</text></g>`;
-    const tb = `<g class="prancha-tb" transform="translate(${W - 190},${H - 44})"><rect x="0" y="0" width="186" height="40" rx="4"/><text class="prancha-tbk" x="10" y="14">EUROVIX · PRANCHA DE PEÇAS</text><text class="prancha-tbv" x="10" y="27">Sistema: ${esc(domSys)}</text><text class="prancha-tbs" x="10" y="36">Ref. catálogo BMW ETK · RealOEM</text></g>`;
+    const tb = `<g class="prancha-tb" transform="translate(${W - 190},${H - 44})"><rect x="0" y="0" width="186" height="40" rx="4"/><text class="prancha-tbk" x="10" y="14">${esc(bnome().toUpperCase().slice(0, 22))} · PRANCHA DE PEÇAS</text><text class="prancha-tbv" x="10" y="27">Sistema: ${esc(domSys)}</text><text class="prancha-tbs" x="10" y="36">Ref. catálogo BMW ETK · RealOEM</text></g>`;
     const svg = `<svg class="prancha-svg" viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Prancha de peças do diagnóstico"><rect class="prancha-bg" x="1" y="1" width="${W - 2}" height="${H - 2}" rx="10"/>${car}${bodySvg}${tb}</svg>`;
     const legend = parts.map((c, i) => {
       const a = sevCor[c.severidade] || 'var(--txt-3)';
@@ -831,7 +847,7 @@
       const sub = [c.modulo, c.sistema].filter(Boolean).join(' · ') + (c.tipo === 'raiz' ? ' · 🎯 causa-raiz' : '');
       return `<button class="prancha-row" data-realoem="${esc(realVin)}" data-termo="${esc(c.termo_peca || '')}"><span class="prancha-rn" style="background:${a}">${i + 1}</span><span class="prancha-rt"><b>${esc(termo)}</b><small>${esc(sub)}</small></span><span class="prancha-ro">RealOEM ↗</span></button>`;
     }).join('');
-    return `<div class="prancha"><div class="prancha-head"><span>🔧 Prancha de peças <em>— clique numa peça pra abrir o desenho no RealOEM</em></span>${realVin ? `<button class="prancha-cat" data-realoem="${esc(realVin)}" data-termo="">Catálogo completo ↗</button>` : ''}</div><div class="prancha-plate">${svg}</div><div class="prancha-legend">${legend}</div>${rest > 0 ? `<p class="prancha-more">+${rest} peça(s) listada(s) acima, não desenhada(s) na prancha.</p>` : ''}<p class="prancha-foot">Desenho esquemático da EUROVIX para orientar a busca — o número e o preço oficiais da peça vêm do RealOEM (catálogo BMW ETK). O VIN é copiado ao abrir.</p></div>`;
+    return `<div class="prancha"><div class="prancha-head"><span>🔧 Prancha de peças <em>— clique numa peça pra abrir o desenho no RealOEM</em></span>${realVin ? `<button class="prancha-cat" data-realoem="${esc(realVin)}" data-termo="">Catálogo completo ↗</button>` : ''}</div><div class="prancha-plate">${svg}</div><div class="prancha-legend">${legend}</div>${rest > 0 ? `<p class="prancha-more">+${rest} peça(s) listada(s) acima, não desenhada(s) na prancha.</p>` : ''}<p class="prancha-foot">Desenho esquemático gerado pelo LexOS para orientar a busca — o número e o preço oficiais da peça vêm do RealOEM (catálogo BMW ETK). O VIN é copiado ao abrir.</p></div>`;
   }
   function diagItemHTML(os, i) {
     const nv = i.niveis[i.nivelEscolhido || 'original'];
@@ -1280,7 +1296,7 @@
               <td>${c.senha ? `<span class="ap-badge aprovado">ativo${c.ativadoEm ? ' · ' + WERK.fd(c.ativadoEm) : ''}</span>` : '<span class="ap-badge pendente">convite pendente</span>'}</td>
               <td style="white-space:nowrap">
                 <button class="quote-btn" data-copy-convite="${c.convite}">copiar link</button>
-                <a class="quote-btn" target="_blank" rel="noopener" href="${WERK.waLink(c.telefone, `Olá, ${c.nome.split(' ')[0]}! Acompanhe seu BMW pelo app EUROVIX: ${WERK.conviteUrl(c)}`)}">WhatsApp</a>
+                <a class="quote-btn" target="_blank" rel="noopener" href="${WERK.waLink(c.telefone, `Olá, ${c.nome.split(' ')[0]}! Acompanhe seu veículo pelo app da ${bnome()}: ${WERK.conviteUrl(c)}`)}">WhatsApp</a>
               </td>
             </tr>`;
           }).join('') || '<tr><td colspan="6" style="color:var(--txt-3)">Nenhum cliente ainda — o cadastro nasce no check-in.</td></tr>'}
@@ -1363,7 +1379,7 @@
       const acts = [
         a.status === 'novo' ? `<button class="quote-btn" data-ag-conf="${escHtml(a.id)}">✓ confirmar</button>` : '',
         aberto ? `<button class="quote-btn" data-ag-ck="${escHtml(a.id)}">▶ check-in</button>` : '',
-        aberto && a.telefone ? `<a class="quote-btn" target="_blank" rel="noopener" href="${WERK.waLink(a.telefone, `Olá, ${(a.nome || '').split(' ')[0]}! Confirmando seu horário na EUROVIX: ${quando}${a.hora ? ' às ' + a.hora : ''} — ${a.servico_nome || 'serviço'}. Protocolo ${a.protocolo || ''}.`)}">WhatsApp</a>` : '',
+        aberto && a.telefone ? `<a class="quote-btn" target="_blank" rel="noopener" href="${WERK.waLink(a.telefone, `Olá, ${(a.nome || '').split(' ')[0]}! Confirmando seu horário na ${bnome()}: ${quando}${a.hora ? ' às ' + a.hora : ''} — ${a.servico_nome || 'serviço'}. Protocolo ${a.protocolo || ''}.`)}">WhatsApp</a>` : '',
         aberto ? `<button class="quote-btn" data-ag-canc="${escHtml(a.id)}">✕ cancelar</button>` : '',
         a.status === 'convertido' && a.os_numero ? `<button class="quote-btn" onclick="location.hash='#/os/${+a.os_numero}'">abrir OS #${+a.os_numero}</button>` : '',
       ].filter(Boolean).join('');
@@ -1766,10 +1782,43 @@
         </div>
       </div>
       <div class="wk-panel">
-        <h3>${I('home')} Dados da oficina</h3>
-        <div class="wk-grid2">
-          <div class="wfield"><label>Chave Pix (recebimento)</label><input id="cf-pix" value="${c.oficina.pixChave}"></div>
-          <div class="wfield"><label>CNPJ</label><input id="cf-cnpj" value="${c.oficina.cnpj}"></div>
+        <h3>${I('home')} Identidade da oficina <span style="font-size:10px;color:var(--txt-3)">— aparece no painel, no app do cliente e nos documentos</span></h3>
+        <div class="wk-idbrand">
+          <div class="wk-idlogo">
+            <label class="wk-idlabel">Logo — fundo escuro (painel / app)</label>
+            <label class="wk-logo-slot" id="cf-logo-slot">
+              <img id="cf-logo-prev" alt="logo"${c.oficina.logo ? ` src="${c.oficina.logo}"` : ' hidden'}>
+              <span id="cf-logo-ph"${c.oficina.logo ? ' hidden' : ''}>＋ enviar logo<br><small>PNG, SVG ou WEBP</small></span>
+              <input id="cf-logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+            </label>
+            <button type="button" class="wk-logo-rm" id="cf-logo-rm"${c.oficina.logo ? '' : ' hidden'}>remover</button>
+          </div>
+          <div class="wk-idlogo">
+            <label class="wk-idlabel">Logo — fundo claro (documentos)</label>
+            <label class="wk-logo-slot light" id="cf-logodoc-slot">
+              <img id="cf-logodoc-prev" alt="logo documentos"${c.oficina.logoDoc ? ` src="${c.oficina.logoDoc}"` : ' hidden'}>
+              <span id="cf-logodoc-ph"${c.oficina.logoDoc ? ' hidden' : ''}>＋ enviar logo escuro<br><small>usado no PDF branco</small></span>
+              <input id="cf-logodoc" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+            </label>
+            <button type="button" class="wk-logo-rm" id="cf-logodoc-rm"${c.oficina.logoDoc ? '' : ' hidden'}>remover</button>
+          </div>
+        </div>
+        <div class="wk-grid2" style="margin-top:14px">
+          <div class="wfield"><label>Nome da oficina (razão social)</label><input id="cf-nome" value="${esc(c.oficina.nome)}" placeholder="Ex.: Sua Oficina Automotiva LTDA"></div>
+          <div class="wfield"><label>CNPJ</label><input id="cf-cnpj" value="${esc(c.oficina.cnpj)}" placeholder="00.000.000/0001-00"></div>
+        </div>
+        <div class="wk-grid2" style="margin-top:12px">
+          <div class="wfield"><label>Endereço completo</label><input id="cf-endereco" value="${esc(c.oficina.endereco)}" placeholder="Rua, nº — bairro, Cidade/UF · CEP"></div>
+          <div class="wfield"><label>Cidade/UF</label><input id="cf-cidade" value="${esc(c.oficina.cidade)}" placeholder="Cidade/UF"></div>
+        </div>
+        <div class="wk-grid3" style="margin-top:12px">
+          <div class="wfield"><label>WhatsApp / telefone</label><input id="cf-fone" value="${esc(c.oficina.fone)}" placeholder="(00) 90000-0000"></div>
+          <div class="wfield"><label>E-mail</label><input id="cf-email" value="${esc(c.oficina.email)}" placeholder="contato@suaoficina.com.br"></div>
+          <div class="wfield"><label>Horário de funcionamento</label><input id="cf-horario" value="${esc(c.oficina.horario)}" placeholder="Seg–Sex 8h–18h · Sáb 8h–12h"></div>
+        </div>
+        <div class="wk-grid2" style="margin-top:12px">
+          <div class="wfield"><label>Chave Pix (recebimento)</label><input id="cf-pix" value="${esc(c.oficina.pixChave)}" placeholder="sua-chave@pix"></div>
+          <div class="wfield"><label>Site / domínio</label><input id="cf-site" value="${esc(c.oficina.site)}" placeholder="suaoficina.com.br"></div>
         </div>
       </div>
       ${WERK.cloud ? `
@@ -1786,15 +1835,39 @@
         <button class="btn btn-secondary" id="cf-seed15">🚗 Carga de teste: +15 OS</button>\n        <button class="btn btn-secondary" id="cf-reset">${WERK.cloud ? '↺ Limpar cache local' : '↺ Resetar demo (limpa localStorage)'}</button>
         <button class="btn btn-primary" id="cf-save">Salvar configurações</button>
       </div>`;
+    // Uploads de logo (guardados em buffer até salvar).
+    let logoBuf = c.oficina.logo || null, logoDocBuf = c.oficina.logoDoc || null;
+    const wireLogo = (inputId, prevId, phId, rmId, set) => {
+      const input = $('#' + inputId), prev = $('#' + prevId), ph = $('#' + phId), rm = $('#' + rmId);
+      if (input) input.addEventListener('change', () => {
+        const f = input.files[0]; if (!f) return;
+        if (f.size > 2.5 * 1024 * 1024) { toast('Logo grande demais', 'Use um arquivo até ~2,5 MB.'); input.value = ''; return; }
+        logoToDataURL(f, url => { set(url); if (prev) { prev.src = url; prev.hidden = false; } if (ph) ph.hidden = true; if (rm) rm.hidden = false; });
+      });
+      if (rm) rm.addEventListener('click', () => { set(null); if (prev) { prev.removeAttribute('src'); prev.hidden = true; } if (ph) ph.hidden = false; rm.hidden = true; if (input) input.value = ''; });
+    };
+    wireLogo('cf-logo', 'cf-logo-prev', 'cf-logo-ph', 'cf-logo-rm', v => { logoBuf = v; });
+    wireLogo('cf-logodoc', 'cf-logodoc-prev', 'cf-logodoc-ph', 'cf-logodoc-rm', v => { logoDocBuf = v; });
+
     $('#cf-save').addEventListener('click', () => {
       const c2 = WERK.getConfig();
       c2.valorHora = +$('#cf-hora').value || 380;
       c2.margens = { original: +$('#cf-mo').value, oem: +$('#cf-me').value, aftermarket: +$('#cf-ma').value };
       c2.garantiaMeses = { peca: +$('#cf-gp').value, mo: +$('#cf-gm').value };
-      c2.oficina.pixChave = $('#cf-pix').value;
-      c2.oficina.cnpj = $('#cf-cnpj').value;
+      const o = c2.oficina;
+      o.nome = $('#cf-nome').value.trim();
+      o.cnpj = $('#cf-cnpj').value.trim();
+      o.endereco = $('#cf-endereco').value.trim();
+      o.cidade = $('#cf-cidade').value.trim();
+      o.fone = $('#cf-fone').value.trim();
+      o.email = $('#cf-email').value.trim();
+      o.horario = $('#cf-horario').value.trim();
+      o.pixChave = $('#cf-pix').value.trim();
+      o.site = $('#cf-site').value.trim();
+      o.logo = logoBuf; o.logoDoc = logoDocBuf;
       WERK.saveConfig(c2);
-      toast('Configurações salvas', 'Novos orçamentos usam os valores atualizados.');
+      renderBrand();
+      toast('Identidade salva', 'Sua marca já vale no painel, no app do cliente e nos documentos.');
     });
     $('#cf-seed15').addEventListener('click', () => {
       if (WERK.cloud) { toast('Indisponível na nuvem', 'A carga de teste é exclusiva do modo demonstração — produção só recebe dados reais.'); return; }
@@ -1864,14 +1937,30 @@
     });
   };
 
+  /* Marca white-label: logo/nome da oficina logada no topo + banner de first-run.
+     LexOS é a marca do fornecedor (sub-rótulo discreto). */
+  function renderBrand() {
+    const m = (WERK.marca && WERK.marca()) || {};
+    const el = $('#wkBrand');
+    if (el) {
+      const sub = '<small style="font-family:var(--font-display);font-size:8px;font-weight:700;letter-spacing:.26em;color:var(--red);text-transform:uppercase">LexOS · Painel da Oficina</small>';
+      const primary = m.temLogo
+        ? `<img src="${m.logo}" alt="${esc(m.displayNome)}" style="max-width:172px;max-height:54px;width:auto;height:auto">`
+        : `<span class="wk-brand-name" style="font-family:var(--font-display);font-weight:800;font-size:20px;letter-spacing:.02em;color:var(--txt)">${esc(m.displayNome)}</span>`;
+      el.innerHTML = primary + sub;
+    }
+    const banner = $('#wkSetupBanner');
+    if (banner) banner.hidden = !!m.configurada;
+  }
+
   /* Tempo real entre abas: aprovações/mudanças feitas no app
      do cliente redesenham a view atual do painel na hora. */
   window.addEventListener('storage', (e) => {
-    if (e.key && e.key.startsWith('evx.') && !$('#wkModal').classList.contains('open')) route();
+    if (e.key && e.key.startsWith('evx.') && !$('#wkModal').classList.contains('open')) { renderBrand(); route(); }
   });
   window.addEventListener('evx:sync', () => { // realtime da nuvem
-    if (!$('#wkModal').classList.contains('open')) route();
+    if (!$('#wkModal').classList.contains('open')) { renderBrand(); route(); }
   });
 
-  WERK.ready.then(route);
+  WERK.ready.then(() => { renderBrand(); route(); });
 })();

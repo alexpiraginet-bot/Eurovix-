@@ -472,3 +472,6 @@ body.app-body{
   .btn-image:hover{filter:none}
   .btn-image:active{transform:none}
 }
+
+/* White-label: wordmark fallback quando a oficina ainda não subiu logo */
+.js-brand-wordmark{display:block;font-family:var(--font-display,inherit);font-weight:800;font-size:26px;letter-spacing:.02em;color:var(--txt);text-align:center;line-height:1.15}

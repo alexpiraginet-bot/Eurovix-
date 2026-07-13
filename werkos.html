@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <script>document.documentElement.setAttribute("data-theme","dark");</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WERK OS — Painel da Oficina · EUROVIX</title>
-<meta name="description" content="WERK OS: sistema operacional da oficina EUROVIX — check-in digital, DVI, orçamento por chassi, kanban, QC e checkout.">
+<title>LexOS — Painel da Oficina</title>
+<meta name="description" content="LexOS: o sistema operacional da sua oficina — check-in digital, DVI, orçamento por chassi, kanban, QC e checkout.">
 <link rel="icon" type="image/png" href="assets/img/brand/favicon.png">
 <meta name="theme-color" content="#07090C">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,9 +17,9 @@
 <body class="werk-body">
 
 <aside class="wk-side" id="wkSide">
-  <a class="brand" href="index.html" style="flex-direction:column;align-items:flex-start;gap:6px">
-    <img src="assets/img/brand/logo-oficial-branco.png" alt="EUROVIX" style="width:168px;height:auto">
-    <small style="font-family:var(--font-display);font-size:8px;font-weight:700;letter-spacing:.26em;color:var(--red);text-transform:uppercase">WERK OS · Painel da Oficina</small>
+  <a class="brand" href="index.html" id="wkBrand" style="flex-direction:column;align-items:flex-start;gap:6px" aria-label="Início">
+    <span class="wk-brand-name" style="font-family:var(--font-display);font-weight:800;font-size:20px;letter-spacing:.02em;color:var(--txt)"></span>
+    <small style="font-family:var(--font-display);font-size:8px;font-weight:700;letter-spacing:.26em;color:var(--red);text-transform:uppercase">LexOS · Painel da Oficina</small>
   </a>
   <nav class="wk-nav" id="wkNav">
     <button data-view="kanban" class="on">⬛ Quadro da Oficina</button>
@@ -33,7 +33,7 @@
     <button data-view="config">🛠 Configurações</button>
   </nav>
   <div class="foot">
-    Demo funcional — Fase 1 do WERK OS.<br>
+    <b style="color:var(--txt-2);letter-spacing:.06em">powered by LexOS</b><br>
     Integrações reais (PartsLink24, TecDoc, Mercado Pago, NFS-e) plugam nesta mesma interface.<br><br>
     <a href="painel.html">⌂ Painel mestre</a> · <a href="index.html">Site</a> · <a href="app.html">App do cliente</a>
   </div>
@@ -41,6 +41,10 @@
 
 <button class="wk-burger" id="wkBurger" aria-label="Menu">☰</button>
 <div class="wk-backdrop" id="wkBackdrop"></div>
+<a class="wk-setup-banner" id="wkSetupBanner" href="#/config" hidden>
+  <span>🎨 <b>Configure a identidade da sua oficina</b> — logo, nome, endereço e horário. Enquanto não configurar, seus documentos e o app do cliente saem sem a sua marca.</span>
+  <span class="wk-setup-cta">Configurar agora →</span>
+</a>
 <main class="wk-main" id="wkMain">
   <!-- renderizado por werkos.js -->
 </main>
