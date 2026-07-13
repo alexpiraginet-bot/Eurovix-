@@ -77,6 +77,45 @@
     if (!token) { form.classList.add('hide'); show('Link inválido. Peça um novo link de acesso ao LexOS.', 'err'); return; }
     if (!sb) { show('Este ambiente está em modo demonstração (sem nuvem). A ativação real acontece na produção com o Supabase configurado.', 'err'); }
 
+    // Já autenticado? Não reutiliza a sessão em silêncio — mostra a conta e deixa
+    // ATIVAR com ela ou TROCAR de e-mail. (Corrige o "entrou sem pedir credencial".)
+    (async function () {
+      if (!sb) return;
+      try {
+        var s = await sb.auth.getSession();
+        var u = s && s.data && s.data.session && s.data.session.user;
+        if (!u) return;
+        form.classList.add('hide');
+        var box = document.createElement('div');
+        box.innerHTML =
+          '<p class="sub">Você já está conectado como <b style="color:var(--ink)">' + (u.email || '') + '</b>. Ative esta oficina com esta conta ou entre com outro e-mail.</p>' +
+          '<button id="ativarJa" type="button">Ativar esta oficina e entrar</button>' +
+          '<button id="trocar" type="button" style="background:transparent;border:1px solid var(--line);color:var(--ink2);box-shadow:none;margin-top:10px">Usar outro e-mail</button>' +
+          '<div id="msg2" class="msg"></div>';
+        document.getElementById('view').appendChild(box);
+        var m2 = document.getElementById('msg2');
+        document.getElementById('ativarJa').addEventListener('click', async function () {
+          var b = this; b.disabled = true; b.textContent = 'Ativando…'; m2.className = 'msg';
+          try {
+            var act = await sb.rpc('ativar_oficina', { p_token: token });
+            if (act.error) throw act.error;
+            m2.className = 'msg ok'; m2.textContent = 'Acesso ativado ✓ Entrando no painel…';
+            setTimeout(function () { location.href = 'werkos.html'; }, 800);
+          } catch (err) {
+            b.disabled = false; b.textContent = 'Ativar esta oficina e entrar';
+            var mm = (err && err.message) || String(err);
+            if (/já utilizado|outra conta/i.test(mm)) mm = 'Este convite já foi ativado. Se você é o administrador, entre no painel.';
+            else if (/outra oficina/i.test(mm)) mm = 'Esta conta já pertence a outra oficina — use "Usar outro e-mail".';
+            m2.className = 'msg err'; m2.textContent = mm;
+          }
+        });
+        document.getElementById('trocar').addEventListener('click', async function () {
+          try { await sb.auth.signOut(); } catch (e) {}
+          box.remove(); form.classList.remove('hide');
+        });
+      } catch (e) { /* sem sessão: segue com o formulário normal */ }
+    })();
+
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
       if (!sb) return;
@@ -112,6 +151,5 @@
     });
   })();
   </script>
-<script src="https://alex-hub-three.vercel.app/support-widget.js" data-app="eurovix" defer></script>
 </body>
 </html>
