@@ -576,7 +576,7 @@
         </div>
         <p style="font-size:10px;color:var(--txt-3);margin:6px 0 8px">Assine para registrar o aceite (validade jurídica: assinatura + IP + timestamp + hash do documento).</p>
         <div class="sig-pad" style="background:#F5F6F8;border-radius:12px"><canvas id="apSig" style="width:100%;height:110px;touch-action:none;display:block;border-radius:12px"></canvas></div>
-        <button class="btn-image" type="button" style="margin-top:12px" id="apConfirm"><img src="assets/img/ui/btn-aprovar-sel.webp" alt="Aprovar selecionados" width="1000" height="227"></button>
+        <button class="btn btn-primary" type="button" style="margin-top:12px;width:100%" id="apConfirm">Aprovar selecionados ✓</button>
       </div>`;
   }
 
@@ -611,7 +611,7 @@
         <p class="pay-hint" id="payHint">Abra o app do seu banco, escaneie o QR — ou copie o código Pix abaixo.</p>
         <div class="pay-code" id="payCode"></div>
         <button type="button" class="btn btn-secondary pay-copy-btn" id="payCopyBtn">Copiar código Pix</button>
-        <button type="button" class="btn-image" id="payPix"><img src="assets/img/ui/btn-pix.webp" alt="Pagar com Pix" width="1000" height="228"></button>
+        <button type="button" class="btn btn-primary" id="payPix" style="width:100%;margin-top:12px">Pagar com Pix</button>
         <p class="pay-note">Ao confirmar, a nota fiscal e a garantia de cada item são liberadas na hora.</p>
       </div>`;
   }
