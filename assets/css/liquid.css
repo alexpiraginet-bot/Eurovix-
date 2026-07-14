@@ -1,0 +1,197 @@
+/* ============================================================
+   LexOS · App do Cliente — camada iOS 27 "Liquid Glass"
+   ------------------------------------------------------------
+   Carregada DEPOIS de app.css. Eleva o app do cliente à
+   linguagem de materiais translúcidos do iOS 26/27: vidro com
+   desfoque + vibrância, profundidade em camadas, cantos
+   contínuos (squircle), tipografia do sistema (SF nos Apple) e
+   controles táteis com brilho e mola. Tudo escopado em
+   .app-shell — não vaza para as outras telas.
+   ============================================================ */
+
+.app-shell{
+  /* tokens da camada de vidro */
+  --lq-accent:#0A84FF;          /* azul do sistema (dark) */
+  --lq-accent-2:#4AA3FF;
+  --lq-accent-grad:linear-gradient(180deg,#3B9BFF 0%,#0A84FF 100%);
+  --lq-glass:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.022));
+  --lq-glass-strong:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04));
+  --lq-hair:rgba(255,255,255,.10);
+  --lq-hair-top:inset 0 1px 0 rgba(255,255,255,.16);
+  --lq-elev:0 10px 34px rgba(0,0,0,.42);
+  --lq-elev-sm:0 6px 20px rgba(0,0,0,.34);
+  --lq-r:22px; --lq-r-sm:16px; --lq-r-lg:28px;
+  --lq-spring:cubic-bezier(.2,.9,.25,1);
+  --lq-font:-apple-system,'SF Pro Text','SF Pro Display',system-ui,'Inter',Segoe UI,Roboto,sans-serif;
+  /* fundo ambiente: azul-quase-preto com brilho de acento p/ o vidro refratar */
+  background:
+    radial-gradient(130% 80% at 50% -8%, rgba(10,132,255,.20), transparent 58%),
+    radial-gradient(120% 60% at 100% 100%, rgba(94,92,230,.14), transparent 60%),
+    linear-gradient(180deg,#0a0e16 0%,#070a11 55%,#05070c 100%);
+  font-family:var(--lq-font);
+  letter-spacing:-.005em;
+}
+@media (min-width:480px){
+  .app-shell{border-radius:38px;border-color:rgba(255,255,255,.09);box-shadow:0 40px 90px rgba(0,0,0,.6),var(--lq-hair-top)}
+}
+
+/* Tipografia — pesos e tracking estilo iOS */
+.app-shell .vtitle,.app-shell .os-detail-head b,.app-shell .profile-head b,.app-shell .conv-hello{
+  font-family:var(--lq-font);font-weight:700;letter-spacing:-.02em;
+}
+.app-shell .vc-top .mod{font-family:var(--lq-font);font-weight:700;letter-spacing:-.02em}
+.app-shell .vc-km .v,.app-shell .pay-head b{font-family:var(--lq-font);font-weight:700;letter-spacing:-.03em}
+.app-shell .sec-label{font-weight:600;letter-spacing:.06em;color:rgba(235,240,248,.42)}
+
+/* ---------- Header: vidro fixo ---------- */
+.app-shell .app-header{
+  position:sticky;top:0;z-index:20;
+  background:linear-gradient(180deg,rgba(10,14,22,.72),rgba(10,14,22,.32));
+  -webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.app-shell .app-header .hello b{font-weight:700;letter-spacing:-.02em}
+.app-shell .hbtn{
+  background:var(--lq-glass);border:1px solid var(--lq-hair);border-radius:13px;
+  box-shadow:var(--lq-hair-top);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  transition:transform .18s var(--lq-spring),border-color .18s;
+}
+.app-shell .hbtn:active{transform:scale(.92)}
+
+/* ---------- Vidro: superfícies de cartão ---------- */
+.app-shell .acard,
+.app-shell .vehicle-card,
+.app-shell .hcard,
+.app-shell .d3-card,
+.app-shell .os-card,
+.app-shell .svc-tile,
+.app-shell .appt-card,
+.app-shell .plist,
+.app-shell .approve-box,
+.app-shell .sig-pad{
+  background:var(--lq-glass);
+  border:1px solid var(--lq-hair);
+  border-radius:var(--lq-r);
+  box-shadow:var(--lq-elev-sm),var(--lq-hair-top);
+  -webkit-backdrop-filter:blur(20px) saturate(150%);backdrop-filter:blur(20px) saturate(150%);
+}
+.app-shell .hcard,.app-shell .svc-tile{border-radius:var(--lq-r-sm)}
+
+/* Cartão do veículo — herói: mais presença, faixa de acento em gradiente */
+.app-shell .vehicle-card{
+  background:
+    radial-gradient(120% 90% at 90% 0%, rgba(10,132,255,.12), transparent 55%),
+    var(--lq-glass-strong);
+  border-radius:var(--lq-r-lg);
+  box-shadow:var(--lq-elev),var(--lq-hair-top);
+  padding:20px;
+}
+.app-shell .vehicle-card::before{height:4px;background:var(--lq-accent-grad);opacity:.95}
+.app-shell .vc-km .v{font-size:30px}
+.app-shell .vc-bar,.app-shell .hcard .hbar{background:rgba(255,255,255,.08)}
+.app-shell .vc-bar i{background:var(--lq-accent-grad)}
+
+/* Ações rápidas — telhas de vidro */
+.app-shell .qbtn{
+  background:var(--lq-glass);border:1px solid var(--lq-hair);border-radius:var(--lq-r-sm);
+  box-shadow:var(--lq-hair-top);color:rgba(235,240,248,.72);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  transition:transform .18s var(--lq-spring),border-color .18s,background .18s;
+}
+.app-shell .qbtn:active{transform:scale(.94)}
+.app-shell .qbtn .ico{color:var(--lq-accent-2)}
+.app-shell .qbtn:nth-child(even) .ico{color:var(--lq-accent-2)}
+
+/* Estados de toque nos cartões clicáveis */
+.app-shell .os-card,.app-shell .svc-tile,.app-shell .plist .prow,.app-shell .vc-switch,.app-shell .back-btn{
+  transition:transform .18s var(--lq-spring),border-color .18s,background .18s,box-shadow .18s;
+}
+.app-shell .os-card:active,.app-shell .svc-tile:active{transform:scale(.985)}
+.app-shell .os-card:hover,.app-shell .svc-tile:hover{border-color:rgba(10,132,255,.5);box-shadow:var(--lq-elev-sm),var(--lq-hair-top)}
+.app-shell .plist .prow:hover{background:rgba(255,255,255,.04)}
+.app-shell .plist .prow:active{background:rgba(255,255,255,.07)}
+
+/* Ícones de ícone-fundo (serviços, notif, agenda, ações) — pastilha de vidro azul */
+.app-shell .svc-tile .ico-wrap,
+.app-shell .appt-date,
+.app-shell .notif .n-ico{
+  background:linear-gradient(180deg,rgba(10,132,255,.24),rgba(10,132,255,.10));
+  border:1px solid rgba(10,132,255,.24);color:var(--lq-accent-2);
+}
+.app-shell .appt-date b,.app-shell .appt-date span{color:var(--lq-accent-2)}
+
+/* Badges de status */
+.app-shell .os-badge{border-radius:999px;padding:5px 10px}
+.app-shell .os-badge.approve{background:rgba(10,132,255,.16);color:var(--lq-accent-2)}
+
+/* ---------- Botões primários: azul vibrante com brilho ---------- */
+.app-shell .btn-primary,
+.app-shell .vc-cta .btn.btn-primary,
+.app-shell .approve-box .btn.btn-primary{
+  background:var(--lq-accent-grad);
+  border:none;border-radius:14px;color:#fff;font-weight:600;letter-spacing:-.01em;
+  box-shadow:0 8px 22px rgba(10,132,255,.42),inset 0 1px 0 rgba(255,255,255,.35);
+  transition:transform .16s var(--lq-spring),box-shadow .18s,filter .18s;
+}
+.app-shell .btn-primary:hover{filter:brightness(1.06)}
+.app-shell .btn-primary:active{transform:scale(.97);box-shadow:0 4px 14px rgba(10,132,255,.4),inset 0 1px 0 rgba(255,255,255,.3)}
+/* Botões secundários / switch — vidro */
+.app-shell .btn.btn-secondary,
+.app-shell .vc-switch,
+.app-shell .back-btn{
+  background:var(--lq-glass);border:1px solid var(--lq-hair);border-radius:14px;color:#EAF0F8;
+  box-shadow:var(--lq-hair-top);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+}
+.app-shell .vc-switch{border-radius:12px}
+.app-shell .vc-switch:active,.app-shell .back-btn:active{transform:scale(.94)}
+
+/* ---------- Tab bar: pílula flutuante de vidro (iOS 26/27) ---------- */
+.app-shell .tabbar{
+  left:14px;right:14px;bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  padding:8px 8px;border-radius:26px;
+  background:linear-gradient(180deg,rgba(22,27,38,.78),rgba(15,19,28,.66));
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 14px 40px rgba(0,0,0,.5),var(--lq-hair-top);
+  -webkit-backdrop-filter:blur(26px) saturate(180%);backdrop-filter:blur(26px) saturate(180%);
+}
+.app-shell .tab{border-radius:16px;padding:7px 12px;color:rgba(235,240,248,.5);gap:3px;z-index:1;transition:color .2s}
+.app-shell .tab .ico{transition:transform .2s var(--lq-spring)}
+.app-shell .tab.on{color:#fff}
+.app-shell .tab.on .ico{transform:translateY(-1px) scale(1.04)}
+/* pílula ativa atrás do item selecionado (em vez do tracinho) */
+.app-shell .tab.on::before{
+  content:"";position:absolute;inset:0;top:auto;left:0;transform:none;
+  width:100%;height:100%;border-radius:16px;
+  background:linear-gradient(180deg,rgba(10,132,255,.34),rgba(10,132,255,.16));
+  border:1px solid rgba(10,132,255,.4);z-index:-1;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2);
+}
+
+/* ---------- Toasts de vidro ---------- */
+.app-shell .toast{
+  background:linear-gradient(180deg,rgba(28,33,45,.9),rgba(20,24,34,.82));
+  border:1px solid rgba(255,255,255,.12);border-radius:16px;
+  box-shadow:var(--lq-elev),var(--lq-hair-top);
+  -webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%);
+}
+
+/* ---------- Modais / drawer: vidro ---------- */
+.app-shell .d3-modal-card,.app-shell .drawer-panel{
+  background:linear-gradient(180deg,rgba(20,25,35,.92),rgba(14,18,26,.9));
+  border:1px solid rgba(255,255,255,.12);
+  -webkit-backdrop-filter:blur(28px) saturate(160%);backdrop-filter:blur(28px) saturate(160%);
+}
+.app-shell .d3-modal-card{border-radius:24px}
+
+/* 3D: palco escuro enquanto o modelo carrega (não um bloco branco) */
+.app-shell .d3-real,.app-shell .d3-modal-stage{background:rgba(255,255,255,.02)}
+
+/* Rótulo do modo demonstração: acima da tab bar flutuante, não em cima dela
+   (o estilo inline do demo.js usa bottom:14px — precisa de !important p/ vencer) */
+body.app-body #evxDemoBar{bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
+
+/* Menos vidro/movimento p/ quem pede (acessibilidade / performance) */
+@media (prefers-reduced-motion:reduce){
+  .app-shell .qbtn,.app-shell .hbtn,.app-shell .os-card,.app-shell .svc-tile,
+  .app-shell .btn-primary,.app-shell .vc-switch,.app-shell .back-btn,.app-shell .tab .ico{transition:none}
+}
