@@ -91,6 +91,7 @@
   let meuPapel = null;    // papel do usuário atual na equipe (admin/gestor/…)
   let oficinaId = null;   // multi-tenant: uuid da oficina do staff (null = banco single-tenant, anon ou cliente)
   let conviteBuf = null;  // resposta de convite_info p/ garagemDe na tela de cadastro
+  let recuperando = false;// true quando a pessoa chegou por um link de "esqueci a senha" (evento PASSWORD_RECOVERY)
 
   const sortOS = () => mirror.os.sort((a, b) => new Date(b.criada) - new Date(a.criada)); // paridade com unshift local
 
@@ -1028,8 +1029,24 @@
     try {
       const { error } = await sb.auth.updateUser({ password: nova });
       if (error) return { ok: false, erro: staffMsg(error) };
+      recuperando = false; // definiu a nova senha → sai do modo recuperação
       return { ok: true };
     } catch (e) { falha('mudarMinhaSenha', e); return { ok: false, erro: staffMsg(e) }; }
+  };
+
+  /* "Esqueci minha senha": envia o e-mail de recuperação do Supabase Auth. O link
+     volta para ESTA página (redirectTo) e o supabase-js emite PASSWORD_RECOVERY —
+     a UI então mostra o formulário de nova senha (→ mudarMinhaSenha). Serve tanto
+     para a equipe (werkos.html) quanto para o admin que use o adaptador. */
+  const resetarSenha = async (email) => {
+    const e = String(email || '').trim();
+    if (!e) return { ok: false, erro: 'Informe o seu e-mail primeiro.' };
+    try {
+      const redirectTo = (location.origin && location.origin !== 'null') ? location.origin + location.pathname : undefined;
+      const { error } = await sb.auth.resetPasswordForEmail(e, redirectTo ? { redirectTo } : undefined);
+      if (error) { if (isNetErr(error)) falha('resetarSenha', error); return { ok: false, erro: staffMsg(error) }; }
+      return { ok: true };
+    } catch (err) { falha('resetarSenha', err); return { ok: false, erro: staffMsg(err) }; }
   };
 
   // Pagamento no modo nuvem: escrita otimista via updateOS do adaptador (espelho +
@@ -1080,6 +1097,8 @@
     /* — equipe (view 👥 Equipe; regras de papel no servidor) — */
     staffPerfil: () => (isStaff ? { papel: meuPapel || 'consultor' } : null),
     staffListar, staffCriar, staffEditar, staffRemover, mudarMinhaSenha,
+    /* — recuperação de senha (Supabase Auth) — */
+    resetarSenha, emRecuperacao: () => recuperando,
     /* — estado — */
     authUser: () => user,
     minhaOficina: () => oficinaId, // multi-tenant: oficina do staff atual (null em modo legado/cliente/anon)
@@ -1096,6 +1115,8 @@
       const u = (session && session.user) || null;
       const trocou = ((u && u.id) || null) !== ((user && user.id) || null);
       user = u;
+      // Chegou por um link de "esqueci a senha" → sinaliza a UI p/ pedir a nova senha.
+      if (_evt === 'PASSWORD_RECOVERY') { recuperando = true; try { window.dispatchEvent(new CustomEvent('evx:recovery')); } catch (e) { /* noop */ } }
       if (trocou) hydrate(); // login/logout → espelho re-hidratado com o novo escopo RLS
     });
     await hydrate();

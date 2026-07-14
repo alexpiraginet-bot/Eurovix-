@@ -292,46 +292,57 @@ body.theme-bmw{background:var(--stage-2)}
 <script>
 (function () {
   'use strict';
-  // Métricas vivas do store compartilhado (na nuvem, espera a hidratação)
-  WERK.ready.then(function () {
-  var all = WERK.getAllOS();
-  var ativas = all.filter(function (o) { return o.status !== 'entregue'; });
-  var aprov = all.filter(function (o) {
-    return o.status === 'aprovacao' && o.itens.some(function (i) { return i.aprovacao === 'pendente'; });
-  });
-  var fat = all.reduce(function (s, o) { return s + (o.pagamento ? o.pagamento.valor : 0); }, 0);
-  var gar = all.reduce(function (s, o) {
-    return s + o.itens.filter(function (i) { return i.garantia; }).length;
-  }, 0);
-  document.getElementById('lv-os').textContent = ativas.length;
-  document.getElementById('lv-ap').innerHTML = aprov.length + (aprov.length ? ' <em>⚠</em>' : '');
-  document.getElementById('lv-fat').textContent = WERK.brl(fat);
-  document.getElementById('lv-gar').textContent = gar;
+  var $ = function (id) { return document.getElementById(id); };
 
-  // Links dinâmicos de documentos (acompanham o estado real)
-  var comAceite = all.find(function (o) { return o.aceite; }) || all[0];
-  var concluida = all.find(function (o) { return o.pagamento; });
-  if (comAceite) {
-    document.getElementById('docTag').textContent = 'OS #' + comAceite.numero + ' · ' + comAceite.cliente.split(' ')[0];
-    document.getElementById('docLinks1').innerHTML =
-      ['termo', 'dvi', 'orcamento', 'os'].map(function (t) {
-        var label = { termo: 'Termo', dvi: 'DVI', orcamento: 'Orçamento', os: 'OS completa' }[t];
-        return '<a class="lnk" href="documento.html?tipo=' + t + '&os=' + comAceite.numero + '">' + label + '</a>';
-      }).join('');
+  // Desenha métricas + links de documento a partir do store compartilhado.
+  // SEMPRE re-render EM LUGAR — nunca location.reload(). O evento evx:sync é
+  // disparado a CADA hidratação/mudança do espelho da nuvem (werk-cloud.js),
+  // então recarregar a página aqui criava um laço infinito de recarregamento
+  // (~2×/s). Mesma estratégia do WERK OS (werkos.js) e do app (app.js).
+  function render() {
+    if (!window.WERK || typeof WERK.getAllOS !== 'function') return;
+    var all = WERK.getAllOS();
+    var ativas = all.filter(function (o) { return o.status !== 'entregue'; });
+    var aprov = all.filter(function (o) {
+      return o.status === 'aprovacao' && o.itens.some(function (i) { return i.aprovacao === 'pendente'; });
+    });
+    var fat = all.reduce(function (s, o) { return s + (o.pagamento ? o.pagamento.valor : 0); }, 0);
+    var gar = all.reduce(function (s, o) {
+      return s + o.itens.filter(function (i) { return i.garantia; }).length;
+    }, 0);
+    if ($('lv-os')) $('lv-os').textContent = ativas.length;
+    if ($('lv-ap')) $('lv-ap').innerHTML = aprov.length + (aprov.length ? ' <em>⚠</em>' : '');
+    if ($('lv-fat')) $('lv-fat').textContent = WERK.brl(fat);
+    if ($('lv-gar')) $('lv-gar').textContent = gar;
+
+    // Links dinâmicos de documentos (acompanham o estado real)
+    var comAceite = all.find(function (o) { return o.aceite; }) || all[0];
+    var concluida = all.find(function (o) { return o.pagamento; });
+    if (comAceite && $('docTag')) {
+      $('docTag').textContent = 'OS #' + comAceite.numero + ' · ' + comAceite.cliente.split(' ')[0];
+      $('docLinks1').innerHTML =
+        ['termo', 'dvi', 'orcamento', 'os'].map(function (t) {
+          var label = { termo: 'Termo', dvi: 'DVI', orcamento: 'Orçamento', os: 'OS completa' }[t];
+          return '<a class="lnk" href="documento.html?tipo=' + t + '&os=' + comAceite.numero + '">' + label + '</a>';
+        }).join('');
+    }
+    if (concluida && $('docTag2')) {
+      $('docTag2').textContent = 'OS #' + concluida.numero + ' · concluída';
+      $('docLinks2').innerHTML =
+        '<a class="lnk" href="documento.html?tipo=fatura&os=' + concluida.numero + '">Fatura</a>' +
+        '<a class="lnk" href="documento.html?tipo=garantia&os=' + concluida.numero + '">Garantia</a>';
+    }
+    var v = WERK.getVehicles()[0];
+    if (v && $('docLinks3')) {
+      $('docLinks3').innerHTML =
+        '<a class="lnk primary" href="documento.html?tipo=prontuario&vin=' + v.vin + '">Prontuário ' + (v.placa || v.vin.slice(-6)) + ' ›</a>' +
+        '<a class="lnk" href="werkos.html#/veiculos">Outros veículos</a>';
+    }
   }
-  if (concluida) {
-    document.getElementById('docTag2').textContent = 'OS #' + concluida.numero + ' · concluída';
-    document.getElementById('docLinks2').innerHTML =
-      '<a class="lnk" href="documento.html?tipo=fatura&os=' + concluida.numero + '">Fatura</a>' +
-      '<a class="lnk" href="documento.html?tipo=garantia&os=' + concluida.numero + '">Garantia</a>';
-  }
-  var v = WERK.getVehicles()[0];
-  if (v) {
-    document.getElementById('docLinks3').innerHTML =
-      '<a class="lnk primary" href="documento.html?tipo=prontuario&vin=' + v.vin + '">Prontuário ' + (v.placa || v.vin.slice(-6)) + ' ›</a>' +
-      '<a class="lnk" href="werkos.html#/veiculos">Outros veículos</a>';
-  }
-  });
+
+  // Primeira pintura: espera a hidratação da nuvem (ou roda já, no demo local).
+  if (window.WERK && WERK.ready && typeof WERK.ready.then === 'function') WERK.ready.then(render);
+  else render();
 
   // Copiar credencial demo
   document.querySelectorAll('[data-copy]').forEach(function (b) {
@@ -342,18 +353,20 @@ body.theme-bmw{background:var(--stage-2)}
     });
   });
 
-  // Reset da demo
-  document.getElementById('resetBtn').addEventListener('click', function () {
+  // Reset da demo (recarregar aqui é intencional — ação do usuário, uma vez só)
+  var resetBtn = $('resetBtn');
+  if (resetBtn) resetBtn.addEventListener('click', function () {
     if (!confirm('Limpar todos os dados da demo deste navegador (OS, aprovações, notificações)?')) return;
     Object.keys(localStorage).forEach(function (k) { if (k.indexOf('evx.') === 0) localStorage.removeItem(k); });
     location.reload();
   });
 
-  // Tempo real: outra aba (ou a nuvem) mudou o estado → atualiza métricas
-  window.addEventListener('storage', function (e) {
-    if (e.key && e.key.indexOf('evx.') === 0) location.reload();
-  });
-  window.addEventListener('evx:sync', function () { location.reload(); });
+  // Tempo real: nuvem ou outra aba mudou o estado → redesenha EM LUGAR (debounced).
+  // Jamais location.reload() — evx:sync dispara na hidratação e entraria em laço.
+  var pend = false;
+  var redraw = function () { if (pend) return; pend = true; setTimeout(function () { pend = false; render(); }, 120); };
+  window.addEventListener('storage', function (e) { if (e.key && e.key.indexOf('evx.') === 0) redraw(); });
+  window.addEventListener('evx:sync', redraw);
 })();
 </script>
 <script src="https://alex-hub-three.vercel.app/support-widget.js" data-app="lexos" defer></script>

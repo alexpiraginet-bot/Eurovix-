@@ -115,8 +115,42 @@
   });
   $('#forgotLink').addEventListener('click', (e) => {
     e.preventDefault();
-    toast('Recuperação de acesso', `Peça um novo link de acesso no balcão ou pelo WhatsApp da ${brandNome()} — você cria a senha de novo na hora.`, 'ok');
+    abrirRecuperacaoCliente($('#l-tel').value.trim());
   });
+
+  // Recuperação de acesso do CLIENTE. O login do cliente é o telefone (conta com
+  // e-mail sintético → reset por e-mail não chega nele); o caminho seguro é a
+  // oficina reemitir o link de convite e o cliente criar uma nova senha na hora.
+  // Folha inferior com o telefone e um botão de WhatsApp já preenchido p/ a oficina.
+  function abrirRecuperacaoCliente(tel) {
+    const nome = brandNome(), whats = brandWhats();
+    const msgDe = (t) => `Olá! Perdi o acesso ao app da ${nome}.` + (t ? ` Meu telefone de cadastro é ${t}.` : '') + ` Podem me enviar um novo link para eu criar a senha de novo?`;
+    const waDe = (t) => whats ? `https://wa.me/${whats}?text=${encodeURIComponent(msgDe(t))}` : '';
+    const old = document.getElementById('recuperaModal'); if (old) old.remove();
+    const ov = document.createElement('div');
+    ov.id = 'recuperaModal';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(4,6,11,.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)';
+    const safe = (tel || '').replace(/"/g, '');
+    ov.innerHTML = `
+      <div role="dialog" aria-modal="true" aria-label="Recuperar acesso" style="width:100%;max-width:430px;background:var(--card,#12161f);border:1px solid var(--line,rgba(255,255,255,.1));border-radius:22px 22px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -20px 60px rgba(0,0,0,.5)">
+        <div style="width:38px;height:4px;border-radius:2px;background:rgba(255,255,255,.18);margin:0 auto 16px"></div>
+        <h3 style="font-size:18px;font-weight:700;margin:0 0 8px;color:var(--txt,#fff)">Recuperar acesso</h3>
+        <p style="font-size:13px;line-height:1.55;color:var(--txt-2,#9aa4b4);margin:0 0 14px">Seu login é o seu <b>telefone (WhatsApp)</b>. Para redefinir a senha, peça um novo link de acesso à ${nome} — você cria uma nova senha na hora, com segurança.</p>
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--txt-2,#9aa4b4);margin-bottom:5px">Seu telefone de cadastro</label>
+        <input id="rcTel" type="tel" value="${safe}" placeholder="(27) 9…" style="width:100%;background:var(--bg,#0a0d13);border:1px solid var(--line,rgba(255,255,255,.12));border-radius:12px;color:var(--txt,#fff);font-size:15px;padding:12px 14px;outline:none;margin-bottom:16px">
+        ${whats
+          ? `<a id="rcWa" href="${waDe(tel)}" target="_blank" rel="noopener" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;text-decoration:none;margin-bottom:10px">Pedir novo link pelo WhatsApp</a>`
+          : `<div style="font-size:12.5px;color:var(--txt-2,#9aa4b4);margin-bottom:10px">Fale com a ${nome} para receber um novo link de acesso e recriar sua senha.</div>`}
+        <button id="rcClose" class="btn" style="width:100%;background:transparent;border:1px solid var(--line,rgba(255,255,255,.14));color:var(--txt,#fff)">Fechar</button>
+      </div>`;
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.addEventListener('click', (ev) => { if (ev.target === ov) close(); });
+    $('#rcClose').addEventListener('click', close);
+    const rcTel = $('#rcTel'), rcWa = $('#rcWa');
+    if (rcTel && rcWa) rcTel.addEventListener('input', () => { rcWa.href = waDe(rcTel.value.trim()); });
+    setTimeout(() => { if (rcTel && !safe) rcTel.focus(); }, 80);
+  }
 
   $('#conviteForm').addEventListener('submit', async (e) => {
     e.preventDefault();
