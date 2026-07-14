@@ -4,15 +4,32 @@
 <meta charset="UTF-8">
 <script>document.documentElement.setAttribute("data-theme","dark");</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel Mestre — EUROVIX · Todos os acessos</title>
-<meta name="description" content="Hub central do ecossistema EUROVIX: site, agendamento, app do cliente, WERK OS, documentos e repositório.">
+<title>LexOS — Painel de acessos</title>
+<meta name="description" content="LexOS por Lex Technology: acessos de demonstração e todas as superfícies (site, app, WERK OS, documentos) numa página só.">
 <link rel="icon" type="image/png" href="assets/img/brand/favicon.png">
-<meta name="theme-color" content="#0A0C10">
+<meta name="theme-color" content="#06070A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/lexos.css">
 <style>
+/* LexOS (Lex Technology): remapeia a paleta EUROVIX desta página para o azul da casa */
+body{
+  --bmw:#3B86F2; --bmw-dark:#2E7BEE; --bmw-soft:rgba(59,134,242,.15);
+  --stage-2:#06070A; --paper:#121A2B; --stage:#18233A;
+  --line:rgba(255,255,255,.08); --line-strong:rgba(255,255,255,.15);
+  --ink:#EEF2F8; --ink-2:#9AA6BC; --ink-3:#5E6B82; --ok:#3ECF77;
+  background:#06070A; font-family:'Poppins',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+/* wordmark LexOS + X (idêntico a lexos.html) */
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:-.03em;font-size:22px;color:var(--ink)}
+.xmark{width:28px;height:28px;display:inline-block;vertical-align:-.14em}
+.brand .a{color:#EEF2F8}
+.brand .b{background:var(--lex-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand .by{font-family:var(--lex-mono,ui-monospace,monospace);font-size:9px;letter-spacing:.16em;color:var(--lex-t3,#5E6B82);text-transform:uppercase;margin-left:4px;font-weight:600}
+.demo-acc .ico-wrap{background:var(--lex-grad-soft,rgba(59,134,242,.16));color:#8ab4ff}
+.demo-acc{border-color:var(--line-strong)}
 body.theme-bmw{background:var(--stage-2)}
 .hub{position:relative;max-width:1180px;margin:0 auto;padding:clamp(26px,5vh,52px) clamp(18px,4vw,40px)}
 .hub-head{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:8px}
@@ -96,13 +113,51 @@ body.theme-bmw{background:var(--stage-2)}
 </style>
 </head>
 <body class="theme-bmw">
+<!-- SVG sprite: ribbon X mark (Lex Technology) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="lexg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B86F2"/><stop offset=".5" stop-color="#5A5FEA"/><stop offset="1" stop-color="#8B3FE8"/>
+    </linearGradient>
+    <symbol id="xmark" viewBox="0 0 64 64">
+      <path d="M55 7 L41 7 L9 57 L23 57 Z" fill="url(#lexg)"/>
+      <path d="M32 32 L40 44 L28 46 Z" fill="#0B1330" opacity=".22"/>
+      <path d="M9 7 L23 7 L55 57 L41 57 Z" fill="url(#lexg)"/>
+      <path d="M9 7 L23 7 L32 21 L18 21 Z" fill="#7FB0FF" opacity=".28"/>
+    </symbol>
+  </defs>
+</svg>
 <div class="hub">
 
   <div class="hub-head">
-    <img class="hub-logo" src="assets/img/brand/logo-oficial-branco.png" alt="EUROVIX — Oficina Especializada BMW">
+    <a class="brand" href="lexos.html" aria-label="LexOS por Lex Technology" style="text-decoration:none">
+      <svg class="xmark" aria-hidden="true"><use href="#xmark"/></svg>
+      <span><span class="a">Lex</span><span class="b">OS</span></span>
+      <span class="by">por Lex Technology</span>
+    </a>
     <div>
-      <h1>Painel <span class="r">Mestre</span> — todos os acessos</h1>
-      <div class="sub"><span class="pulse"></span>Ecossistema digital EUROVIX + WERK OS · demo funcional Fase 1 · dados vivos deste navegador</div>
+      <h1>Painel de <span class="r">acessos</span></h1>
+      <div class="sub"><span class="pulse"></span>Teste cada papel com dados fictícios · EUROVIX é a nossa oficina-piloto ao vivo</div>
+    </div>
+  </div>
+
+  <div class="sec-title">🧪 Acessos de demonstração — teste cada papel</div>
+  <div class="cards">
+    <div class="acc demo-acc">
+      <div class="top"><div class="ico-wrap">📋</div><div><h3>Oficina (visão completa)</h3><span class="tag">painel · a oficina como um todo</span></div></div>
+      <p>O painel inteiro: quadro, agenda, check-in, veículos, clientes, equipe, gestão &amp; DRE e configurações. Já vem com carros e OS fictícias criadas.</p>
+      <div class="links"><a class="lnk primary" href="werkos.html?demo=1&papel=gestor">Entrar como Oficina ›</a></div>
+    </div>
+    <div class="acc demo-acc">
+      <div class="top"><div class="ico-wrap">🔧</div><div><h3>Mecânico (bancada)</h3><span class="tag">operacional · sem financeiro</span></div></div>
+      <p>O dia a dia da bancada: quadro, agenda, check-in, veículos e motor de peças. Sem gestão nem equipe — só o que o mecânico usa.</p>
+      <div class="links"><a class="lnk primary" href="werkos.html?demo=1&papel=mecanico">Entrar como Mecânico ›</a></div>
+    </div>
+    <div class="acc demo-acc">
+      <div class="top"><div class="ico-wrap">👤</div><div><h3>Cliente (app + garagem)</h3><span class="tag">garagem · 3D · aprovação</span></div></div>
+      <p>O app do cliente com a garagem (BMW M135i + X1), acompanhamento das OS em tempo real, 3D e aprovação item a item. Entra sozinho.</p>
+      <div class="cred">login: <code>(27) 99900-0000</code> · <code>bmw2026</code></div>
+      <div class="links"><a class="lnk primary" href="app.html?demo=1">Entrar como Cliente ›</a><a class="lnk" href="demo.html">Página de acessos ›</a></div>
     </div>
   </div>
 
@@ -211,9 +266,9 @@ body.theme-bmw{background:var(--stage-2)}
       </div>
     </div>
     <div class="acc">
-      <div class="top"><div class="ico-wrap">🎨</div><div><h3>Apresentação da marca</h3><span class="tag">deck original · 9 slides</span></div></div>
-      <p>O escopo que deu origem a tudo: identidade, conceito do símbolo, app e site premium.</p>
-      <div class="links"><a class="lnk primary" href="apresentacao.html">Abrir deck ›</a></div>
+      <div class="top"><div class="ico-wrap">🎨</div><div><h3>Apresentação LexOS</h3><span class="tag">por Lex Technology · deck comercial</span></div></div>
+      <p>A plataforma numa página: proposta, três frentes, ativação em dias e planos. Também o deck da marca do piloto EUROVIX.</p>
+      <div class="links"><a class="lnk primary" href="lexos-apresentacao.html">Abrir deck LexOS ›</a><a class="lnk" href="apresentacao.html">Deck EUROVIX</a></div>
     </div>
     <div class="acc">
       <div class="top"><div class="ico-wrap">♻️</div><div><h3>Resetar demonstração</h3><span class="tag">volta ao estado inicial</span></div></div>
@@ -223,8 +278,8 @@ body.theme-bmw{background:var(--stage-2)}
   </div>
 
   <div class="hub-foot">
-    <span>© 2026 EUROVIX Reparação Automotiva LTDA · CNPJ 45.979.822/0001-02 · Oficina: R. Hermes Curry Carneiro, 421 — Ilha de Santa Maria, Vitória/ES (sede fiscal: R. Maria de Lourdes Garcia, 303) · <a href="https://www.instagram.com/eurovix027" target="_blank" rel="noopener" style="color:var(--bmw)">@eurovix027</a> · BMW e MINI são marcas de BMW AG; oficina independente.</span>
-    <span><a href="index.html">Site</a> · <a href="app.html">App</a> · <a href="werkos.html">WERK OS</a> · <a href="https://github.com/alexpiraginet-bot/Eurovix-/pull/1" target="_blank" rel="noopener">PR</a></span>
+    <span>LexOS™ é um produto <b style="color:var(--ink-2)">Lex Technology</b> · família LEX AI · LEX CLOUD · LEX PAY · LEX OS. Modelo ao vivo: <b style="color:var(--ink-2)">EUROVIX</b>, nossa oficina-piloto. As oficinas clientes entram no ar com a marca delas.</span>
+    <span><a href="lexos.html">LexOS</a> · <a href="demo.html">Acessos demo</a> · <a href="werkos.html?demo=1&papel=gestor">Painel</a> · <a href="app.html?demo=1">App</a></span>
   </div>
 </div>
 
@@ -301,6 +356,6 @@ body.theme-bmw{background:var(--stage-2)}
   window.addEventListener('evx:sync', function () { location.reload(); });
 })();
 </script>
-<script src="https://alex-hub-three.vercel.app/support-widget.js" data-app="eurovix" defer></script>
+<script src="https://alex-hub-three.vercel.app/support-widget.js" data-app="lexos" defer></script>
 </body>
 </html>
