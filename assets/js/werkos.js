@@ -191,7 +191,26 @@
     const [v, param] = (location.hash.replace(/^#\//, '') || 'kanban').split('/');
     $$('.wk-nav button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
     (views[v] || views.kanban)(param);
+    wrapTables();
     $('#wkSide').classList.remove('open');
+  }
+  // Toda tabela larga ganha um contêiner com rolagem horizontal própria — no mobile
+  // ela rola dentro do card em vez de estourar a página para o lado.
+  function wrapTables() {
+    $$('#wkMain table.wk-table').forEach(t => {
+      if (t.parentElement && t.parentElement.classList.contains('wk-scroll')) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'wk-scroll';
+      t.parentNode.insertBefore(wrap, t);
+      wrap.appendChild(t);
+    });
+  }
+  // Ícones do menu: injeta os SVG do set do app (fim dos emojis "pobres").
+  function pintarNavIcons() {
+    $$('#wkNav button[data-icon]').forEach(b => {
+      if (b.querySelector('svg.ico')) return;
+      b.insertAdjacentHTML('afterbegin', I(b.dataset.icon, 18));
+    });
   }
   window.addEventListener('hashchange', route);
 
@@ -237,6 +256,7 @@
     $('#st-senha').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
   }
   $$('.wk-nav button').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
+  pintarNavIcons(); // ícones SVG do menu (no lugar dos emojis)
 
   /* Navegação mobile: burger + backdrop */
   const burger = $('#wkBurger'), backdrop = $('#wkBackdrop'), side = $('#wkSide');
@@ -351,7 +371,7 @@
     const done = WERK.getAllOS().filter(o => o.status === 'entregue');
     main.innerHTML = head('Quadro da Oficina',
       `${all.length} OS ativas · ${done.length} entregues no histórico`,
-      `<button type="button" class="btn-image" onclick="location.hash='#/checkin'"><img src="assets/img/ui/btn-novo-checkin.webp" alt="+ Novo check-in" width="1000" height="193"></button>`) + `
+      `<button type="button" class="btn btn-primary wk-cta-checkin" onclick="location.hash='#/checkin'">${I('scan', 18)} Novo check-in</button>`) + `
       <div class="board-tools">
         <div class="seg" id="boardSeg">
           <button data-m="lista">☰ Lista</button>
@@ -1430,7 +1450,7 @@
       return;
     }
     main.innerHTML = head('Veículos & Prontuário', 'Pesquisou o chassi, aparece a vida inteira do carro.',
-      `<button type="button" class="btn-image" onclick="location.hash='#/checkin'"><img src="assets/img/ui/btn-novo-checkin.webp" alt="+ Novo check-in" width="1000" height="193"></button>`) + `
+      `<button type="button" class="btn btn-primary wk-cta-checkin" onclick="location.hash='#/checkin'">${I('scan', 18)} Novo check-in</button>`) + `
       <div class="wk-panel">
         <table class="wk-table">
           <tr><th>VIN</th><th>Veículo</th><th>Placa</th><th>Cliente</th><th class="num">km</th><th class="num">OS</th><th></th></tr>
@@ -1453,7 +1473,7 @@
     const clientes = WERK.getClientes();
     const oss = WERK.getAllOS();
     main.innerHTML = head('Clientes & Acesso', 'O acesso nasce no check-in: link de convite → cliente cria a senha → login por telefone.',
-      `<button type="button" class="btn-image" onclick="location.hash='#/checkin'"><img src="assets/img/ui/btn-novo-checkin.webp" alt="+ Novo check-in" width="1000" height="193"></button>`) + `
+      `<button type="button" class="btn btn-primary wk-cta-checkin" onclick="location.hash='#/checkin'">${I('scan', 18)} Novo check-in</button>`) + `
       <div class="wk-panel">
         <table class="wk-table">
           <tr><th>Cliente</th><th>Telefone (login)</th><th>Garagem</th><th class="num">OS</th><th>Acesso</th><th></th></tr>
@@ -2170,7 +2190,7 @@
       el.innerHTML = primary + sub;
     }
     const banner = $('#wkSetupBanner');
-    if (banner) banner.hidden = !!m.configurada;
+    if (banner) banner.hidden = WERK.isDemo || !!m.configurada; // na demo nao pede configuracao
     // Chip de conta: quem está logado + oficina + sair (só na nuvem, com staff).
     const acc = $('#wkAccount');
     if (acc) {
