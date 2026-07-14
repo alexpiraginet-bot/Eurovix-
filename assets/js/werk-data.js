@@ -1097,15 +1097,19 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
   function ensureMarcaDemo() {
     if (!read(KEYS.seedv, false)) return;
     const c = read(KEYS.config, {}) || {};
-    if (c.oficina && (c.oficina.nome || '').trim()) return;
+    const nome = (c.oficina && c.oficina.nome || '').trim();
+    // Migra caches de demonstração antigos que ainda guardam a marca do cliente-piloto.
+    const ehEuroVixCache = DEMO && /eurovix/i.test(nome);
+    if (nome && !ehEuroVixCache) return;
+    // Demonstração/teste: oficina NEUTRA (nunca a marca de um cliente). A identidade
+    // EUROVIX fica só na land e no app do próprio cliente — aqui é "Oficina Demonstração".
     write(KEYS.config, { ...c, oficina: {
-      nome: 'EUROVIX REPARAÇÃO AUTOMOTIVA LTDA', cnpj: '45.979.822/0001-02',
-      endereco: 'R. Maria de Lourdes Garcia, 303 — Monte Belo, Vitória/ES · CEP 29053-310',
-      cidade: 'Vitória/ES', fone: '(27) 99730-6440 (WhatsApp)', email: 'contato@eurovix.com.br',
-      pixChave: 'configure-sua-chave@pix (demo)', site: 'eurovix.vercel.app',
-      horario: 'Seg–Sex 9h–18h · Sáb 9h–13h',
-      logo: 'assets/img/brand/logo-oficial-branco.png', logoDoc: 'assets/img/brand/logo-oficial-preto.png',
-      icon: 'assets/img/brand/app-icon-dark.png',
+      nome: 'Oficina Demonstração', cnpj: '00.000.000/0001-00',
+      endereco: 'Av. Exemplo, 1000 — Centro · Sua Cidade/UF',
+      cidade: 'Sua Cidade/UF', fone: '(00) 90000-0000', email: 'contato@suaoficina.com.br',
+      pixChave: 'sua-chave@pix', site: 'suaoficina.com.br',
+      horario: 'Seg–Sex 8h–18h · Sáb 8h–12h',
+      logo: '', logoDoc: '', icon: '',
     } });
   }
 
