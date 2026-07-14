@@ -156,6 +156,14 @@
       <div class="fld"><label for="f-senha">Senha</label><input id="f-senha" type="password" autocomplete="current-password" placeholder="••••••••"></div>
       <button type="submit" id="loginBtn">Entrar</button>
       <div class="err" id="loginErr"></div>
+      <a href="#" id="forgotLink" style="display:inline-block;margin-top:14px;font-size:12.5px;color:var(--lex-t2)">Esqueci minha senha</a>
+      <div class="err" id="resetMsg" style="color:var(--lex-ok);margin-top:6px"></div>
+    </form>
+    <form id="resetForm" style="display:none">
+      <div class="fld"><label for="r-senha">Nova senha (mín. 6)</label><input id="r-senha" type="password" autocomplete="new-password" placeholder="••••••••"></div>
+      <div class="fld"><label for="r-senha2">Confirme a senha</label><input id="r-senha2" type="password" autocomplete="new-password" placeholder="••••••••"></div>
+      <button type="submit" id="resetBtn2">Salvar e entrar</button>
+      <div class="err" id="resetErr"></div>
     </form>
     <p class="hint" id="localHint"><b>Modo local (demo):</b> sem nuvem configurada — entre com qualquer e-mail e a senha <code>2705</code>. Em produção, o acesso é a sua conta do Supabase.</p>
   </div>

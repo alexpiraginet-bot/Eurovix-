@@ -51,6 +51,29 @@
   }
   async function doLogout() { if (CLOUD) { try { await sb.auth.signOut(); } catch (_) {} } sessionStorage.removeItem('evx.admin.ok'); location.reload(); }
 
+  /* ---------- recuperação de senha (Supabase Auth) ---------- */
+  var recoveryMode = false;
+  async function enviarReset(email) {
+    if (!CLOUD) return { ok: false, erro: 'Modo local (demo): a senha é ' + LOCAL_PIN + ' — sem recuperação por e-mail.' };
+    if (!email) return { ok: false, erro: 'Digite o seu e-mail acima primeiro.' };
+    try {
+      var redirectTo = origin ? origin + location.pathname : undefined;
+      var r = await sb.auth.resetPasswordForEmail(email, redirectTo ? { redirectTo: redirectTo } : undefined);
+      if (r.error) return { ok: false, erro: r.error.message || 'Não foi possível enviar agora.' };
+      return { ok: true };
+    } catch (e) { return { ok: false, erro: String((e && e.message) || e) }; }
+  }
+  function showReset() {
+    recoveryMode = true;
+    $('gate').style.display = 'flex'; $('panel').style.display = 'none';
+    $('loginForm').style.display = 'none';
+    var fl = $('forgotLink'); if (fl) fl.style.display = 'none';
+    var lh = $('localHint'); if (lh) lh.style.display = 'none';
+    $('modeLabel').textContent = 'defina a nova senha';
+    $('resetForm').style.display = 'block';
+    setTimeout(function () { $('r-senha').focus(); }, 60);
+  }
+
   /* ---------- CRUD oficinas ---------- */
   async function listOficinas() {
     if (CLOUD) {
@@ -190,12 +213,39 @@
   function closeModal() { $('ofModal').classList.remove('on'); }
 
   /* ---------- init ---------- */
-  function showPanel(user) { $('gate').style.display = 'none'; $('panel').style.display = 'block'; $('meEmail').textContent = user ? user.email : ''; renderLinks(); renderTable(); }
+  function showPanel(user) { if (recoveryMode) return showReset(); $('gate').style.display = 'none'; $('panel').style.display = 'block'; $('meEmail').textContent = user ? user.email : ''; renderLinks(); renderTable(); }
   function showGate() { $('gate').style.display = 'flex'; $('panel').style.display = 'none'; }
 
   (async function init() {
+    // Registra o ouvinte ANTES de qualquer await: o link de "esqueci a senha"
+    // dispara PASSWORD_RECOVERY logo após o createClient consumir o hash da URL.
+    if (CLOUD) sb.auth.onAuthStateChange(function (evt) { if (evt === 'PASSWORD_RECOVERY') showReset(); });
+
     var u = await currentUser();
-    if (u && (await isAdmin())) showPanel(u); else showGate();
+    if (recoveryMode) { showReset(); }
+    else if (u && (await isAdmin())) showPanel(u); else showGate();
+
+    $('forgotLink').addEventListener('click', async function (e) {
+      e.preventDefault();
+      var msg = $('resetMsg'); $('loginErr').textContent = '';
+      var r = await enviarReset($('f-email').value.trim());
+      msg.style.color = r.ok ? 'var(--lex-ok)' : 'var(--lex-warn)';
+      msg.textContent = r.ok ? '✓ Link enviado para ' + $('f-email').value.trim() + '. Abra o e-mail e defina a nova senha (veja o spam).' : r.erro;
+    });
+    $('resetForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var s1 = $('r-senha').value, s2 = $('r-senha2').value, err = $('resetErr'); err.textContent = '';
+      if (s1.length < 6) { err.textContent = 'A senha precisa de ao menos 6 caracteres.'; return; }
+      if (s1 !== s2) { err.textContent = 'As senhas não conferem.'; return; }
+      var btn = $('resetBtn2'); btn.disabled = true; var t = btn.textContent; btn.textContent = 'Salvando…';
+      var r = await sb.auth.updateUser({ password: s1 });
+      btn.disabled = false; btn.textContent = t;
+      if (r.error) { err.textContent = r.error.message || 'Não foi possível — o link pode ter expirado. Peça um novo.'; return; }
+      recoveryMode = false; toast('Senha atualizada ✓');
+      var uu = await currentUser();
+      if (uu && (await isAdmin())) showPanel(uu);
+      else { $('resetForm').style.display = 'none'; $('loginForm').style.display = 'block'; var fl = $('forgotLink'); if (fl) fl.style.display = 'inline-block'; $('modeLabel').textContent = CLOUD ? 'nuvem · Supabase Auth' : 'local · demo'; }
+    });
 
     $('loginForm').addEventListener('submit', async function (e) {
       e.preventDefault(); $('loginErr').textContent = '';

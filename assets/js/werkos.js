@@ -185,6 +185,8 @@
   const views = {};
   function go(route) { location.hash = '#/' + route; }
   function route() {
+    // Chegou por link de "esqueci a senha" → pede a nova senha antes de tudo.
+    if (WERK.cloud && WERK.emRecuperacao && WERK.emRecuperacao()) { renderNovaSenha(); return; }
     // Produção: painel SÓ para STAFF — exige sessão E papel de equipe. Uma sessão
     // persistida qualquer (cliente, ativação stale, conta sem equipe) NÃO entra.
     if (WERK.cloud && !(WERK.authUser() && WERK.staffPerfil())) { renderStaffLock(); return; }
@@ -242,7 +244,9 @@
           <div class="wfield"><label>E-mail</label><input id="st-email" type="email" placeholder="voce@suaoficina.com.br" autocomplete="username"></div>
           <div class="wfield" style="margin-top:12px"><label>Senha</label><input id="st-senha" type="password" autocomplete="current-password" placeholder="••••••••"></div>
           <div class="hintline err" id="stErr" style="display:none;margin-top:10px">E-mail ou senha inválidos — ou este usuário ainda não foi incluído na equipe da oficina.</div>
+          <div class="hintline" id="stMsg" style="display:none;margin-top:10px;color:var(--ok)"></div>
           <button class="btn btn-primary" style="margin-top:16px;width:100%" id="stEntrar">Entrar no painel</button>
+          <a class="wk-lock-alt" href="#" id="stForgot">Esqueci minha senha</a>
           <a class="wk-lock-alt" href="app.html">O app do cliente é por aqui →</a>
           <a class="wk-lock-alt" href="demo.html">🧪 Ver uma demonstração (sem conta) →</a>
         </div>
@@ -254,6 +258,53 @@
     };
     $('#stEntrar').addEventListener('click', entrar);
     $('#st-senha').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+    // "Esqueci minha senha" → envia o link de recuperação (Supabase). O link volta
+    // a esta página e o app pede a nova senha (renderNovaSenha via evento).
+    $('#stForgot').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const email = $('#st-email').value.trim();
+      const err = $('#stErr'), msg = $('#stMsg');
+      err.style.display = 'none'; msg.style.display = 'none';
+      if (!email) { msg.style.color = 'var(--warn)'; msg.textContent = 'Digite o seu e-mail acima e clique novamente — mandamos o link de recuperação para ele.'; msg.style.display = 'block'; $('#st-email').focus(); return; }
+      const a = $('#stForgot'); a.style.pointerEvents = 'none'; const t = a.textContent; a.textContent = 'Enviando…';
+      const r = await WERK.resetarSenha(email);
+      a.style.pointerEvents = ''; a.textContent = t;
+      msg.style.color = r.ok ? 'var(--ok)' : 'var(--warn)';
+      msg.textContent = r.ok
+        ? '✓ Link enviado para ' + email + '. Abra o e-mail e defina a nova senha (verifique o spam).'
+        : (r.erro || 'Não foi possível enviar agora — tente de novo em instantes.');
+      msg.style.display = 'block';
+    });
+  }
+
+  /* Formulário de NOVA SENHA — aparece quando a pessoa chega pelo link de
+     recuperação (evento PASSWORD_RECOVERY). Define a senha e entra no painel. */
+  function renderNovaSenha() {
+    $$('.wk-nav button').forEach(b => b.classList.remove('on'));
+    main.innerHTML = `
+      <div class="wk-lock">
+        <div class="wk-lock-card">
+          <div class="wk-lock-mark"><span>Lex</span>OS</div>
+          <h2>Defina uma nova senha</h2>
+          <p class="wk-lock-sub">Você chegou pelo link de recuperação. Crie a nova senha para acessar o painel.</p>
+          <div class="wfield"><label>Nova senha (mín. 6)</label><input id="rsSenha" type="password" autocomplete="new-password" placeholder="••••••••"></div>
+          <div class="wfield" style="margin-top:12px"><label>Confirme a senha</label><input id="rsSenha2" type="password" autocomplete="new-password" placeholder="••••••••"></div>
+          <div class="hintline err" id="rsErr" style="display:none;margin-top:10px"></div>
+          <button class="btn btn-primary" style="margin-top:16px;width:100%" id="rsSalvar">Salvar e entrar</button>
+        </div>
+      </div>`;
+    const salvar = async () => {
+      const s1 = $('#rsSenha').value, s2 = $('#rsSenha2').value, err = $('#rsErr');
+      if (s1.length < 6) { err.textContent = 'A senha precisa de ao menos 6 caracteres.'; err.style.display = 'block'; return; }
+      if (s1 !== s2) { err.textContent = 'As senhas não conferem.'; err.style.display = 'block'; return; }
+      const btn = $('#rsSalvar'); btn.disabled = true; const t = btn.textContent; btn.textContent = 'Salvando…';
+      const r = await WERK.mudarMinhaSenha(s1);
+      if (!r.ok) { err.textContent = r.erro || 'Não foi possível salvar — o link pode ter expirado. Peça um novo.'; err.style.display = 'block'; btn.disabled = false; btn.textContent = t; return; }
+      toast('Senha atualizada ✓', 'Bem-vindo de volta.');
+      renderBrand(); route();
+    };
+    $('#rsSalvar').addEventListener('click', salvar);
+    $('#rsSenha2').addEventListener('keydown', e => { if (e.key === 'Enter') salvar(); });
   }
   $$('.wk-nav button').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
   pintarNavIcons(); // ícones SVG do menu (no lugar dos emojis)
@@ -2229,6 +2280,7 @@
   window.addEventListener('evx:sync', () => { // realtime da nuvem
     if (!$('#wkModal').classList.contains('open')) { renderBrand(); route(); }
   });
+  window.addEventListener('evx:recovery', () => { renderBrand(); route(); }); // link de "esqueci a senha"
 
   WERK.ready.then(() => { renderBrand(); route(); });
 })();
