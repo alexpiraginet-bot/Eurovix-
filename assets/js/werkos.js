@@ -472,7 +472,8 @@
           $('#ck-placa').value = r.placa;
           if (r.vin) { vinInput.value = r.vin; checkVin(); }
           const fonteTxt = r.fonte === 'api' ? 'consulta oficial' : r.fonte === 'garagem' ? 'já na garagem' : 'base demo';
-          toast('Veículo identificado', `${r.modelo || 'Veículo'}${r.anoModelo ? ' · ' + r.anoModelo : ''} · ${fonteTxt}`);
+          const det = [r.modelo || 'Veículo', r.anoModelo, r.cor, r.combustivel].filter(Boolean).join(' · ');
+          toast('Veículo identificado', `${det} · ${fonteTxt}`);
         } finally { btn.disabled = false; btn.classList.remove('loading'); btn.innerHTML = orig; }
       });
       $('#ckNext1').addEventListener('click', () => {
