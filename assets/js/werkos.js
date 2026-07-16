@@ -445,10 +445,15 @@
      ============================================================ */
   const ck = { step: 1, fotos: {}, danos: [], sig: null };
   views.checkin = () => {
+    // Novo check-in = tudo em branco: nunca herda dados (veículo NEM cliente) do
+    // check-in anterior. Antes só o veículo era limpo — o nome/telefone do cliente
+    // anterior vazava para a próxima entrada.
     ck.step = 1; ck.fotos = {}; ck.danos = []; ck.sig = null; ck.view3 = null;
-    // novo check-in = veículo novo: limpa a consulta e os campos preenchidos pela placa
     ck.veic = null; ck.veiculoNome = ''; ck.veicCor = ''; ck.veicComb = ''; ck.veicAnoMod = '';
-    ck.placa = ''; ck.vin = '';
+    ck.placa = ''; ck.vin = ''; ck.decoded = null;
+    ck.cliente = ''; ck.telefone = ''; ck.sintoma = ''; ck.tecnico = '';
+    ck.odometro = ''; ck.combustivel = 50; ck.luzes = []; ck.itens = [];
+    ck.osNum = null; ck.clienteRec = null; ck.iaOrcamento = null;
     renderCheckin();
   };
 
