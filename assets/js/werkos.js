@@ -532,6 +532,10 @@
         const box = $('#placaInfo'); if (!box) return;
         if (!r) { box.innerHTML = ''; return; }
         const linhas = [];
+        // Chassi/VIN é o dado que a oficina usa para comprar/localizar peças — mostra
+        // o que a consulta trouxe: completo (VIN válido) ou parcial (a base mascara).
+        if (r.vin) linhas.push(['Chassi (VIN)', r.vin]);
+        else if (r.chassi) linhas.push(['Chassi', r.chassi + ' · parcial — complete pela etiqueta']);
         if (r.versao) linhas.push(['Versão', r.versao]);
         if (r.anoFabricacao) linhas.push(['Ano fab.', r.anoFabricacao]);
         if (r.fipe && r.fipe.valor) linhas.push(['FIPE', r.fipe.valor + (r.fipe.referencia ? ' · ' + r.fipe.referencia : '')]);
@@ -558,6 +562,7 @@
           ck.veic = r;                                            // guarda a consulta completa
           $('#ck-placa').value = r.placa;
           if (r.vin) { vinInput.value = r.vin; checkVin(); }
+          else if (r.chassi) { hint.className = 'hintline'; hint.textContent = 'A consulta retornou o chassi parcial (' + r.chassi + '). Complete o VIN pela etiqueta para validar e buscar peças.'; }
           // preenche os campos de cadastro com os dados da consulta
           const setv = (id, v) => { const el = $(id); if (el && v != null && v !== '') el.value = v; };
           setv('#ck-modelo', r.modelo); setv('#ck-anomod', r.anoModelo); setv('#ck-cor', r.cor); setv('#ck-comb', r.combustivel);

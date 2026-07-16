@@ -99,6 +99,7 @@ function normalizar(d, placa) {
     ok: true,
     placa,
     vin: vinLimpo.length === 17 ? vinLimpo : '',
+    chassi: txt(chassi) ? String(chassi).trim().toUpperCase() : null,  // bruto (pode vir mascarado "*****00841") — mostrado no check-in para o mecânico completar o VIN
     modelo: modeloFull || (txt(modelo)),      // "RENAULT LOGAN ZEN10MT" — vai p/ o campo do veículo
     marca: txt(marca),
     modeloBase: txt(modelo),                  // só o MODELO ("LOGAN ZEN10MT")
