@@ -181,7 +181,17 @@
       const btn = $('#nsSalvar'); btn.disabled = true; const t = btn.textContent; btn.textContent = 'Salvando…';
       const r = await WERK.mudarMinhaSenha(s1);
       if (!r || !r.ok) { err.textContent = (r && r.erro) || 'Não foi possível — o link pode ter expirado. Peça um novo.'; btn.disabled = false; btn.textContent = t; return; }
+      // Entra já logado: cria a sessão local a partir da conta recuperada. Sem isso a
+      // boot exige EVX.getSession() e cairia no login num aparelho onde nunca logou.
       history.replaceState(null, '', location.pathname);
+      try {
+        const u = WERK.authUser && WERK.authUser();
+        const m = /^c(\d+)@/.exec((u && u.email) || '');
+        const tel = m ? m[1] : '';
+        const c = (tel && WERK.clientePorTelefone) ? WERK.clientePorTelefone(tel) : null;
+        const session = { nome: (c && c.nome) || 'Cliente', telefone: (c && c.telefone) || tel, desde: c && c.desde };
+        if (session.telefone) { EVX.setSession(session); ov.remove(); enter(session); return; }
+      } catch (_) { /* cai no reload abaixo */ }
       location.reload();
     };
     $('#nsSalvar').addEventListener('click', salvar);

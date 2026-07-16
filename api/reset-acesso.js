@@ -2,7 +2,7 @@
 // LexOS — gerar LINK de redefinição de senha (Supabase Admin)
 // ------------------------------------------------------------
 // POST /api/reset-acesso
-//   Body:  { tipo:'oficina'|'cliente', email?, telefone?, origin? }
+//   Body:  { tipo:'oficina'|'cliente', email?, telefone? }   (origin é do servidor)
 //   Header: Authorization: Bearer <access_token do chamador>
 //   → { ok:true, link } — o link que você envia (WhatsApp). Quem abre
 //     define a nova senha (fluxo PASSWORD_RECOVERY do Supabase).
@@ -10,8 +10,9 @@
 // Segurança (a service_role só existe aqui, na env SUPABASE_SERVICE_ROLE
 // da Vercel — nunca no navegador/repo):
 //   • tipo 'oficina'  → o chamador precisa ser ADMIN LexOS (is_lex_admin).
-//   • tipo 'cliente'  → o chamador precisa ser STAFF e o cliente precisa
-//     pertencer à SUA oficina (checado por RLS na tabela clientes).
+//   • tipo 'cliente'  → a RLS da tabela clientes define o escopo: a equipe só
+//     enxerga/reseta clientes da PRÓPRIA oficina; um cliente, só a si mesmo
+//     (resetar a própria senha é inofensivo — não há escalonamento entre tenants).
 //
 // Sem SUPABASE_SERVICE_ROLE → { ok:false } e o admin usa o dashboard.
 // ============================================================
@@ -57,8 +58,11 @@ async function handler(req, res) {
       if (!RE_EMAIL.test(email)) { res.status(200).json({ ok: false, erro: 'Informe o e-mail de login da oficina.' }); return; }
     }
 
-    // 2 · gera o link de recuperação (service_role)
-    const origin = String(body.origin || '').replace(/\/+$/, '');
+    // 2 · gera o link de recuperação (service_role). A origem do redirect é fixada
+    // pelo SERVIDOR (headers da própria requisição) — nunca confiamos no corpo.
+    const proto = String(req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
+    const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+    const origin = host ? proto + '://' + host : '';
     const redirectTo = origin ? origin + (tipo === 'cliente' ? '/app.html' : '/werkos.html') : '';
     const payload = redirectTo ? { type: 'recovery', email, redirect_to: redirectTo } : { type: 'recovery', email };
     const gen = await fetch(URL + '/auth/v1/admin/generate_link',
