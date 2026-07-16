@@ -49,9 +49,12 @@
   const PREVIEW = new URLSearchParams(location.search).has('preview') || !!window.EVX_DEMO; // ?demo=1 também
 
   renderBrand(); // marca cedo (splash) no modo local; recarregada após WERK.ready p/ nuvem
+  // Cliente chegou pelo link de "nova senha" (reset gerado pela oficina) → pede a nova senha.
+  window.addEventListener('evx:recovery', () => { splash.classList.add('hide'); abrirNovaSenhaCliente(); });
   Promise.all([WERK.ready, new Promise(r => setTimeout(r, 1400))]).then(() => {
     renderBrand();
     splash.classList.add('hide');
+    if (WERK.cloud && WERK.emRecuperacao && WERK.emRecuperacao()) { abrirNovaSenhaCliente(); return; }
     if (WERK.cloud) $('#loginForm .login-demo').style.display = 'none'; // produção: sem conta demo
     // ?preview=1 (com EVX_ENV zerado no app.html) entra direto na conta demo local,
     // para mostrar o app do cliente ao vivo mesmo em produção (dados fictícios).
@@ -150,6 +153,40 @@
     const rcTel = $('#rcTel'), rcWa = $('#rcWa');
     if (rcTel && rcWa) rcTel.addEventListener('input', () => { rcWa.href = waDe(rcTel.value.trim()); });
     setTimeout(() => { if (rcTel && !safe) rcTel.focus(); }, 80);
+  }
+
+  // Cliente abriu o link de "nova senha" (reset gerado pela oficina): define a
+  // senha nova (Supabase updateUser) e recarrega já logado.
+  function abrirNovaSenhaCliente() {
+    const old = document.getElementById('novaSenhaModal'); if (old) old.remove();
+    const inSt = 'width:100%;background:var(--bg,#0a0d13);border:1px solid var(--line,rgba(255,255,255,.12));border-radius:12px;color:var(--txt,#fff);font-size:15px;padding:12px 14px;outline:none;margin-bottom:12px';
+    const ov = document.createElement('div');
+    ov.id = 'novaSenhaModal';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:flex-end;justify-content:center;background:rgba(4,6,11,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)';
+    ov.innerHTML = `
+      <div role="dialog" aria-modal="true" aria-label="Criar nova senha" style="width:100%;max-width:430px;background:var(--card,#12161f);border:1px solid var(--line,rgba(255,255,255,.1));border-radius:22px 22px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -20px 60px rgba(0,0,0,.5)">
+        <div style="width:38px;height:4px;border-radius:2px;background:rgba(255,255,255,.18);margin:0 auto 16px"></div>
+        <h3 style="font-size:18px;font-weight:700;margin:0 0 8px;color:var(--txt,#fff)">Criar nova senha</h3>
+        <p style="font-size:13px;line-height:1.55;color:var(--txt-2,#9aa4b4);margin:0 0 14px">Você chegou pelo link de recuperação. Defina a nova senha do app.</p>
+        <input id="nsSenha" type="password" autocomplete="new-password" placeholder="Nova senha (mín. 6)" style="${inSt}">
+        <input id="nsSenha2" type="password" autocomplete="new-password" placeholder="Confirme a senha" style="${inSt}">
+        <div id="nsErr" style="color:#ff8b7d;font-size:12.5px;min-height:16px;margin-bottom:6px"></div>
+        <button id="nsSalvar" class="btn btn-primary" style="width:100%">Salvar e entrar</button>
+      </div>`;
+    document.body.appendChild(ov);
+    const salvar = async () => {
+      const s1 = $('#nsSenha').value, s2 = $('#nsSenha2').value, err = $('#nsErr');
+      if (s1.length < 6) { err.textContent = 'A senha precisa de ao menos 6 caracteres.'; return; }
+      if (s1 !== s2) { err.textContent = 'As senhas não conferem.'; return; }
+      const btn = $('#nsSalvar'); btn.disabled = true; const t = btn.textContent; btn.textContent = 'Salvando…';
+      const r = await WERK.mudarMinhaSenha(s1);
+      if (!r || !r.ok) { err.textContent = (r && r.erro) || 'Não foi possível — o link pode ter expirado. Peça um novo.'; btn.disabled = false; btn.textContent = t; return; }
+      history.replaceState(null, '', location.pathname);
+      location.reload();
+    };
+    $('#nsSalvar').addEventListener('click', salvar);
+    $('#nsSenha2').addEventListener('keydown', e => { if (e.key === 'Enter') salvar(); });
+    setTimeout(() => $('#nsSenha').focus(), 80);
   }
 
   $('#conviteForm').addEventListener('submit', async (e) => {

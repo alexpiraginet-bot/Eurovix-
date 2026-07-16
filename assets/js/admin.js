@@ -74,6 +74,24 @@
     setTimeout(function () { $('r-senha').focus(); }, 60);
   }
 
+  // Gera um LINK de nova senha para uma OFICINA (via /api/reset-acesso, service_role
+  // no servidor). Você envia o link; o dono abre e cria a nova senha. Sem depender
+  // do e-mail chegar nem de abrir o Supabase.
+  async function resetarAcesso(payload) {
+    if (!CLOUD) return { ok: false, erro: 'Redefinição por link só no modo nuvem (em demo a senha é ' + LOCAL_PIN + ').' };
+    var token = '';
+    try { var s = await sb.auth.getSession(); token = (s.data.session && s.data.session.access_token) || ''; } catch (_) {}
+    if (!token) return { ok: false, erro: 'Sua sessão expirou — entre de novo.' };
+    try {
+      var r = await fetch('/api/reset-acesso', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify(Object.assign({ origin: origin }, payload)),
+      });
+      return await r.json().catch(function () { return { ok: false, erro: 'Resposta inválida do servidor.' }; });
+    } catch (e) { return { ok: false, erro: 'Falha de conexão ao gerar o link.' }; }
+  }
+
   /* ---------- CRUD oficinas ---------- */
   async function listOficinas() {
     if (CLOUD) {
@@ -161,6 +179,7 @@
           '<td><span class="act">' +
           (o.whatsapp ? '<button data-wa="' + esc(waDigits(o.whatsapp)) + '" title="WhatsApp">💬</button>' : '') +
           '<button data-convite="' + esc(o.id) + '" data-wpp="' + esc(waDigits(o.whatsapp || '')) + '" data-nome="' + esc(o.nome || '') + '" title="Gerar link de acesso do dono da oficina">🔗 acesso</button>' +
+          '<button data-reset="' + esc(o.id) + '" data-email="' + esc(o.email || '') + '" data-wpp="' + esc(waDigits(o.whatsapp || '')) + '" data-nome="' + esc(o.nome || '') + '" title="Gerar link de NOVA SENHA da oficina">🔑 senha</button>' +
           '<button data-edit="' + esc(o.id) + '">editar</button>' +
           '<button class="danger" data-del="' + esc(o.id) + '" data-nome="' + esc(o.nome || '') + '">excluir</button>' +
           '</span></td></tr>';
@@ -181,6 +200,24 @@
           var wpp = b.getAttribute('data-wpp');
           if (wpp) {
             var msg = 'Olá! O acesso ao WERK OS da ' + (b.getAttribute('data-nome') || 'sua oficina') + ' está pronto. Crie sua senha e entre por este link: ' + link;
+            try { window.open('https://wa.me/' + wpp + '?text=' + encodeURIComponent(msg), '_blank', 'noopener'); } catch (_) {}
+          }
+        });
+      });
+      Array.prototype.forEach.call(tb.querySelectorAll('[data-reset]'), function (b) {
+        b.addEventListener('click', async function () {
+          var nome = b.getAttribute('data-nome') || 'a oficina';
+          var email = window.prompt('E-mail de LOGIN da ' + nome + ' (o que o dono usa para entrar no WERK OS):', b.getAttribute('data-email') || '');
+          if (!email) return;
+          b.disabled = true; var orig = b.textContent; b.textContent = 'gerando…';
+          var d = await resetarAcesso({ tipo: 'oficina', email: email.trim() });
+          b.disabled = false; b.textContent = orig;
+          if (!d.ok) { toast('Reset: ' + d.erro); return; }
+          try { if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(d.link); } catch (_) {}
+          window.prompt('Link de NOVA SENHA (já copiado) — envie para a oficina:', d.link);
+          var wpp = b.getAttribute('data-wpp');
+          if (wpp) {
+            var msg = 'Redefinição de senha do WERK OS da ' + nome + ': abra este link e crie sua nova senha — ' + d.link;
             try { window.open('https://wa.me/' + wpp + '?text=' + encodeURIComponent(msg), '_blank', 'noopener'); } catch (_) {}
           }
         });

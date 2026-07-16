@@ -1606,6 +1606,7 @@
               <td style="white-space:nowrap">
                 <button class="quote-btn" data-copy-convite="${c.convite}">copiar link</button>
                 <a class="quote-btn" target="_blank" rel="noopener" href="${WERK.waLink(c.telefone, `Olá, ${c.nome.split(' ')[0]}! Acompanhe seu veículo pelo app da ${bnome()}: ${WERK.conviteUrl(c)}`)}">WhatsApp</a>
+                ${c.senha ? `<button class="quote-btn" data-reset-cli="${esc(c.telefone)}" data-nome="${esc(c.nome)}" title="Gerar link de nova senha">🔑 nova senha</button>` : ''}
               </td>
             </tr>`;
           }).join('') || '<tr><td colspan="6" style="color:var(--txt-3)">Nenhum cliente ainda — o cadastro nasce no check-in.</td></tr>'}
@@ -1617,6 +1618,18 @@
       if (!c) return;
       navigator.clipboard.writeText(WERK.conviteUrl(c));
       toast('Link copiado', c.senha ? 'Cliente já ativo — o link só reabre o app.' : 'Envie ao cliente: ele cria a senha no primeiro acesso.');
+    }));
+    // Redefinir senha de um cliente ativo: gera um link de nova senha p/ enviar.
+    $$('[data-reset-cli]').forEach(b => b.addEventListener('click', async () => {
+      const tel = b.dataset.resetCli, nome = (b.dataset.nome || 'cliente').split(' ')[0];
+      b.disabled = true; const orig = b.textContent; b.textContent = 'gerando…';
+      const d = await WERK.resetarSenhaCliente(tel);
+      b.disabled = false; b.textContent = orig;
+      if (!d.ok) { toast('Nova senha', d.erro); return; }
+      try { if (navigator.clipboard) await navigator.clipboard.writeText(d.link); } catch (_) {}
+      const msg = `Olá, ${nome}! Para criar uma nova senha do app da ${bnome()}, abra este link: ${d.link}`;
+      window.open(WERK.waLink(tel, msg), '_blank', 'noopener');
+      toast('Link de nova senha gerado ✓', 'Copiado e aberto no WhatsApp para enviar ao cliente.');
     }));
   };
 
