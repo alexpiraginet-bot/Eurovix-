@@ -445,10 +445,15 @@
      ============================================================ */
   const ck = { step: 1, fotos: {}, danos: [], sig: null };
   views.checkin = () => {
+    // Novo check-in = tudo em branco: nunca herda dados (veículo NEM cliente) do
+    // check-in anterior. Antes só o veículo era limpo — o nome/telefone do cliente
+    // anterior vazava para a próxima entrada.
     ck.step = 1; ck.fotos = {}; ck.danos = []; ck.sig = null; ck.view3 = null;
-    // novo check-in = veículo novo: limpa a consulta e os campos preenchidos pela placa
     ck.veic = null; ck.veiculoNome = ''; ck.veicCor = ''; ck.veicComb = ''; ck.veicAnoMod = '';
-    ck.placa = ''; ck.vin = '';
+    ck.placa = ''; ck.vin = ''; ck.decoded = null;
+    ck.cliente = ''; ck.telefone = ''; ck.sintoma = ''; ck.tecnico = '';
+    ck.odometro = ''; ck.combustivel = 50; ck.luzes = []; ck.itens = [];
+    ck.osNum = null; ck.clienteRec = null; ck.iaOrcamento = null;
     renderCheckin();
   };
 
@@ -485,10 +490,10 @@
         <div class="wk-panel">
           <h3>${I('car')} Dados do veículo <span style="font-size:10px;color:var(--txt-3);font-weight:400">— preenchidos pela consulta da placa; confira e ajuste se precisar</span></h3>
           <div class="wk-grid2">
-            <div class="wfield"><label>Modelo</label><input id="ck-modelo" value="${esc((ck.veic && ck.veic.modelo) || ck.veiculoNome || '')}" placeholder="Marca e modelo"></div>
-            <div class="wfield"><label>Ano-modelo</label><input id="ck-anomod" inputmode="numeric" maxlength="4" value="${esc((ck.veic && ck.veic.anoModelo) || ck.veicAnoMod || '')}" placeholder="2023"></div>
-            <div class="wfield"><label>Cor</label><input id="ck-cor" value="${esc((ck.veic && ck.veic.cor) || ck.veicCor || '')}" placeholder="Branca"></div>
-            <div class="wfield"><label>Combustível</label><input id="ck-comb" value="${esc((ck.veic && ck.veic.combustivel) || ck.veicComb || '')}" placeholder="Flex"></div>
+            <div class="wfield"><label>Modelo</label><input id="ck-modelo" value="${esc(ck.veiculoNome || (ck.veic && ck.veic.modelo) || '')}" placeholder="Marca e modelo"></div>
+            <div class="wfield"><label>Ano-modelo</label><input id="ck-anomod" inputmode="numeric" maxlength="4" value="${esc(ck.veicAnoMod || (ck.veic && ck.veic.anoModelo) || '')}" placeholder="2023"></div>
+            <div class="wfield"><label>Cor</label><input id="ck-cor" value="${esc(ck.veicCor || (ck.veic && ck.veic.cor) || '')}" placeholder="Branca"></div>
+            <div class="wfield"><label>Combustível</label><input id="ck-comb" value="${esc(ck.veicComb || (ck.veic && ck.veic.combustivel) || '')}" placeholder="Flex"></div>
           </div>
           <div id="placaInfo" style="margin-top:10px"></div>
         </div>
