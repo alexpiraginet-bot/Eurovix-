@@ -1134,6 +1134,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     staffRemover: async () => ({ ok: false, erro: 'Gestão de equipe disponível apenas no modo nuvem.' }),
     mudarMinhaSenha: async () => ({ ok: false, erro: 'Disponível apenas no modo nuvem.' }),
     resetarSenha: async () => ({ ok: false, erro: 'Recuperação por e-mail disponível apenas no modo nuvem.' }),
+    resetarSenhaCliente: async () => ({ ok: false, erro: 'Redefinição por link disponível apenas no modo nuvem.' }),
     emRecuperacao: () => false,
     aprovarOrcamento, registrarPagamento, chatCliente, avaliarNps,
     _aplicarPagamento: aplicarPagamento, // interno: só o registrarPagamento (local e do adaptador) deve usar

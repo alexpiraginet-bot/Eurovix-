@@ -1049,6 +1049,26 @@
     } catch (err) { falha('resetarSenha', err); return { ok: false, erro: staffMsg(err) }; }
   };
 
+  /* A oficina redefine a senha de um CLIENTE dela: gera um LINK (via /api/reset-acesso,
+     service_role no servidor) que o consultor manda pelo WhatsApp. O token da equipe
+     vai no header; o servidor confirma por RLS que o cliente é desta oficina. */
+  const resetarSenhaCliente = async (telefone) => {
+    const tel = local.normTel(telefone);
+    if (!tel) return { ok: false, erro: 'Informe o telefone do cliente.' };
+    try {
+      const { data } = await sb.auth.getSession();
+      const token = data && data.session && data.session.access_token;
+      if (!token) return { ok: false, erro: 'Sua sessão expirou — entre de novo.' };
+      const origin = (location.origin && location.origin !== 'null') ? location.origin : '';
+      const r = await fetch('/api/reset-acesso', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ tipo: 'cliente', telefone: tel, origin }),
+      });
+      return await r.json().catch(() => ({ ok: false, erro: 'Resposta inválida do servidor.' }));
+    } catch (e) { falha('resetarSenhaCliente', e); return { ok: false, erro: 'Falha de conexão ao gerar o link.' }; }
+  };
+
   // Pagamento no modo nuvem: escrita otimista via updateOS do adaptador (espelho +
   // push async) reusando local._aplicarPagamento. A guarda de idempotência e o
   // evento ficam DENTRO do mutator (sem 3º param): se o pushOS reaplicar o mutator
@@ -1098,7 +1118,7 @@
     staffPerfil: () => (isStaff ? { papel: meuPapel || 'consultor' } : null),
     staffListar, staffCriar, staffEditar, staffRemover, mudarMinhaSenha,
     /* — recuperação de senha (Supabase Auth) — */
-    resetarSenha, emRecuperacao: () => recuperando,
+    resetarSenha, resetarSenhaCliente, emRecuperacao: () => recuperando,
     /* — estado — */
     authUser: () => user,
     minhaOficina: () => oficinaId, // multi-tenant: oficina do staff atual (null em modo legado/cliente/anon)
