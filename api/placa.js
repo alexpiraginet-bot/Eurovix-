@@ -53,23 +53,43 @@ function placaDaUrl(url) {
 }
 function pick(o, ...ks) { if (!o) return null; for (const k of ks) { if (o[k] != null && o[k] !== '') return o[k]; } return null; }
 function soAno(v) { const s = String(v == null ? '' : v).replace(/\D/g, ''); return s ? s.slice(0, 4) : null; }
+function txt(v) { return (v == null || v === '') ? null : String(v).trim(); }
 
-// Normaliza o formato do ApiPlacas para o que o WERK.consultarPlaca espera:
-// { ok, vin, modelo, marca, anoModelo, cor, combustivel }. Tolerante a variações
-// de nome de campo (MAIÚSCULAS x minúsculas) e ao objeto "extra".
+// Melhor linha FIPE (maior "score") → valor de mercado + código para o histórico.
+function fipeInfo(d) {
+  const arr = (d && d.fipe && Array.isArray(d.fipe.dados)) ? d.fipe.dados : [];
+  if (!arr.length) return null;
+  const best = arr.slice().sort((a, b) => (b && b.score || 0) - (a && a.score || 0))[0] || arr[0];
+  const out = {
+    valor: txt(pick(best, 'texto_valor', 'valor')),
+    codigo: txt(pick(best, 'codigo_fipe')),
+    modelo: txt(pick(best, 'texto_modelo')),
+    referencia: txt(pick(best, 'mes_referencia')),
+  };
+  return (out.valor || out.codigo) ? out : null;
+}
+
+// Normaliza o retorno do ApiPlacas para o WERK. Entrega o MÁXIMO de dados úteis do
+// veículo e do "histórico" público (situação, origem, FIPE/valor, município/UF),
+// tolerante a variações de nome de campo (MAIÚSCULAS x minúsculas), ao objeto
+// "extra" (às vezes vazio) e ao bloco FIPE (fipe.dados[]).
 function normalizar(d, placa) {
   const ex = (d.extra && typeof d.extra === 'object') ? d.extra : {};
-  // No retorno real o "extra" às vezes vem vazio e combustível/ano só existem
-  // no bloco FIPE (fipe.dados[0]) — daí a busca em três camadas.
   const fipe = (d.fipe && Array.isArray(d.fipe.dados) && d.fipe.dados[0]) ? d.fipe.dados[0] : {};
   const marca = pick(d, 'MARCA', 'marca') || pick(ex, 'marca', 'MARCA');
   const modelo = pick(d, 'MODELO', 'modelo') || pick(ex, 'modelo', 'MODELO');
+  const submodelo = pick(d, 'SUBMODELO', 'submodelo') || pick(ex, 'submodelo');
+  const versao = pick(d, 'VERSAO', 'versao', 'VERSÃO') || pick(ex, 'versao');
   const chassi = pick(d, 'chassi', 'CHASSI', 'chassis') || pick(ex, 'chassi', 'CHASSI');
-  const anoMod = pick(d, 'anoModelo', 'ano_modelo', 'ano') || pick(ex, 'ano_modelo', 'anoModelo', 'ano') || pick(fipe, 'ano_modelo');
+  const anoMod = pick(d, 'anoModelo', 'ano_modelo') || pick(ex, 'ano_modelo', 'anoModelo') || pick(fipe, 'ano_modelo');
+  const anoFab = pick(d, 'ano', 'anoFabricacao', 'ano_fabricacao') || pick(ex, 'ano', 'ano_fabricacao');
   const cor = pick(d, 'cor', 'COR') || pick(ex, 'cor', 'COR');
   const comb = pick(ex, 'combustivel', 'COMBUSTIVEL', 'combustível') || pick(d, 'combustivel') || pick(fipe, 'combustivel');
   const municipio = pick(d, 'municipio', 'MUNICIPIO') || pick(ex, 'municipio', 'MUNICIPIO');
   const uf = pick(d, 'uf', 'UF') || pick(ex, 'uf', 'UF');
+  const origem = pick(d, 'origem', 'ORIGEM') || pick(ex, 'origem');
+  const segmento = pick(d, 'segmento', 'SEGMENTO') || pick(ex, 'segmento');
+  const situacao = pick(d, 'situacao', 'SITUACAO', 'situação') || pick(ex, 'situacao');
   const modeloFull = [marca, modelo].filter(Boolean).join(' ').trim();
   // O ApiPlacas mascara o chassi (ex.: "*****00841") em parte dos planos: ao tirar
   // os "*" sobra um fragmento inválido. Só emitimos VIN quando vier completo (17
@@ -79,13 +99,21 @@ function normalizar(d, placa) {
     ok: true,
     placa,
     vin: vinLimpo.length === 17 ? vinLimpo : '',
-    modelo: modeloFull || (modelo || null),
-    marca: marca || null,
+    modelo: modeloFull || (txt(modelo)),      // "RENAULT LOGAN ZEN10MT" — vai p/ o campo do veículo
+    marca: txt(marca),
+    modeloBase: txt(modelo),                  // só o MODELO ("LOGAN ZEN10MT")
+    submodelo: txt(submodelo),
+    versao: txt(versao),
     anoModelo: soAno(anoMod),
-    cor: cor ? String(cor).trim() : null,
-    combustivel: comb ? String(comb).trim() : null,
-    municipio: municipio ? String(municipio).trim() : null,
-    uf: uf ? String(uf).trim() : null,
+    anoFabricacao: soAno(anoFab),
+    cor: txt(cor),
+    combustivel: txt(comb),
+    municipio: txt(municipio),
+    uf: txt(uf),
+    origem: txt(origem),
+    segmento: txt(segmento),
+    situacao: txt(situacao),
+    fipe: fipeInfo(d),                        // { valor:"R$ 57.175,00", codigo, modelo, referencia } | null
   };
 }
 

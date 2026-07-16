@@ -446,6 +446,9 @@
   const ck = { step: 1, fotos: {}, danos: [], sig: null };
   views.checkin = () => {
     ck.step = 1; ck.fotos = {}; ck.danos = []; ck.sig = null; ck.view3 = null;
+    // novo check-in = veículo novo: limpa a consulta e os campos preenchidos pela placa
+    ck.veic = null; ck.veiculoNome = ''; ck.veicCor = ''; ck.veicComb = ''; ck.veicAnoMod = '';
+    ck.placa = ''; ck.vin = '';
     renderCheckin();
   };
 
@@ -478,6 +481,16 @@
             </div>
           </div>
           <div id="vinDecoded" style="margin-top:12px"></div>
+        </div>
+        <div class="wk-panel">
+          <h3>${I('car')} Dados do veículo <span style="font-size:10px;color:var(--txt-3);font-weight:400">— preenchidos pela consulta da placa; confira e ajuste se precisar</span></h3>
+          <div class="wk-grid2">
+            <div class="wfield"><label>Modelo</label><input id="ck-modelo" value="${esc((ck.veic && ck.veic.modelo) || ck.veiculoNome || '')}" placeholder="Marca e modelo"></div>
+            <div class="wfield"><label>Ano-modelo</label><input id="ck-anomod" inputmode="numeric" maxlength="4" value="${esc((ck.veic && ck.veic.anoModelo) || ck.veicAnoMod || '')}" placeholder="2023"></div>
+            <div class="wfield"><label>Cor</label><input id="ck-cor" value="${esc((ck.veic && ck.veic.cor) || ck.veicCor || '')}" placeholder="Branca"></div>
+            <div class="wfield"><label>Combustível</label><input id="ck-comb" value="${esc((ck.veic && ck.veic.combustivel) || ck.veicComb || '')}" placeholder="Flex"></div>
+          </div>
+          <div id="placaInfo" style="margin-top:10px"></div>
         </div>
         <div class="wk-panel">
           <h3>${I('user')} Cliente & sintoma</h3>
@@ -513,6 +526,28 @@
           </div>`;
       };
       vinInput.addEventListener('input', checkVin); checkVin();
+      // Card "consulta oficial": mostra o MÁXIMO de info que a placa entrega
+      // (versão, ano de fabricação, valor FIPE, situação/restrições, emplacamento, procedência).
+      const renderPlacaInfo = (r) => {
+        const box = $('#placaInfo'); if (!box) return;
+        if (!r) { box.innerHTML = ''; return; }
+        const linhas = [];
+        if (r.versao) linhas.push(['Versão', r.versao]);
+        if (r.anoFabricacao) linhas.push(['Ano fab.', r.anoFabricacao]);
+        if (r.fipe && r.fipe.valor) linhas.push(['FIPE', r.fipe.valor + (r.fipe.referencia ? ' · ' + r.fipe.referencia : '')]);
+        if (r.situacao) linhas.push(['Situação', r.situacao]);
+        if (r.municipio || r.uf) linhas.push(['Emplacamento', [r.municipio, r.uf].filter(Boolean).join('/')]);
+        if (r.origem) linhas.push(['Procedência', r.origem]);
+        if (!linhas.length) { box.innerHTML = ''; return; }
+        const fonte = r.fonte === 'api' ? 'consulta oficial' : r.fonte === 'garagem' ? 'já na garagem' : 'base demo';
+        box.innerHTML =
+          '<div class="diag-item"><div class="di-head"><b>Consulta do veículo</b>' +
+          '<span class="sev-badge ok">' + fonte + '</span></div>' +
+          '<div class="di-nota" style="display:flex;flex-wrap:wrap;gap:4px 16px">' +
+          linhas.map(l => '<span><b style="color:var(--txt-2)">' + l[0] + ':</b> ' + esc(l[1]) + '</span>').join('') +
+          '</div></div>';
+      };
+      if (ck.veic) renderPlacaInfo(ck.veic);
       $('#ckPlaca').addEventListener('click', async () => {
         const btn = $('#ckPlaca'); const placaVal = $('#ck-placa').value;
         if (!WERK.normPlaca(placaVal)) { toast('Placa', 'Digite a placa primeiro.'); return; }
@@ -520,8 +555,13 @@
         try {
           const r = await WERK.consultarPlaca(placaVal);
           if (!r.ok) { toast('Placa não encontrada', r.erro); return; }
+          ck.veic = r;                                            // guarda a consulta completa
           $('#ck-placa').value = r.placa;
           if (r.vin) { vinInput.value = r.vin; checkVin(); }
+          // preenche os campos de cadastro com os dados da consulta
+          const setv = (id, v) => { const el = $(id); if (el && v != null && v !== '') el.value = v; };
+          setv('#ck-modelo', r.modelo); setv('#ck-anomod', r.anoModelo); setv('#ck-cor', r.cor); setv('#ck-comb', r.combustivel);
+          renderPlacaInfo(r);                                     // card "consulta oficial" (FIPE, situação, origem…)
           const fonteTxt = r.fonte === 'api' ? 'consulta oficial' : r.fonte === 'garagem' ? 'já na garagem' : 'base demo';
           const det = [r.modelo || 'Veículo', r.anoModelo, r.cor, r.combustivel].filter(Boolean).join(' · ');
           toast('Veículo identificado', `${det} · ${fonteTxt}`);
@@ -535,10 +575,17 @@
         if (raw && !v.ok) { hint.className = 'hintline err'; hint.textContent = '⚠ ' + (v.motivo || 'VIN não confere') + ' — seguindo sem validar; ajuste depois se precisar.'; }
         if (!$('#ck-cli').value.trim()) { toast('Falta o cliente', 'Informe ao menos o nome do cliente.'); $('#ck-cli').focus(); return; }
         const vin = v.ok ? v.vin : raw;
+        const decoded = WERK.decodeVIN(vin);
+        // Dados do veículo: o que a consulta trouxe, sobreposto pela edição manual do consultor.
+        const val = (id) => { const el = $(id); return el ? el.value.trim() : ''; };
+        ck.veiculoNome = val('#ck-modelo') || (ck.veic && ck.veic.modelo) || decoded.modelo || 'Veículo';
+        ck.veicAnoMod = val('#ck-anomod') || (ck.veic && ck.veic.anoModelo) || decoded.anoModelo || '';
+        ck.veicCor = val('#ck-cor') || (ck.veic && ck.veic.cor) || '';
+        ck.veicComb = val('#ck-comb') || (ck.veic && ck.veic.combustivel) || '';
         Object.assign(ck, {
           vin, placa: $('#ck-placa').value.toUpperCase(), cliente: $('#ck-cli').value.trim(),
           telefone: $('#ck-tel').value, tecnico: $('#ck-tec').value.split(' — ')[0], sintoma: $('#ck-sintoma').value.trim(),
-          decoded: WERK.decodeVIN(vin),
+          decoded,
         });
         ck.step = 2; renderCheckin();
       });
@@ -660,7 +707,7 @@
         if (box.style.display !== 'none') { box.style.display = 'none'; _r3.innerHTML = I('car', 15) + ' Ver o modelo real (BMW) em 3D'; return; }
         box.style.display = 'block';
         if (!box.dataset.loaded && window.WERK3D && WERK3D.embedReal) {
-          try { WERK3D.embedReal(box, (ck.decoded && ck.decoded.modelo) || ck.placa || 'BMW'); box.dataset.loaded = '1'; }
+          try { WERK3D.embedReal(box, ck.veiculoNome || (ck.decoded && ck.decoded.modelo) || ck.placa || 'BMW'); box.dataset.loaded = '1'; }
           catch (_) { box.innerHTML = '<div style="padding:14px;color:var(--txt-3);font-size:12px">Modelo 3D indisponível offline.</div>'; }
         }
         _r3.innerHTML = '▲ Ocultar modelo 3D real';
@@ -705,7 +752,7 @@
         <div class="wk-panel">
           <h3>${I('doc')} Reconhecimento do estado de entrada</h3>
           <p style="font-size:12.5px;color:var(--txt-2);line-height:1.6;margin-bottom:14px">
-            ${ck.cliente}, declaro que acompanhei a inspeção de entrada do veículo <b>${ck.decoded.modelo}</b>
+            ${ck.cliente}, declaro que acompanhei a inspeção de entrada do veículo <b>${esc(ck.veiculoNome || (ck.decoded && ck.decoded.modelo) || 'veículo')}</b>
             (placa ${ck.placa || '—'}, ${Number(ck.odometro).toLocaleString('pt-BR')} km) e reconheço o estado registrado:
             <b>${Object.keys(ck.fotos).length} fotos timestampadas</b> e <b>${ck.danos.length} dano(s) preexistente(s)</b> marcados.
           </p>
@@ -722,17 +769,29 @@
       $('#ckFinish').addEventListener('click', async () => {
         if (pad.isEmpty()) { toast('Assinatura obrigatória', 'O termo só é válido com o aceite do cliente.'); return; }
         const os = await WERK.novaOS({
-          vin: ck.vin, veiculo: ck.decoded.modelo, placa: ck.placa, cliente: ck.cliente,
+          vin: ck.vin, veiculo: ck.veiculoNome || (ck.decoded && ck.decoded.modelo) || 'Veículo', placa: ck.placa, cliente: ck.cliente,
           telefone: ck.telefone, sintoma: ck.sintoma, tecnico: ck.tecnico,
           checkin: {
             ts: new Date().toISOString(), odometro: +ck.odometro, combustivel: ck.combustivel,
             itens: ck.itens, luzes: ck.luzes || [], danos: ck.danos,
             fotos: Object.keys(ck.fotos).length, fotosData: ck.fotos, assinatura: pad.data(),
+            veiculo: ck.veic || null,   // consulta oficial da placa (marca, cor, combustível, ano, FIPE, situação, origem…)
           },
           ator: 'Recepção',
         });
-        // sem VIN não grava no prontuário por VIN (evita colidir vários "sem chassi" na mesma chave)
-        if (ck.vin) WERK.upsertVehicle({ vin: ck.vin, ...ck.decoded, placa: ck.placa, km: +ck.odometro, cliente: ck.cliente, telefone: ck.telefone });
+        // sem VIN não grava no prontuário por VIN (evita colidir vários "sem chassi" na mesma chave).
+        // Com VIN, o prontuário guarda os dados reais da consulta (não só o palpite do VIN).
+        if (ck.vin) WERK.upsertVehicle({
+          vin: ck.vin, ...ck.decoded,
+          modelo: ck.veiculoNome || (ck.decoded && ck.decoded.modelo),
+          anoModelo: ck.veicAnoMod || (ck.decoded && ck.decoded.anoModelo) || '',
+          cor: ck.veicCor || (ck.decoded && ck.decoded.cor) || '',
+          combustivel: ck.veicComb || '',
+          versao: (ck.veic && ck.veic.versao) || '', anoFabricacao: (ck.veic && ck.veic.anoFabricacao) || '',
+          municipio: (ck.veic && ck.veic.municipio) || '', uf: (ck.veic && ck.veic.uf) || '',
+          fipe: (ck.veic && ck.veic.fipe) || null, situacao: (ck.veic && ck.veic.situacao) || '', origem: (ck.veic && ck.veic.origem) || '',
+          placa: ck.placa, km: +ck.odometro, cliente: ck.cliente, telefone: ck.telefone,
+        });
         ck.clienteRec = await WERK.upsertCliente({ nome: ck.cliente, telefone: ck.telefone });
         ck.osNum = os.numero; ck.step = 4; renderCheckin();
       });
@@ -744,7 +803,7 @@
       const url = rec ? WERK.conviteUrl(rec) : '';
       const ativo = !!(rec && rec.senha);
       const primeiro = (ck.cliente || 'Cliente').split(' ')[0];
-      const msgWa = `Olá, ${primeiro}! Seu ${ck.decoded.modelo} deu entrada na ${bnome()} (OS #${ck.osNum}). ` +
+      const msgWa = `Olá, ${primeiro}! Seu ${ck.veiculoNome || (ck.decoded && ck.decoded.modelo) || 'veículo'} deu entrada na ${bnome()} (OS #${ck.osNum}). ` +
         (ativo ? `Acompanhe tudo pelo app — login: seu telefone. ${url}` : `Crie seu acesso e acompanhe tudo pelo app: ${url}`);
       body.innerHTML = `
         <div class="wk-panel" style="text-align:center;padding:40px 20px">

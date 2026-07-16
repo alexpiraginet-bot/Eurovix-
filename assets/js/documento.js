@@ -34,16 +34,30 @@
       <span style="text-align:right">${extra || ''}<br>Documento gerado pelo LexOS em ${new Date().toLocaleString('pt-BR')}</span>
     </div>`;
 
-  const veicGrid = (os) => `
+  const veicGrid = (os) => {
+    // Dados capturados na consulta da placa (check-in) — persistidos em checkin.veiculo.
+    const vc = (os.checkin && os.checkin.veiculo) || null;
+    const extra = [];
+    if (vc) {
+      if (vc.anoModelo) extra.push(`<div class="kv"><b>Ano-modelo</b>${vc.anoModelo}</div>`);
+      if (vc.cor) extra.push(`<div class="kv"><b>Cor</b>${vc.cor}</div>`);
+      if (vc.combustivel) extra.push(`<div class="kv"><b>Combustível</b>${vc.combustivel}</div>`);
+      if (vc.fipe && vc.fipe.valor) extra.push(`<div class="kv"><b>Valor FIPE</b>${vc.fipe.valor}</div>`);
+      if (vc.situacao) extra.push(`<div class="kv"><b>Situação</b>${vc.situacao}</div>`);
+      if (vc.municipio || vc.uf) extra.push(`<div class="kv"><b>Emplacamento</b>${[vc.municipio, vc.uf].filter(Boolean).join('/')}</div>`);
+    }
+    return `
     <h2>Veículo & Cliente</h2>
     <div class="grid">
       <div class="kv"><b>Veículo</b>${os.veiculo}</div>
       <div class="kv"><b>Cliente</b>${os.cliente}</div>
-      <div class="kv"><b>VIN (chassi)</b>${os.vin}</div>
+      <div class="kv"><b>VIN (chassi)</b>${os.vin || '—'}</div>
       <div class="kv"><b>Telefone</b>${os.telefone || '—'}</div>
       <div class="kv"><b>Placa</b>${os.placa || '—'}</div>
       <div class="kv"><b>Consultor</b>${os.consultor}</div>
+      ${extra.join('')}
     </div>`;
+  };
 
   function orcTable(os, apenasAprovados) {
     const itens = os.itens.filter(i => i.severidade !== 'ok').filter(i => !apenasAprovados || i.aprovacao === 'aprovado');
