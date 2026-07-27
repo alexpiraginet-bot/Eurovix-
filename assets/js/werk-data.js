@@ -837,20 +837,77 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
   // /api/analisar-fotos, que usa a ANTHROPIC_API_KEY do servidor) e cai
   // no modo assistido se a chave/endpoint não estiver disponível (demo
   // local em file://, deploy sem a variável, offline). Mesmo formato.
+  /* O corpo de uma função serverless na Vercel é limitado a ~4,5 MB — acima disso
+     ela devolve 413 FUNCTION_PAYLOAD_TOO_LARGE e a IA nem chega a rodar. Um tour
+     de 8 fotos de iPhone passa disso com facilidade quando o conteúdo tem textura
+     (motor sujo, cascalho, pouca luz): medido, 8 fotos ruidosas dão ~5,9 MB em
+     base64 contra ~0,4 MB de uma lataria lisa. Como isso depende da FOTO, a falha
+     era intermitente — o pior tipo. Encolhemos só a CÓPIA que vai para a IA; a
+     foto guardada no check-in e impressa no Termo continua na resolução cheia. */
+  const IA_TETO = 3.8 * 1024 * 1024;                 // margem sobre o limite real (medido: 4 MB passa, 5 MB não)
+  const IA_ESCADA = [[1400, 0.68], [1200, 0.60], [1024, 0.55], [880, 0.50]];
+
+  function _recomprimir(dataUrl, lado, q) {
+    return new Promise((resolve) => {
+      if (typeof Image !== 'function' || typeof document === 'undefined') { resolve(dataUrl); return; }
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const k = Math.min(1, lado / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(img.width * k));
+          c.height = Math.max(1, Math.round(img.height * k));
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          const u = c.toDataURL('image/jpeg', q);
+          resolve(u && u.length > 32 ? u : dataUrl);
+        } catch (_) { resolve(dataUrl); }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
+  // Devolve um conjunto de fotos que CABE no envio. Só recomprime se precisar.
+  async function _caberNoEnvio(fotos) {
+    const chaves = Object.keys(fotos || {});
+    if (!chaves.length) return { fotos, reduzido: false };
+    let atual = fotos;
+    if (JSON.stringify(atual).length <= IA_TETO) return { fotos: atual, reduzido: false };
+    for (let i = 0; i < IA_ESCADA.length; i++) {
+      const menor = {};
+      for (const k of chaves) menor[k] = await _recomprimir(fotos[k], IA_ESCADA[i][0], IA_ESCADA[i][1]);
+      atual = menor;
+      if (JSON.stringify(atual).length <= IA_TETO) return { fotos: atual, reduzido: true };
+    }
+    return { fotos: atual, reduzido: true, aindaGrande: true };
+  }
+
   async function analisarFotos(fotos, ctx) {
     ctx = ctx || {};
+    let motivo = null;
     try {
+      const cabe = await _caberNoEnvio(fotos);
       const r = await fetch('/api/analisar-fotos', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ fotos, ctx }),
+        body: JSON.stringify({ fotos: cabe.fotos, ctx }),
       });
       if (r.ok) {
         const d = await r.json();
-        if (d && d.ok) return d;                     // { modo:'ia', km, combustivel, luzes, avarias, itens, itensFaltantes, confianca, fotosAnalisadas }
+        // { modo:'ia', km, combustivel, luzes, avarias, itens, itensFaltantes, confianca, fotosAnalisadas }
+        if (d && d.ok) return Object.assign(d, { reduzido: !!cabe.reduzido });
+        motivo = (d && d.erro) || 'a visão não respondeu';
+      } else if (r.status === 404) {
+        motivo = null;                               // demo local / sem função publicada: nada a explicar
+      } else {
+        motivo = r.status === 413
+          ? 'as fotos ficaram grandes demais para o envio'
+          : 'a visão respondeu ' + r.status;
       }
-    } catch (_) { /* sem endpoint / offline / file:// → modo assistido */ }
-    return _analisarAssistida(fotos, ctx);
+    } catch (_) { motivo = null; /* offline / file:// → modo assistido, sem alarde */ }
+    // Cair no assistido é aceitável; cair CALADO não é — quem preenche a OS precisa
+    // saber que aqueles campos não vieram de uma leitura real das fotos.
+    return Object.assign(_analisarAssistida(fotos, ctx), { motivo });
   }
 
   /* ============================================================

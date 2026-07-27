@@ -31,6 +31,18 @@ html {
   text-size-adjust: 100%;
 }
 
+/* ------------------------------------------------------------
+   `hidden` tem que esconder — sempre.
+   O atributo `hidden` vale como `display:none` só na folha padrão
+   do navegador, e QUALQUER `display` declarado numa classe o
+   anula. Como várias telas declaram `display:flex` em elementos
+   que também usam `hidden` (barra de abas, botão de Face ID,
+   linha de opções), eles apareciam como fantasmas na tela.
+   Esta é a última folha carregada — a correção fecha o assunto
+   em todas as páginas de uma vez.
+   ------------------------------------------------------------ */
+[hidden] { display: none !important; }
+
 @media (max-width: 900px) {
 
   /* --- 2) nada mais largo que a tela --- */

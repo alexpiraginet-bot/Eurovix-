@@ -918,6 +918,11 @@
             <div class="ck-ia-cell"><span class="k">Itens faltando</span><span class="v">${ck.iaResumo.itensFaltantes.length ? ck.iaResumo.itensFaltantes.join(', ') : 'nenhum'}</span></div>
             <div class="ck-ia-cell"><span class="k">A conferir</span><span class="v">${(ck.iaResumo.itensNaoVerificados || []).length ? ck.iaResumo.itensNaoVerificados.join(', ') : '—'}</span></div>
           </div>
+          ${ck.iaResumo.motivo ? `
+          <p class="ck-ia-note ck-ia-falhou"><b>A leitura real das fotos não rodou</b> — ${esc(ck.iaResumo.motivo)}.
+            Os campos abaixo são uma sugestão do modo assistido, <b>não</b> uma leitura das suas fotos: confira tudo antes de continuar.</p>` : ''}
+          ${ck.iaResumo.reduzido ? `
+          <p class="ck-ia-note">As fotos foram reduzidas para caber no envio à IA — as originais, em resolução cheia, seguem no check-in e no Termo.</p>` : ''}
           <p class="ck-ia-note">Campos pré-preenchidos acima — <b>revise e ajuste</b> antes de continuar. A IA marcou ${ck.iaResumo.avarias.length} avaria(s) na silhueta.</p>
           <button type="button" class="ck-ai-btn" id="ckSugerir">Sugerir orçamento a partir dos sinais</button>
           ${ck.iaOrcamento ? `<div class="ck-ia-orc">${ck.iaOrcamento.map(o => `<div class="orc-row"><span>${o.descricao} <small>${o.motivo}</small></span><b>${WERK.brl(o.preco)}</b></div>`).join('')}<div class="orc-foot">Sugestões — o consultor confirma o que entra na OS.</div></div>` : ''}
