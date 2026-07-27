@@ -141,3 +141,46 @@ select o.nome as oficina,
        (select count(*) from public.agendamentos a where a.oficina_id = o.id) as agendamentos
   from public.oficinas o
  order by o.recebe_agendamentos desc, o.criado_em;
+
+-- ============================================================
+-- 6 ·  EXCLUIR OFICINA x AUDITORIA IMUTÁVEL
+-- ------------------------------------------------------------
+-- eventos_log é append-only (trg_eventos_log_imutavel). Como
+-- eventos_log.oficina_id tem FK "on delete cascade", excluir uma oficina
+-- disparava o gatilho e a exclusão inteira era cancelada:
+--   "eventos_log é imutável (auditoria append-only): DELETE bloqueado"
+--
+-- O log continua imutável para TODA operação normal. A única exceção é a
+-- purga deliberada de uma oficina pela RPC excluir_oficina(), que valida
+-- is_lex_admin() e liga a flag apenas dentro daquela transação.
+-- ============================================================
+create or replace function public.bloquear_mutacao_log()
+returns trigger language plpgsql as $$
+begin
+  if coalesce(current_setting('app.purga_oficina', true), '') = 'on' then
+    return null;   -- gatilho de STATEMENT: não cancela, apenas deixa seguir
+  end if;
+  raise exception 'eventos_log é imutável (auditoria append-only): % bloqueado', tg_op;
+end;
+$$;
+
+create or replace function public.excluir_oficina(p_id uuid)
+returns jsonb language plpgsql security definer
+set search_path = public, pg_temp as $$
+declare v_nome text; v_n integer;
+begin
+  if not public.is_lex_admin() then
+    raise exception 'Apenas administradores LexOS podem excluir oficinas';
+  end if;
+  if p_id is null then return jsonb_build_object('ok', false, 'erro', 'Informe a oficina'); end if;
+  select nome into v_nome from public.oficinas where id = p_id;
+  if not found then return jsonb_build_object('ok', false, 'erro', 'Oficina não encontrada'); end if;
+  perform set_config('app.purga_oficina', 'on', true);   -- só nesta transação
+  delete from public.oficinas where id = p_id;
+  get diagnostics v_n = row_count;
+  perform set_config('app.purga_oficina', 'off', true);
+  return jsonb_build_object('ok', v_n > 0, 'nome', v_nome, 'excluidas', v_n);
+end;
+$$;
+revoke all on function public.excluir_oficina(uuid) from public;
+grant execute on function public.excluir_oficina(uuid) to authenticated;
