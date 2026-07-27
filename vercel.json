@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/apresentacao", "destination": "/lexos-apresentacao.html" }
+    { "source": "/apresentacao", "destination": "/lexos-apresentacao.html" },
+    { "source": "/apresentacao2", "destination": "/lexos-apresentacao2.html" }
   ]
 }

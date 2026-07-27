@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LexOS — O sistema operacional da oficina</title>
+<meta name="description" content="LexOS, por Lex Technology. Site, agendamento, app do cliente, painel de operação e a IA que lê o laudo do scanner.">
+<meta name="theme-color" content="#06070A">
+<link rel="icon" href="assets/img/lexos-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   LexOS — apresentação cinemática (scrollytelling)
+   Identidade da casa (assets/css/lexos.css): cockpit escuro,
+   Poppins, gradiente #3B86F2 → #5A5FEA → #8B3FE8, marca X.
+   Herói: canvas fixo dirigido pelo scroll (HeroSource).
+   ============================================================ */
+:root{
+  --void:#06070A; --cockpit:#0B111D; --card:#121A2B; --card-2:#18233A;
+  --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.18);
+  --t1:#EEF2F8; --t2:#9AA6BC; --t3:#7A879E;
+  --blue:#3B86F2; --blue-2:#4C9BFF; --violet:#8B3FE8;
+  --grad:linear-gradient(120deg,#3B86F2 0%,#5A5FEA 52%,#8B3FE8 100%);
+  --grad-txt:linear-gradient(115deg,#4C9BFF 0%,#7488F7 46%,#A96FF9 100%);
+  --ok:#3ECF77; --warn:#E8B031; --red:#E5484D;
+  --font:'Poppins',system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --ease:cubic-bezier(.22,.72,.28,1);
+  --maxw:1060px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:auto;background:var(--void)}
+body{
+  font-family:var(--font);background:var(--void);color:var(--t1);
+  line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+::selection{background:var(--blue);color:#fff}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+img,svg{display:block;max-width:100%}
+a{color:inherit}
+
+/* ---------- Herói fixo (canvas + fallbacks) ---------- */
+.hero-stage{position:fixed;inset:0;z-index:0;pointer-events:none;transition:opacity .5s var(--ease)}
+.hero-stage.off{opacity:0}
+#heroCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero-fallback{
+  position:absolute;inset:0;display:none;
+  background:
+    radial-gradient(90% 70% at 18% 18%,rgba(59,134,242,.20),transparent 60%),
+    radial-gradient(80% 66% at 84% 30%,rgba(139,63,232,.16),transparent 62%),
+    radial-gradient(70% 60% at 50% 88%,rgba(90,95,234,.14),transparent 64%),
+    var(--void);
+  background-size:160% 160%,150% 150%,170% 170%,100% 100%;
+  animation:drift 22s var(--ease) infinite alternate;
+}
+@keyframes drift{
+  0%{background-position:0% 0%,100% 0%,50% 100%,0 0}
+  100%{background-position:60% 40%,40% 60%,30% 40%,0 0}
+}
+.no-webgl .hero-fallback{display:block}
+.no-webgl #heroCanvas{display:none}
+.veil{ /* vinheta p/ legibilidade do texto sobre o vídeo */
+  position:absolute;inset:0;
+  background:
+    radial-gradient(120% 86% at 50% 108%,rgba(6,7,10,.90),transparent 58%),
+    radial-gradient(130% 90% at 50% -12%,rgba(6,7,10,.78),transparent 54%),
+    linear-gradient(rgba(6,7,10,.30),rgba(6,7,10,.30));
+}
+/* modo reduzido com poster: canvas parado, sem vídeo */
+.static-hero #heroCanvas{filter:saturate(.9)}
+/* faixa de leitura atrás dos painéis de texto que passam sobre o vídeo
+   (os blocos com fundo próprio — quote, gate, tiers — dispensam) */
+.panel:not(.cta){position:relative}
+.panel:not(.cta)::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent 0%,rgba(6,7,10,.60) 16%,rgba(6,7,10,.60) 84%,transparent 100%);
+}
+@media (max-width:820px){
+  .panel:not(.cta)::before{
+    background:linear-gradient(180deg,transparent 0%,rgba(6,7,10,.68) 12%,rgba(6,7,10,.68) 88%,transparent 100%);
+  }
+}
+.panel>.wrap{position:relative;z-index:1}
+/* CTA fora da zona sólida: o carro fechado aparece por trás */
+.panel.cta{background:linear-gradient(180deg,rgba(6,7,10,.0) 0%,rgba(6,7,10,.66) 26%,rgba(6,7,10,.88) 60%,rgba(6,7,10,.94) 100%)}
+
+/* ---------- Chrome fixo ---------- */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:30;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:clamp(14px,2.4vw,22px) clamp(18px,4.5vw,44px);
+  background:linear-gradient(180deg,rgba(6,7,10,.82),transparent);
+  pointer-events:none;transition:opacity .35s var(--ease),transform .35s var(--ease);
+}
+.topbar.off{opacity:0;transform:translateY(-8px)}
+.topbar>*{pointer-events:auto}
+.wm{font-weight:800;letter-spacing:-.03em;font-size:clamp(17px,2vw,20px);display:inline-flex;align-items:center;gap:8px}
+.wm .a{color:var(--t1)}
+.wm .b{background:var(--grad-txt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.wm svg{width:clamp(18px,2.2vw,22px);height:auto}
+.topbar .by{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--t3);font-weight:600}
+.progress{position:fixed;top:0;left:0;right:0;height:2px;z-index:31;background:transparent}
+.progress i{display:block;height:100%;width:0;background:var(--grad)}
+
+/* ---------- Layout base das seções ---------- */
+main{position:relative;z-index:1}
+section{position:relative}
+.wrap{width:100%;max-width:var(--maxw);margin:0 auto;padding:0 clamp(20px,5vw,48px)}
+.panel{min-height:100svh;display:flex;align-items:center;padding:clamp(72px,12svh,120px) 0}
+.eyebrow{
+  display:flex;align-items:flex-start;gap:12px;
+  font-size:clamp(10.5px,1.3vw,12.5px);font-weight:600;line-height:1.5;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--t3);
+  margin-bottom:clamp(16px,2.6svh,26px);
+}
+.eyebrow::before{content:"";width:26px;height:2px;background:var(--grad);flex:none;margin-top:.55em}
+h1,h2{font-weight:700;letter-spacing:-.028em;line-height:1.06;color:var(--t1)}
+h2{font-size:clamp(30px,5.6vw,54px)}
+h2 .hl{color:var(--blue-2)}
+h2 .gr{background:var(--grad-txt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:clamp(16px,2.1vw,20px);color:var(--t2);max-width:56ch;line-height:1.6}
+.p{font-size:clamp(15px,1.9vw,17.5px);color:var(--t2);line-height:1.6}
+.note{font-size:clamp(12.5px,1.5vw,14px);color:var(--t3);line-height:1.55}
+strong{color:var(--t1);font-weight:600}
+
+/* fala do dono */
+.quote{
+  background:rgba(13,19,32,.94);border:1px solid var(--line);box-shadow:0 18px 50px -22px rgba(0,0,0,.85);
+  border-left:3px solid var(--red);border-radius:12px;
+  padding:clamp(16px,2.4vw,24px) clamp(18px,2.8vw,28px);
+  max-width:640px;
+}
+.quote p{font-size:clamp(18px,2.9vw,27px);line-height:1.35;font-weight:500;letter-spacing:-.014em;color:var(--t1)}
+
+/* ticks */
+.ticks{list-style:none;max-width:640px}
+.ticks li{position:relative;padding-left:34px;font-size:clamp(15px,1.9vw,17.5px);line-height:1.55;color:var(--t2)}
+.ticks li+li{margin-top:clamp(12px,1.8svh,18px)}
+.ticks li::before{
+  content:"";position:absolute;left:0;top:.28em;width:18px;height:18px;border-radius:5px;
+  background:rgba(59,134,242,.15);border:1px solid var(--blue);
+}
+.ticks li::after{
+  content:"";position:absolute;left:5px;top:.28em;margin-top:5px;width:7px;height:4px;
+  border-left:2px solid var(--blue-2);border-bottom:2px solid var(--blue-2);transform:rotate(-45deg);
+}
+
+/* rows numeradas */
+.rows{border-top:1px solid var(--line);max-width:680px}
+.row{display:flex;gap:20px;align-items:baseline;padding:clamp(14px,2.2svh,20px) 0;border-bottom:1px solid var(--line)}
+.row .n{flex:none;width:34px;font-size:13px;font-weight:700;color:var(--blue-2);font-variant-numeric:tabular-nums}
+.row .t{display:block;font-size:clamp(16.5px,2.2vw,19px);font-weight:600;color:var(--t1);letter-spacing:-.012em;line-height:1.25}
+.row .d{display:block;font-size:clamp(13.5px,1.7vw,15.5px);color:var(--t2);margin-top:5px;line-height:1.5}
+
+/* travas */
+.gate{
+  border:1px solid var(--line);border-radius:12px;
+  background:linear-gradient(165deg,rgba(18,26,43,.92),rgba(18,26,43,.55));
+  padding:clamp(16px,2.4vw,24px) clamp(18px,2.6vw,26px);max-width:640px;
+}
+.gate+.gate{margin-top:14px}
+.gate .k{display:block;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--blue-2);margin-bottom:8px}
+.gate p{font-size:clamp(14px,1.8vw,16.5px);line-height:1.55;color:var(--t2)}
+
+/* ---------- Capa (ato 1) ---------- */
+#hero{height:185svh}
+.hero-pin{position:sticky;top:0;height:100svh;display:flex;align-items:center;overflow:hidden}
+.hero-copy{will-change:transform,opacity;text-shadow:0 1px 16px rgba(6,7,10,.92),0 0 40px rgba(6,7,10,.6)}
+.hero-copy .telem{
+  font-size:clamp(10px,1.3vw,12px);letter-spacing:.3em;text-transform:uppercase;
+  color:var(--t3);font-weight:600;margin-bottom:clamp(18px,3svh,30px);
+}
+.hero-copy .telem span{color:var(--blue-2)}
+.bigwm{font-weight:800;letter-spacing:-.045em;line-height:.9;font-size:clamp(64px,15vw,150px)}
+.bigwm .a{color:var(--t1)}
+.bigwm .b{background:var(--grad-txt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-copy .tag{font-size:clamp(19px,3vw,30px);font-weight:600;letter-spacing:-.015em;margin-top:clamp(14px,2.4svh,24px)}
+.hero-copy .sub{color:var(--t2);font-size:clamp(15px,2vw,18.5px);margin-top:14px;max-width:46ch;line-height:1.6}
+.live{
+  display:inline-flex;align-items:center;gap:10px;margin-top:clamp(18px,3svh,28px);
+  border:1px solid rgba(62,207,119,.42);background:rgba(62,207,119,.09);
+  border-radius:40px;padding:8px 16px;
+  font-size:clamp(10.5px,1.3vw,12px);font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ok);
+}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:pulse 2.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.scrollhint{
+  position:absolute;left:50%;bottom:26px;transform:translateX(-50%);
+  font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--t3);font-weight:600;text-align:center;
+}
+.scrollhint::after{content:"";display:block;width:10px;height:10px;margin:8px auto 0;
+  border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);
+  animation:bob 2.1s var(--ease) infinite}
+@keyframes bob{0%,100%{transform:rotate(45deg) translate(0,0)}50%{transform:rotate(45deg) translate(3px,3px)}}
+
+/* ---------- A dor (scrub) ---------- */
+#dor{height:340svh}
+.dor-pin{position:sticky;top:0;height:100svh;display:flex;align-items:center;overflow:hidden}
+.dor-pin::before{ /* leitura das quotes sobre o vídeo */
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent 0%,rgba(6,7,10,.55) 26%,rgba(6,7,10,.55) 74%,transparent 100%);
+}
+.dor-item{position:absolute;left:0;right:0;opacity:0;will-change:transform,opacity}
+.dor-item .quote{margin:0 auto}
+.dor-close{position:absolute;left:0;right:0;opacity:0;text-align:center;will-change:transform,opacity}
+.dor-close .p{max-width:44ch;margin:0 auto}
+.dor-kick{position:absolute;top:clamp(84px,13svh,130px);left:0;right:0}
+.dor-kick .eyebrow{justify-content:center}
+.dor-kick .eyebrow::before{display:none}
+
+/* ---------- Mecanismo (pergunta → resposta) ---------- */
+.answer .quote{margin-bottom:clamp(18px,3svh,28px)}
+.answer h2{margin-bottom:clamp(14px,2.4svh,22px);max-width:16ch}
+.answer .ticks{margin-top:clamp(6px,1svh,10px)}
+
+/* ---------- IA ---------- */
+.ia-glow{background:radial-gradient(86% 60% at 50% 34%,rgba(59,134,242,.14),transparent 66%)}
+
+/* ---------- Scanners ---------- */
+#scanners{background:linear-gradient(180deg,transparent,rgba(11,17,29,.9) 18%,rgba(11,17,29,.9) 82%,transparent)}
+.scan-head{text-align:center;max-width:640px;margin:0 auto}
+.scan-head .eyebrow{justify-content:center}
+.scan-head .eyebrow::before{display:none}
+.orbit{
+  --D:min(560px,92vw);
+  --R1:calc(var(--D) * .315);
+  --R2:calc(var(--D) * .478);
+  position:relative;width:var(--D);height:var(--D);
+  margin:clamp(26px,5svh,48px) auto 0;
+}
+.orbit .ring{
+  position:absolute;inset:0;border:1px dashed rgba(255,255,255,.10);border-radius:50%;
+}
+.orbit .ring.r2{inset:17.5%}
+.orbit .core{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:112px;height:112px;border-radius:50%;
+  background:radial-gradient(60% 60% at 50% 42%,rgba(59,134,242,.28),rgba(11,17,29,.94) 72%);
+  border:1px solid var(--line-2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  box-shadow:0 0 60px rgba(90,95,234,.35);
+}
+.orbit .core svg{width:34px;height:34px;filter:drop-shadow(0 6px 18px rgba(93,95,234,.6))}
+.orbit .core span{font-size:12px;font-weight:800;letter-spacing:-.02em}
+.orbit .core span .b{background:var(--grad-txt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.badge{
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%,-50%) rotate(var(--a)) translateY(calc(var(--rr) * -1)) rotate(calc(var(--a) * -1));
+  white-space:nowrap;border-radius:9px;padding:9px 14px;
+  font-size:clamp(11px,1.5vw,13px);font-weight:600;letter-spacing:.02em;
+  animation:float 6s var(--ease) infinite;animation-delay:var(--fd,0s);
+}
+@keyframes float{0%,100%{margin-top:0}50%{margin-top:-7px}}
+.badge small{display:block;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);font-weight:600;margin-top:2px}
+.badge.now{background:rgba(59,134,242,.13);border:1px solid rgba(76,155,255,.55);color:var(--t1)}
+.badge.dem{background:rgba(232,176,49,.07);border:1px dashed rgba(232,176,49,.5);color:var(--t2)}
+.badge.dem small{color:var(--warn)}
+.scan-legend{
+  display:flex;gap:22px;justify-content:center;flex-wrap:wrap;
+  margin-top:clamp(22px,4svh,36px);font-size:12.5px;color:var(--t2);
+}
+.scan-legend b{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:8px;vertical-align:-1px}
+.scan-legend .l1 b{background:rgba(59,134,242,.16);border:1px solid rgba(76,155,255,.6)}
+.scan-legend .l2 b{background:rgba(232,176,49,.08);border:1px dashed rgba(232,176,49,.55)}
+.scan-note{max-width:60ch;margin:clamp(18px,3svh,26px) auto 0;text-align:center}
+/* mobile: constelação vira listas */
+.scan-lists{display:none;max-width:560px;margin:26px auto 0}
+.scan-group+.scan-group{margin-top:20px}
+.scan-group .gt{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px}
+.scan-group.g1 .gt{color:var(--blue-2)}
+.scan-group.g2 .gt{color:var(--warn)}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{border-radius:9px;padding:9px 13px;font-size:12.5px;font-weight:600}
+.chip small{display:block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-top:2px}
+.chip.now{background:rgba(59,134,242,.13);border:1px solid rgba(76,155,255,.55);color:var(--t1)}
+.chip.dem{background:rgba(232,176,49,.07);border:1px dashed rgba(232,176,49,.5);color:var(--t2)}
+@media (max-width:720px){
+  .orbit{display:none}
+  .scan-lists{display:block}
+}
+
+/* ---------- Capítulos visuais ---------- */
+.visual-story{position:relative;z-index:2;background:var(--void)}
+.visual-card{
+  position:relative;min-height:100svh;overflow:hidden;
+  display:grid;align-items:end;background:var(--void);
+}
+.visual-card img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+  object-position:center;background:var(--void);
+}
+.visual-card::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(6,7,10,.08) 42%,rgba(6,7,10,.92) 100%);
+}
+.visual-card figcaption{
+  position:relative;z-index:1;width:min(100%,720px);margin:0 auto;
+  padding:clamp(28px,7svh,72px) clamp(20px,6vw,56px);
+}
+.visual-card figcaption span{
+  display:block;font-size:10px;font-weight:700;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--blue-2);margin-bottom:10px;
+}
+.visual-card figcaption strong{
+  display:block;font-size:clamp(24px,7vw,48px);line-height:1.06;
+  letter-spacing:-.035em;text-wrap:balance;
+}
+@media (max-width:720px){
+  .visual-card img{object-fit:cover}
+}
+
+/* ---------- Ativação ---------- */
+.steps{border-top:1px solid var(--line);max-width:640px}
+.step{display:flex;justify-content:space-between;gap:18px;align-items:baseline;padding:clamp(13px,2svh,18px) 0;border-bottom:1px solid var(--line)}
+.step .s{font-size:clamp(16px,2.1vw,18.5px);font-weight:600;letter-spacing:-.01em}
+.step .s span{display:block;font-size:clamp(13px,1.6vw,14.5px);font-weight:400;color:var(--t2);margin-top:4px}
+.step .w{flex:none;font-size:12px;font-weight:600;color:var(--blue-2);letter-spacing:.1em;text-transform:uppercase}
+
+/* ---------- Zona sólida (planos → CTA): cobre o herói ---------- */
+#solid-zone{background:var(--void);box-shadow:0 -80px 120px -60px rgba(6,7,10,.95)}
+#solid-zone .panel{background:transparent}
+
+/* planos */
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:980px;margin-top:clamp(22px,4svh,36px)}
+@media (max-width:840px){.tiers{grid-template-columns:1fr;max-width:560px}}
+.tier{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:clamp(18px,2.6vw,26px)}
+.tier.reco{border-color:rgba(76,155,255,.55);background:linear-gradient(165deg,rgba(59,134,242,.13),var(--card) 58%)}
+.tier .nm{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--t2)}
+.tier.reco .nm{color:var(--blue-2)}
+
+/* roadmap */
+.soon{list-style:none;border-top:1px solid var(--line);max-width:640px}
+.soon li{padding:clamp(13px,2svh,18px) 0 clamp(13px,2svh,18px) 26px;border-bottom:1px solid var(--line);position:relative;
+  font-size:clamp(14px,1.8vw,16px);line-height:1.5;color:var(--t2)}
+.soon li::before{content:"";position:absolute;left:0;top:1.55em;width:13px;height:1px;background:var(--warn)}
+
+/* CTA */
+.cta{text-align:center;background:radial-gradient(84% 60% at 50% 42%,rgba(59,134,242,.12),transparent 64%)}
+.cta h2{font-size:clamp(36px,7vw,68px)}
+.cta .p{max-width:46ch;margin:clamp(14px,2.4svh,22px) auto 0}
+.contact{margin-top:clamp(24px,4svh,36px);font-size:clamp(17px,2.6vw,22px);font-weight:600;color:var(--blue-2);letter-spacing:-.012em;word-break:break-word}
+.contact span{display:block;color:var(--t2);font-weight:400;font-size:clamp(13.5px,1.7vw,15.5px);margin-top:8px;letter-spacing:0}
+.byline{margin-top:clamp(26px,4svh,40px);font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--t3);font-weight:600}
+.legal{margin-top:16px;font-size:11px;color:var(--t3);max-width:62ch;margin-left:auto;margin-right:auto;line-height:1.6}
+
+/* ---------- Reveals ---------- */
+.js .rv{opacity:0;transform:translateY(22px);transition:opacity .8s var(--ease),transform .8s var(--ease);transition-delay:var(--d,0s)}
+.js .in .rv{opacity:1;transform:none}
+
+/* ---------- Reduced motion / sem scrub ---------- */
+.static-hero #hero{height:100svh}
+.static-hero .hero-copy{transform:none!important;opacity:1!important}
+.static-hero #dor{height:auto}
+.static-hero .dor-pin{position:static;height:auto;display:block;padding:clamp(90px,14svh,140px) 0}
+.static-hero .dor-item,.static-hero .dor-close{position:static;opacity:1;transform:none!important}
+.static-hero .dor-item+.dor-item{margin-top:16px}
+.static-hero .dor-close{margin-top:26px}
+.static-hero .dor-kick{position:static;margin-bottom:26px}
+@media (prefers-reduced-motion:reduce){
+  .hero-fallback,.live i,.scrollhint::after,.badge{animation:none}
+  .js .rv{transition:none;opacity:1;transform:none}
+}
+</style>
+<link rel="stylesheet" href="assets/css/mobile.css"><!-- por último: correções de celular (iOS) -->
+</head>
+<body>
+<script>document.documentElement.className+=' js';</script>
+
+<!-- Marca X (Lex Technology) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="lexg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B86F2"/><stop offset=".5" stop-color="#5A5FEA"/><stop offset="1" stop-color="#8B3FE8"/>
+    </linearGradient>
+    <symbol id="xmark" viewBox="0 0 64 64">
+      <path d="M55 7 L41 7 L9 57 L23 57 Z" fill="url(#lexg)"/>
+      <path d="M32 32 L40 44 L28 46 Z" fill="#0B1330" opacity=".22"/>
+      <path d="M9 7 L23 7 L55 57 L41 57 Z" fill="url(#lexg)"/>
+      <path d="M9 7 L23 7 L32 21 L18 21 Z" fill="#7FB0FF" opacity=".28"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ============ HERÓI FIXO ============ -->
+<div class="hero-stage" id="heroStage" aria-hidden="true">
+  <canvas id="heroCanvas"></canvas>
+  <div class="hero-fallback"></div>
+  <div class="veil"></div>
+</div>
+
+<div class="progress" aria-hidden="true"><i id="pbar"></i></div>
+<header class="topbar">
+  <span class="wm"><svg aria-hidden="true"><use href="#xmark"/></svg><span class="a">Lex</span><span class="b">OS</span></span>
+  <span class="by">por Lex Technology</span>
+</header>
+
+<main>
+
+  <!-- ============ ATO 1 · CAPA ============ -->
+  <section id="hero" aria-label="Capa">
+    <div class="hero-pin">
+      <div class="wrap">
+        <div class="hero-copy" id="heroCopy">
+          <p class="telem">VIN <span>·</span> Ordem de serviço <span>·</span> Tempo real</p>
+          <h1 class="bigwm"><span class="a">Lex</span><span class="b">OS</span></h1>
+          <p class="tag">O sistema operacional da oficina.</p>
+          <p class="sub">Site, agendamento, app do cliente, painel de operação — e a IA que lê o laudo do scanner.</p>
+        </div>
+      </div>
+      <p class="scrollhint">Role</p>
+    </div>
+  </section>
+
+  <!-- ============ ATO 2 · A DOR (scrub) ============ -->
+  <section id="dor" aria-label="As frases que toda oficina conhece">
+    <div class="dor-pin">
+      <div class="dor-kick"><p class="eyebrow">Você já ouviu isso</p></div>
+      <div class="wrap" style="position:relative;width:100%">
+        <div class="dor-item" data-q="0"><div class="quote"><p>“Eu não autorizei esse serviço.”</p></div></div>
+        <div class="dor-item" data-q="1"><div class="quote"><p>“E aí, meu carro já está pronto?”</p></div></div>
+        <div class="dor-item" data-q="2"><div class="quote"><p>“O carro voltou com o mesmo problema.”</p></div></div>
+        <div class="dor-item" data-q="3"><div class="quote"><p>“Trocaram a peça e não resolveu.”</p></div></div>
+        <div class="dor-close">
+          <p class="p">Cada uma dessas frases custa dinheiro, tempo ou cliente.<br><strong>O LexOS foi desenhado em cima delas.</strong></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ATO 3 · TRÊS FRENTES ============ -->
+  <section class="panel" id="frentes" aria-label="Uma plataforma, três frentes">
+    <div class="wrap in-watch">
+      <p class="eyebrow rv">O que é</p>
+      <h2 class="rv">Uma plataforma.<br><span class="hl">Três frentes.</span></h2>
+      <div style="height:clamp(20px,3.4svh,32px)"></div>
+      <div class="rows">
+        <div class="row rv"><span class="n">01</span><span class="col"><span class="t">Site e agendamento</span><span class="d">Sua marca no ar. O cliente marca sozinho, com protocolo e confirmação no WhatsApp.</span></span></div>
+        <div class="row rv"><span class="n">02</span><span class="col"><span class="t">App do cliente</span><span class="d">A garagem dele, o acompanhamento do serviço e a aprovação do orçamento.</span></span></div>
+        <div class="row rv"><span class="n">03</span><span class="col"><span class="t">Painel da oficina</span><span class="d">Da entrada do carro à entrega, numa tela. Com a IA de diagnóstico ao lado.</span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ATO 4 · MECANISMO ============ -->
+  <section class="panel answer" aria-label="Aprovação com prova">
+    <div class="wrap in-watch">
+      <p class="eyebrow rv">Disputa</p>
+      <div class="quote rv"><p>“Eu não autorizei esse serviço.”</p></div>
+      <h2 class="rv">Agora existe prova.</h2>
+      <ul class="ticks">
+        <li class="rv">O cliente aprova <strong>item por item</strong>, no app dele.</li>
+        <li class="rv">Cada aceite guarda <strong>assinatura, data, hora e o endereço de onde veio</strong>, com um código de verificação que não se altera depois.</li>
+        <li class="rv">O que ele recusou não desaparece: volta como <strong>pendência</strong> na próxima visita.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel answer" aria-label="Orçamento com imagem">
+    <div class="wrap in-watch">
+      <p class="eyebrow rv">Aprovação travada</p>
+      <div class="quote rv"><p>“Vou pensar, depois eu te falo.”</p></div>
+      <h2 class="rv">Ele aprova o que <span class="hl">consegue ver</span>.</h2>
+      <ul class="ticks">
+        <li class="rv">Diagnóstico em <strong>três cores</strong>: o que é urgente, o que é atenção, o que está bom.</li>
+        <li class="rv">Item vermelho ou amarelo <strong>só entra no diagnóstico com foto ou vídeo</strong>. É regra do sistema, não combinado de equipe.</li>
+        <li class="rv">As avarias ficam marcadas num <strong>carro em 3D que ele gira na tela</strong> do app.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel answer" aria-label="Acompanhamento sem telefone">
+    <div class="wrap in-watch">
+      <p class="eyebrow rv">O telefone não para</p>
+      <div class="quote rv"><p>“E aí, meu carro já está pronto?”</p></div>
+      <h2 class="rv">Ele acompanha sem ligar.</h2>
+      <ul class="ticks">
+        <li class="rv">A ordem de serviço anda na tela dele como <strong>rastreio de encomenda</strong>.</li>
+        <li class="rv">Peça atrasada aparece como <strong>“aguardando peça”</strong>, com o prazo à vista — quem cobra é o sistema, não você.</li>
+        <li class="rv">Dúvida vira <strong>conversa no app</strong>, com o consultor, e fica registrada na ordem.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel answer" aria-label="Controle de qualidade">
+    <div class="wrap in-watch">
+      <p class="eyebrow rv">Retrabalho</p>
+      <div class="quote rv"><p>“O carro voltou com o mesmo problema.”</p></div>
+      <h2 class="rv">Nada sai sem passar pela dupla.</h2>
+      <ul class="ticks">
+        <li class="rv">Antes da entrega: <strong>checklist obrigatório</strong> e test-drive com a quilometragem registrada.</li>
+        <li class="rv">Duas pessoas assinam a conferência — <strong>quem fez e quem revisou</strong>.</li>
+        <li class="rv">Sem essa conferência, o sistema <strong>não deixa fechar</strong> a ordem nem cobrar.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel answer" aria-label="Histórico, garantia e caixa">
+    <div class="wrap in-watch">
+      <p class="eyebrow rv">O mês fechado</p>
+      <h2 class="rv">Histórico, garantia<br>e caixa no lugar.</h2>
+      <ul class="ticks" style="margin-top:clamp(14px,2.4svh,22px)">
+        <li class="rv">Cada <strong>garantia fica por item</strong>, com o prazo correndo à vista do cliente no app.</li>
+        <li class="rv">O histórico é <strong>do chassi</strong>, não da pessoa: carro vendido migra para o novo dono no próximo check-in.</li>
+        <li class="rv">Fatura com <strong>Pix copia-e-cola</strong>, resultado por ordem de serviço, comissão por tempo e curva ABC — <strong>tudo exportável</strong>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ ATO 5 · IA ============ -->
+  <section class="panel answer ia-glow" aria-label="A IA lê o laudo do scanner">
+    <div class="wrap in-watch">
+      <p class="eyebrow rv">O laudo do scanner</p>
+      <div class="quote rv"><p>“Só o mecânico mais experiente entende esse relatório.”</p></div>
+      <h2 class="rv">A IA lê e <span class="gr">traduz para você</span>.</h2>
+      <ul class="ticks">
+        <li class="rv">Vale <strong>foto da tela</strong> do scanner ou o <strong>PDF exportado</strong> — de dezenas de páginas.</li>
+        <li class="rv">Volta em <strong>português claro</strong>, com um resumo que o consultor lê para o cliente na hora.</li>
+        <li class="rv">Códigos <strong>priorizados</strong>: crítico primeiro, cosmético por último.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel answer" aria-label="Causa provável e consequência">
+    <div class="wrap in-watch">
+      <p class="eyebrow rv">Peça trocada em vão</p>
+      <div class="quote rv"><p>“Trocaram a peça e não resolveu.”</p></div>
+      <h2 class="rv">Trinta códigos,<br>um problema só.</h2>
+      <ul class="ticks">
+        <li class="rv">Bateria fraca, massa ruim ou um módulo sem comunicação <strong>acendem dezenas de códigos de uma vez</strong>.</li>
+        <li class="rv">A IA marca quais são <strong>só consequência</strong> e aponta a <strong>causa provável</strong> — como hipótese a confirmar.</li>
+        <li class="rv">E avisa, escrito: <strong>não troque peça por código</strong>. Antes, meça — ela diz o que medir.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Travas de segurança">
+    <div class="wrap in-watch">
+      <p class="eyebrow rv">Sua proteção</p>
+      <h2 class="rv" style="margin-bottom:clamp(18px,3svh,28px)">Airbag e freio<br>não passam batido.</h2>
+      <div class="gate rv">
+        <span class="k">A IA nunca libera</span>
+        <p>Falha de airbag, cinto, freio ou direção: ela <strong>não diz que o carro está liberado</strong> e <strong>não sugere apagar o código</strong>. Marca como crítico e exige a confirmação do técnico.</p>
+      </div>
+      <div class="gate rv">
+        <span class="k">A IA nunca chuta</span>
+        <p>Laudo borrado ou cortado: ela <strong>pede outra captura</strong> em vez de inventar código. Nada sai no relatório que não esteja escrito no laudo.</p>
+      </div>
+      <div class="gate rv">
+        <span class="k">O orçamento é seu</span>
+        <p>Ela <strong>não gera peça, preço, nem tempo de mão de obra</strong>. E o chassi do cliente não sai por extenso no relatório.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ATO 6 · SCANNERS ============ -->
+  <section class="panel" id="scanners" aria-label="Sintonia com os scanners">
+    <div class="wrap in-watch">
+      <div class="scan-head">
+        <p class="eyebrow rv">Sintonia fina</p>
+        <h2 class="rv">Fala a língua<br>do <span class="gr">seu scanner</span>.</h2>
+        <p class="lead rv" style="margin:clamp(14px,2.4svh,22px) auto 0">Hoje o LexOS lê laudos de BMW ISTA, Autel, Launch, Thinkcar e leitores OBD-II comuns. Sistemas originais de outras marcas premium, nós <strong>configuramos para a sua operação</strong>.</p>
+      </div>
+
+      <div class="orbit rv" aria-hidden="true">
+        <div class="ring"></div><div class="ring r2"></div>
+        <div class="core"><svg aria-hidden="true"><use href="#xmark"/></svg><span><span class="a">Lex</span><span class="b">OS</span></span></div>
+        <span class="badge now" style="--a:-90deg;--rr:var(--R1);--fd:.0s">BMW ISTA / ISTA-D<small>lê hoje</small></span>
+        <span class="badge now" style="--a:-18deg;--rr:var(--R1);--fd:.6s">Autel<small>lê hoje</small></span>
+        <span class="badge now" style="--a:54deg;--rr:var(--R1);--fd:1.2s">Launch<small>lê hoje</small></span>
+        <span class="badge now" style="--a:126deg;--rr:var(--R1);--fd:1.8s">Thinkcar<small>lê hoje</small></span>
+        <span class="badge now" style="--a:198deg;--rr:var(--R1);--fd:2.4s">OBD-II genérico<small>lê hoje</small></span>
+        <span class="badge dem" style="--a:-45deg;--rr:var(--R2);--fd:.3s">ODIS · Audi/VW<small>sob demanda</small></span>
+        <span class="badge dem" style="--a:45deg;--rr:var(--R2);--fd:.9s">XENTRY · Mercedes-Benz<small>sob demanda</small></span>
+        <span class="badge dem" style="--a:135deg;--rr:var(--R2);--fd:1.5s">VIDA · Volvo<small>sob demanda</small></span>
+        <span class="badge dem" style="--a:225deg;--rr:var(--R2);--fd:2.1s">PIWIS · Porsche<small>sob demanda</small></span>
+      </div>
+
+      <div class="scan-lists rv">
+        <div class="scan-group g1">
+          <p class="gt">Lê hoje</p>
+          <div class="chips">
+            <span class="chip now">BMW ISTA / ISTA-D</span>
+            <span class="chip now">Autel</span>
+            <span class="chip now">Launch</span>
+            <span class="chip now">Thinkcar</span>
+            <span class="chip now">OBD-II genérico</span>
+          </div>
+        </div>
+        <div class="scan-group g2">
+          <p class="gt">Configuramos para a sua operação</p>
+          <div class="chips">
+            <span class="chip dem">ODIS<small>Audi / VW</small></span>
+            <span class="chip dem">XENTRY<small>Mercedes-Benz</small></span>
+            <span class="chip dem">VIDA<small>Volvo</small></span>
+            <span class="chip dem">PIWIS<small>Porsche</small></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="scan-legend rv">
+        <span class="l1"><b></b>Lê hoje — foto, PDF ou texto do laudo</span>
+        <span class="l2"><b></b>Configuramos para a sua operação</span>
+      </div>
+      <p class="note scan-note rv">ISTA, ODIS, XENTRY, VIDA e PIWIS são sistemas e marcas dos respectivos fabricantes. O LexOS lê relatórios gerados por esses aparelhos e não é afiliado, patrocinado ou homologado por nenhum deles.</p>
+    </div>
+  </section>
+
+  <!-- ============ INTERLÚDIO VISUAL ============ -->
+  <section class="visual-story" aria-label="O veículo em camadas">
+    <figure class="visual-card">
+      <img src="apresentacao-assets/generated/exploded-longitudinal.webp" width="720" height="1280" loading="lazy" decoding="async" alt="Cupê escuro desmontado em uma sequência organizada de componentes mecânicos">
+      <figcaption><span>Visão completa</span><strong>O conjunto inteiro, peça por peça.</strong></figcaption>
+    </figure>
+    <figure class="visual-card">
+      <img src="apresentacao-assets/generated/exploded-profile.webp" width="720" height="1280" loading="lazy" decoding="async" alt="Cupê escuro visto de perfil durante a separação controlada dos componentes">
+      <figcaption><span>Leitura clara</span><strong>Do exterior ao sistema que exige atenção.</strong></figcaption>
+    </figure>
+    <figure class="visual-card">
+      <img src="apresentacao-assets/generated/exploded-tower.webp" width="720" height="1280" loading="lazy" decoding="async" alt="Cupê escuro com componentes organizados verticalmente em vista explodida">
+      <figcaption><span>Ordem para decidir</span><strong>Complexidade organizada antes da ação.</strong></figcaption>
+    </figure>
+  </section>
+
+  <!-- ============ ATO 7 · ATIVAÇÃO ============ -->
+  <section class="panel" id="activation" aria-label="Como entra no ar">
+    <div class="wrap in-watch">
+      <p class="eyebrow rv">Ativação</p>
+      <h2 class="rv">Você não constrói<br><span class="hl">nada.</span></h2>
+      <div style="height:clamp(18px,3svh,28px)"></div>
+      <div class="steps">
+        <div class="step rv"><span class="s">Conversa<span>Seus serviços, sua tabela, seu jeito de trabalhar.</span></span><span class="w">30 min</span></div>
+        <div class="step rv"><span class="s">Personalização<span>Sua logo, suas cores, seu catálogo, seu endereço na internet.</span></span><span class="w">2–4 dias</span></div>
+        <div class="step rv"><span class="s">Treino<span>Uma hora com a equipe, no painel e no app.</span></span><span class="w">1 h</span></div>
+        <div class="step rv"><span class="s">No ar<span>Primeiro check-in já gerando o acesso do cliente.</span></span><span class="w">Pronto</span></div>
+      </div>
+      <div style="height:14px"></div>
+      <p class="note rv">Sua oficina entra com subdomínio próprio em <strong>.lexos.app</strong>. Sem fidelidade, e seus dados sempre exportáveis.</p>
+    </div>
+  </section>
+
+  <!-- ============ ZONA SÓLIDA · PLANOS → CTA ============ -->
+  <div id="solid-zone">
+
+    <section class="panel" aria-label="Planos">
+      <div class="wrap in-watch">
+        <p class="eyebrow rv">Planos</p>
+        <h2 class="rv">Escolha pelo tamanho<br>da operação.</h2>
+        <div class="tiers">
+          <div class="tier rv">
+            <span class="nm">Conecta</span>
+          </div>
+          <div class="tier reco rv">
+            <span class="nm">Digital</span>
+          </div>
+          <div class="tier rv">
+            <span class="nm">Marca própria</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="O que ainda não está pronto">
+      <div class="wrap in-watch">
+        <p class="eyebrow rv">Transparência</p>
+        <h2 class="rv">O que ainda<br><span class="hl">não está pronto.</span></h2>
+        <div style="height:clamp(16px,2.6svh,24px)"></div>
+        <ul class="soon">
+          <li class="rv">O laudo do scanner <strong>entrando sozinho</strong>. Hoje o mecânico anexa a foto ou o PDF.</li>
+          <li class="rv">Ler a <strong>placa pela foto</strong>. Hoje a placa é digitada e o sistema busca os dados do veículo.</li>
+          <li class="rv"><strong>Nota fiscal</strong> automática e <strong>pagamento dentro do app</strong>.</li>
+          <li class="rv">Catálogo de peças <strong>ligado direto ao fornecedor</strong>, com cotação automática.</li>
+          <li class="rv">Fotos e vídeos do box <strong>guardados na nuvem</strong>.</li>
+        </ul>
+        <div style="height:12px"></div>
+        <p class="note rv">Preferimos dizer isso agora do que na terceira semana de uso.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <section class="panel cta" aria-label="Contato">
+      <div class="wrap in-watch">
+        <p class="eyebrow rv" style="justify-content:center">Vamos ligar a sua</p>
+        <h2 class="rv">Ative a sua <span class="gr">oficina</span>.</h2>
+        <p class="p rv">Manda o nome da oficina, a cidade e o que você faz hoje. A gente prepara o seu ambiente com os seus serviços.</p>
+        <p class="contact rv">
+          contato@lextechnology.com.br
+          <span>Sua oficina em suaoficina.lexos.app</span>
+        </p>
+        <p class="byline rv">LexOS · por Lex Technology</p>
+        <p class="legal rv">BMW, ISTA, ODIS, XENTRY, VIDA e PIWIS pertencem aos respectivos fabricantes — o LexOS não é afiliado, patrocinado nem homologado por eles.</p>
+      </div>
+    </section>
+
+</main>
+
+<script>
+/* ============================================================
+   Herói cinematográfico — CONTRATO (a página só fala por aqui):
+     .init(canvas, {reduced}) -> bool   (monta a fonte)
+     .resize(w, h, dpr)                 (viewport mudou)
+     .draw(progress, timeSec)           (progress 0..1 JÁ suavizado)
+     .setPaused(bool)                   (herói coberto/oculto)
+
+   FONTE PRINCIPAL: HeroSourceFrames — o VÍDEO real do cliente como
+   sequência de frames WebP desenhada em canvas 2D com cover-fit.
+     apresentacao-assets/hero/          121 frames 1280×720 (desktop)
+     apresentacao-assets/hero-vertical/  97 frames  540×960 (celular)
+   Carga mobile-first: poster pinta JÁ; ~10 frames uniformes formam o
+   esqueleto do scrub; o resto preenche os vãos (binary-fill) em
+   requestIdleCallback. draw() usa o frame carregado mais próximo do
+   pedido (preferindo o anterior) — nunca espera rede.
+   Beats amarrados às seções reais: fechado na capa → abrindo nas
+   dores → aberto na IA → frames percorridos ao contrário durante a
+   ativação → fechado antes da zona sólida e do CTA.
+
+   FALLBACKS em cascata: frames indisponíveis → herói procedural
+   three.js (three.min.js só é baixado NESSE caso) → sem WebGL →
+   gradiente CSS. prefers-reduced-motion → poster estático.
+   ============================================================ */
+var HeroSourceFrames = (function () {
+  var cv = null, cx = null, ok = false, paused = false, reduced = false, dead = false;
+  var DIR = '', N = 0;
+  var frames = [], have = [], loadedCount = 0, failCount = 0;
+  var posterImg = null, posterOk = false;
+  var lastKey = -9, inFlight = 0, queue = [];
+  var map = null, mapH = 0, mapW = 0;
+  var stats = { t0: 0, posterAt: 0, firstDrawAt: 0, loaded: 0, total: 0, set: '' };
+  var api;
+
+  function pickSet() {
+    var w = window.innerWidth, h = window.innerHeight, d = window.devicePixelRatio || 1;
+    var small = w <= 820 || (d >= 2.5 && Math.min(w, h) <= 520);
+    if (small) { DIR = 'apresentacao-assets/hero-vertical/'; N = 97; }
+    else { DIR = 'apresentacao-assets/hero/'; N = 121; }
+    stats.total = N; stats.set = small ? 'hero-vertical' : 'hero';
+  }
+  function pad4(n) { n = String(n); while (n.length < 4) n = '0' + n; return n; }
+  function src(i) { return DIR + 'frame_' + pad4(i + 1) + '.webp'; }
+
+  function store(i, im) {
+    var done = function (pic) { frames[i] = pic; have[i] = true; loadedCount++; stats.loaded = loadedCount; };
+    if (window.createImageBitmap) {
+      createImageBitmap(im).then(done, function () { done(im); });
+    } else done(im);
+  }
+  function die() {
+    if (dead) return;
+    dead = true; ok = false;
+    if (api && api.onfail) api.onfail();
+  }
+  function pump() {
+    while (inFlight < 3 && queue.length && !dead) {
+      (function (i) {
+        if (i == null || have[i]) return;
+        inFlight++;
+        var im = new Image();
+        im.decoding = 'async';
+        im.onload = function () {
+          var fin = function () { inFlight--; pump(); };
+          if (im.decode) im.decode().then(function () { store(i, im); fin(); }, function () { store(i, im); fin(); });
+          else { store(i, im); fin(); }
+        };
+        im.onerror = function () {
+          inFlight--; failCount++;
+          if (failCount >= 3 && loadedCount === 0 && !posterOk) die(); else pump();
+        };
+        im.src = src(i);
+      })(queue.shift());
+    }
+  }
+  // ordem de carga: esqueleto uniforme → binary-fill dos vãos → varredura final
+  function buildOrder() {
+    var order = [], seen = {};
+    function add(x) { var i = Math.max(0, Math.min(N - 1, Math.round(x))); if (!seen[i]) { seen[i] = 1; order.push(i); } }
+    var SK = 10;
+    for (var k = 0; k < SK; k++) add(k * (N - 1) / (SK - 1));
+    var step = (N - 1) / (SK - 1);
+    while (step > 1) { step /= 2; for (var x = step; x < N - 1; x += step * 2) add(x); }
+    for (var i = 0; i < N; i++) add(i);
+    return order;
+  }
+  function ric(fn) { (window.requestIdleCallback || function (f) { setTimeout(function () { f(); }, 90); })(fn); }
+  function scheduleRest(order) {
+    var idx = 0;
+    (function tick() {
+      if (dead) return;
+      var pushed = 0;
+      while (idx < order.length && pushed < 6) { queue.push(order[idx++]); pushed++; }
+      pump();
+      if (idx < order.length) ric(tick);
+    })();
+  }
+
+  function init(canvas, opts) {
+    cv = canvas; reduced = !!(opts && opts.reduced);
+    try { cx = cv.getContext('2d', { alpha: false }); } catch (e) { cx = null; }
+    if (!cx) return false;
+    pickSet();
+    stats.t0 = performance.now();
+    posterImg = new Image();
+    posterImg.decoding = 'async';
+    posterImg.onload = function () {
+      posterOk = true;
+      stats.posterAt = Math.round(performance.now() - stats.t0);
+      if (lastKey < 0) { blit(posterImg); lastKey = -2; }   // 1º paint: não espera nada
+    };
+    posterImg.onerror = function () { if (reduced) die(); else if (loadedCount === 0 && failCount >= 3) die(); };
+    posterImg.src = DIR + 'poster.webp';
+    if (!reduced) {
+      var order = buildOrder();
+      for (var k = 0; k < 10 && k < order.length; k++) queue.push(order[k]); // esqueleto já
+      pump();
+      scheduleRest(order.slice(10));
+    }
+    window.addEventListener('resize', function () { map = null; });
+    ok = true;
+    return true;
+  }
+
+  function resize(w, h, dpr) {
+    if (!cx) return;
+    var pr = Math.min(dpr || 1, 2);
+    var mp = w * h * pr * pr;
+    if (mp > 2300000) pr *= Math.sqrt(2300000 / mp); // teto de pixels internos
+    cv.width = Math.round(w * pr); cv.height = Math.round(h * pr);
+    map = null; lastKey = -9;                          // força remedida + repintura
+    if (posterOk && !have.some(Boolean)) { blit(posterImg); lastKey = -2; }
+  }
+
+  // beats do vídeo amarrados às SEÇÕES REAIS (medidas do DOM):
+  // v = fração 0..1 da sequência original (0 = fechado, 1 = aberto).
+  // A remontagem percorre os mesmos frames no sentido inverso.
+  function topOf(sel) {
+    var el = document.querySelector(sel);
+    if (!el) return null;
+    return el.getBoundingClientRect().top + (window.scrollY || 0);
+  }
+  function measure() {
+    var vh = window.innerHeight;
+    var total = document.documentElement.scrollHeight - vh;
+    if (total <= 0) { map = null; return; }
+    var dor = topOf('#dor'), fre = topOf('#frentes'), ia = topOf('.ia-glow'),
+        sca = topOf('#scanners'), vis = topOf('.visual-story'),
+        act = topOf('#activation'), sol = topOf('#solid-zone'), cta = topOf('.cta');
+    var pts = [[0, 0]];
+    function push(y, v) { if (y != null) { var p = Math.max(0, Math.min(1, y / total)); if (p > pts[pts.length - 1][0]) pts.push([p, v]); } }
+    push(dor, .08);                 // capa termina: começando a abrir
+    push(fre - vh * .5, .30);       // as dores percorrem a abertura
+    push(ia - vh * .35, .68);       // componentes já visíveis na IA
+    push(sca, .92);                 // quase totalmente aberto nos scanners
+    push(vis, 1);                   // aberto no interlúdio visual
+    push(act - vh * .3, .58);       // percorre os frames ao contrário
+    push(sol - vh * .5, 0);         // fechado antes de a zona sólida cobrir
+    if (cta != null) push(cta - vh, 0);
+    pts.push([1, 0]);               // mantém fechado até o CTA
+    map = pts; mapH = document.documentElement.scrollHeight; mapW = window.innerWidth;
+  }
+  function frameFor(p) {
+    if (!map || Math.abs(document.documentElement.scrollHeight - mapH) > 2 || window.innerWidth !== mapW) measure();
+    if (!map) return 0;
+    var v = 0;
+    for (var i = 1; i < map.length; i++) {
+      if (p <= map[i][0] || i === map.length - 1) {
+        var a = map[i - 1], b = map[i];
+        var t = b[0] > a[0] ? (p - a[0]) / (b[0] - a[0]) : 1;
+        v = a[1] + (b[1] - a[1]) * Math.max(0, Math.min(1, t));
+        break;
+      }
+    }
+    return Math.max(0, Math.min(N - 1, Math.round(v * (N - 1))));
+  }
+  // frame carregado mais próximo do pedido (empate → o anterior): nunca trava
+  function nearestLoaded(idx) {
+    if (have[idx]) return idx;
+    for (var d = 1; d < N; d++) {
+      if (idx - d >= 0 && have[idx - d]) return idx - d;
+      if (idx + d < N && have[idx + d]) return idx + d;
+    }
+    return -1;
+  }
+  function blit(im) {
+    var iw = im.width, ih = im.height;
+    if (!iw || !ih || !cv.width) return;
+    var s = Math.max(cv.width / iw, cv.height / ih);        // cover-fit
+    var dw = iw * s, dh = ih * s;
+    cx.imageSmoothingEnabled = true;
+    if ('imageSmoothingQuality' in cx) cx.imageSmoothingQuality = 'medium';
+    cx.drawImage(im, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh);
+  }
+  function draw(p) {
+    if (!ok || paused || !cx) return;
+    if (reduced) { if (posterOk && lastKey !== -2) { blit(posterImg); lastKey = -2; } return; }
+    var idx = frameFor(p);
+    var use = nearestLoaded(idx);
+    var key = use >= 0 ? use : (posterOk ? -2 : -9);
+    if (key === lastKey || key === -9) return;
+    blit(use >= 0 ? frames[use] : posterImg);
+    lastKey = key;
+    if (!stats.firstDrawAt && use >= 0) stats.firstDrawAt = Math.round(performance.now() - stats.t0);
+    stats.idx = use;
+  }
+  api = {
+    init: init, resize: resize, draw: draw,
+    setPaused: function (v) { paused = !!v; },
+    onfail: null,
+    get ok() { return ok; },
+    get stats() { return stats; }
+  };
+  window.__heroFramesStats = stats;
+  return api;
+})();
+
+/* ---------- Fallback procedural (three.js, carregado só se precisar) ---------- */
+var HeroSourceProcedural = (function () {
+  var renderer, scene, camera, carGroup, tunnel, points, ok = false, paused = false;
+  var RING_N = 24, RING_SPACING = 18, TUNNEL_LEN = RING_N * RING_SPACING;
+  var rings = [], streaks;
+
+  // gradiente LexOS: #3B86F2 → #5A5FEA → #8B3FE8
+  var C1 = { r: 0x3B / 255, g: 0x86 / 255, b: 0xF2 / 255 };
+  var C2 = { r: 0x5A / 255, g: 0x5F / 255, b: 0xEA / 255 };
+  var C3 = { r: 0x8B / 255, g: 0x3F / 255, b: 0xE8 / 255 };
+  function grad(t, out) { // t 0..1 → cor no gradiente
+    var a, b; t = Math.max(0, Math.min(1, t));
+    if (t < .52) { a = C1; b = C2; t = t / .52; } else { a = C2; b = C3; t = (t - .52) / .48; }
+    out[0] = a.r + (b.r - a.r) * t; out[1] = a.g + (b.g - a.g) * t; out[2] = a.b + (b.b - a.b) * t;
+    return out;
+  }
+
+  // ---- perfil do sedã (vista lateral, x: -2.5 frente → 2.5 traseira) ----
+  var TOP = [[-2.5, .42], [-2.2, .52], [-1.7, .60], [-1.15, .68], [-.72, .72], [-.45, .84], [-.1, 1.06], [.35, 1.12], [.8, 1.10], [1.2, .99], [1.5, .84], [1.9, .74], [2.2, .70], [2.5, .56]];
+  var BELT = [[-2.5, .40], [-1.7, .56], [-.9, .66], [0, .70], [.9, .70], [1.7, .66], [2.5, .52]];
+  var WID = [[-2.5, .46], [-2.1, .68], [-1.4, .84], [-.6, .92], [.4, .93], [1.2, .90], [1.9, .80], [2.5, .52]];
+  function interp(tab, x) {
+    if (x <= tab[0][0]) return tab[0][1];
+    for (var i = 1; i < tab.length; i++) {
+      if (x <= tab[i][0]) {
+        var t = (x - tab[i - 1][0]) / (tab[i][0] - tab[i - 1][0]);
+        t = t * t * (3 - 2 * t); // suaviza
+        return tab[i - 1][1] + (tab[i][1] - tab[i - 1][1]) * t;
+      }
+    }
+    return tab[tab.length - 1][1];
+  }
+  var BOT = [[-2.5, .34], [-2.15, .18], [-1.0, .15], [1.1, .15], [2.1, .18], [2.5, .32]];
+  function yBot(x) { return interp(BOT, x); }
+
+  // pontos de uma secção transversal do carro em x (loop fechado)
+  function section(x, K) {
+    var w = interp(WID, x), yTop = interp(TOP, x), yBelt = Math.min(interp(BELT, x), yTop - .02);
+    var yb = yBot(x);
+    var pts = [], i, t, ang, gw = w * .82; // greenhouse mais estreito
+    pts.push([-w, yb]);                          // piso esq.
+    pts.push([-w, yBelt]);                       // lateral esq. até a cintura
+    var topN = K - 6;                            // arco do teto
+    for (i = 0; i <= topN; i++) {
+      t = i / topN; ang = Math.PI * (1 - t);
+      var zz = Math.cos(ang), ww = (yTop - yBelt) < .12 ? w : gw; // sem "cabine" nas pontas
+      pts.push([zz * (w * (1 - Math.pow(Math.sin(ang), 1.4)) + ww * Math.pow(Math.sin(ang), 1.4)),
+                yBelt + (yTop - yBelt) * Math.pow(Math.sin(ang), .85)]);
+    }
+    pts.push([w, yBelt]);                        // desce lateral dir.
+    pts.push([w, yb]);                           // piso dir.
+    return pts;                                  // fechar ligando ao 1º
+  }
+
+  function buildCar() {
+    var g = new THREE.Group();
+    var segs = [], cols = [], i, j, k;
+    var NX = 24, K = 22;
+    var xs = [], secs = [];
+    for (i = 0; i <= NX; i++) { var x = -2.5 + 5 * i / NX; xs.push(x); secs.push(section(x, K)); }
+    var c = [0, 0, 0];
+    function push(x1, y1, z1, x2, y2, z2, t) {
+      segs.push(x1, y1, z1, x2, y2, z2);
+      grad(t, c); cols.push(c[0], c[1], c[2], c[0], c[1], c[2]);
+    }
+    // costelas (secções)
+    for (i = 0; i <= NX; i += 2) {
+      var s = secs[i], t = i / NX;
+      for (j = 0; j < s.length; j++) {
+        var a = s[j], b = s[(j + 1) % s.length];
+        push(xs[i], a[1], a[0], xs[i], b[1], b[0], t);
+      }
+    }
+    // longarinas
+    var L = secs[0].length;
+    for (k = 0; k < L; k += 2) {
+      for (i = 0; i < NX; i++) {
+        var p1 = secs[i][k], p2 = secs[i + 1][k];
+        push(xs[i], p1[1], p1[0], xs[i + 1], p2[1], p2[0], (i + .5) / NX);
+      }
+    }
+    // rodas: 4 aros (círculo externo + interno)
+    var wheels = [[-1.52, 1], [-1.52, -1], [1.55, 1], [1.55, -1]];
+    for (i = 0; i < wheels.length; i++) {
+      var wx = wheels[i][0], side = wheels[i][1], wz = interp(WID, wx) * .99 * side;
+      var R = .40, RN = 26, r2 = .17, tcol = (wx + 2.5) / 5;
+      for (j = 0; j < RN; j++) {
+        var a1 = j / RN * Math.PI * 2, a2 = (j + 1) / RN * Math.PI * 2;
+        push(wx + Math.cos(a1) * R, .42 + Math.sin(a1) * R, wz, wx + Math.cos(a2) * R, .42 + Math.sin(a2) * R, wz, tcol);
+        if (j % 2 === 0) push(wx + Math.cos(a1) * r2, .42 + Math.sin(a1) * r2, wz, wx + Math.cos(a2) * r2, .42 + Math.sin(a2) * r2, wz, tcol);
+      }
+    }
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(segs, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+    var mat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false });
+    g.add(new THREE.LineSegments(geo, mat));
+
+    // nuvem de partículas sobre a carroceria
+    var P = 2200, pos = [], pc = [], n = 0;
+    while (n < P) {
+      var px = -2.5 + Math.random() * 5;
+      var s2 = section(px, K), idx = Math.floor(Math.random() * s2.length);
+      var pt = s2[idx];
+      pos.push(px + (Math.random() - .5) * .05, pt[1] + (Math.random() - .5) * .045, pt[0] + (Math.random() - .5) * .05);
+      grad((px + 2.5) / 5, c);
+      var lum = .55 + Math.random() * .6;
+      pc.push(c[0] * lum, c[1] * lum, c[2] * lum);
+      n++;
+    }
+    var pgeo = new THREE.BufferGeometry();
+    pgeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    pgeo.setAttribute('color', new THREE.Float32BufferAttribute(pc, 3));
+    points = new THREE.Points(pgeo, new THREE.PointsMaterial({ size: .045, vertexColors: true, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }));
+    g.add(points);
+    return g;
+  }
+
+  function buildTunnel() {
+    var g = new THREE.Group(), i, j, c = [0, 0, 0];
+    for (i = 0; i < RING_N; i++) {
+      var segsN = 36, arr = [], cols = [];
+      for (j = 0; j <= segsN; j++) {
+        var a = j / segsN * Math.PI * 2;
+        arr.push(Math.cos(a) * 7.6, 1.4 + Math.sin(a) * 4.6, 0);
+        grad(j / segsN, c);
+        cols.push(c[0], c[1], c[2]);
+      }
+      var geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+      var ring = new THREE.Line(geo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: .16, blending: THREE.AdditiveBlending, depthWrite: false }));
+      ring.userData.base = i * RING_SPACING;
+      rings.push(ring); g.add(ring);
+    }
+    // faixas de velocidade (pontos esticados pelo movimento)
+    var S = 460, pos = [], cols2 = [];
+    for (i = 0; i < S; i++) {
+      var ang = Math.random() * Math.PI * 2, rr = 5 + Math.random() * 3.4;
+      pos.push(Math.cos(ang) * rr * 1.25, 1.4 + Math.sin(ang) * rr * .78, Math.random() * TUNNEL_LEN);
+      grad(Math.random(), c);
+      cols2.push(c[0] * .9, c[1] * .9, c[2] * .9);
+    }
+    var sg = new THREE.BufferGeometry();
+    sg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    sg.setAttribute('color', new THREE.Float32BufferAttribute(cols2, 3));
+    streaks = new THREE.Points(sg, new THREE.PointsMaterial({ size: .09, vertexColors: true, transparent: true, opacity: .5, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }));
+    g.add(streaks);
+    return g;
+  }
+
+  function init(canvas) {
+    try {
+      if (!window.THREE) return false;
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
+      renderer.setClearColor(0x06070A, 1);
+    } catch (e) { return false; }
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x06070A, 0.0135);
+    camera = new THREE.PerspectiveCamera(46, 1, .1, 260);
+    carGroup = buildCar(); scene.add(carGroup);
+    tunnel = buildTunnel(); scene.add(tunnel);
+    ok = true;
+    return true;
+  }
+
+  function resize(w, h, dpr) {
+    if (!ok) return;
+    // teto de DPR 2 + teto de pixels internos (~1.15 Mpx): o brilho aditivo
+    // esconde a reamostragem e o herói roda liso em aparelho mediano.
+    var pr = Math.min(dpr || 1, 2);
+    var cap = Math.sqrt(1150000 / (w * h * pr * pr));
+    renderer.setPixelRatio(pr * Math.min(1, cap));
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+
+  function draw(p, time) {
+    if (!ok || paused) return;
+    // câmera orbita o carro num percurso amarrado ao scroll
+    var th = -1.85 + p * 4.35;
+    var portrait = camera.aspect < 1 ? 1.28 : 1;
+    var r = (8.6 - 2.7 * Math.sin(p * Math.PI)) * portrait;
+    var cy = 1.35 + (1 - p) * 1.5 + 1.05 * Math.sin(p * 2.6 + .4);
+    camera.position.set(Math.sin(th) * r, cy, Math.cos(th) * r);
+    camera.lookAt(0, .58, 0);
+    camera.rotation.z += Math.sin(p * 5.4) * .03;
+    // respiração sutil do carro
+    carGroup.position.y = Math.sin(time * 1.1) * .02;
+    if (points) points.material.opacity = .72 + .2 * Math.sin(time * 2.1);
+    // túnel fluindo: scroll acelera a viagem
+    var off = p * 300 + time * 7;
+    for (var i = 0; i < rings.length; i++) {
+      var z = ((rings[i].userData.base + off) % TUNNEL_LEN);
+      rings[i].position.z = z - TUNNEL_LEN * .72;
+      rings[i].material.opacity = .05 + .16 * (z / TUNNEL_LEN);
+    }
+    if (streaks) streaks.position.z = -((off * 1.35) % RING_SPACING);
+    renderer.render(scene, camera);
+  }
+
+  return {
+    init: init, resize: resize, draw: draw,
+    setPaused: function (v) { paused = !!v; },
+    get ok() { return ok; }
+  };
+})();
+
+/* ============================================================
+   Motor da página: scroll nativo + lerp próprio (sem libs).
+   ============================================================ */
+(function () {
+  var doc = document.documentElement;
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var stage = document.getElementById('heroStage');
+  var canvas = document.getElementById('heroCanvas');
+  var heroCopy = document.getElementById('heroCopy');
+  var heroSec = document.getElementById('hero');
+  var dorSec = document.getElementById('dor');
+  var dorItems = Array.prototype.slice.call(document.querySelectorAll('.dor-item'));
+  var dorClose = document.querySelector('.dor-close');
+  var solid = document.getElementById('solid-zone');
+  var pbar = document.getElementById('pbar');
+  var topbar = document.querySelector('.topbar');
+
+  // ---- reveals (IntersectionObserver) ----
+  var watches = Array.prototype.slice.call(document.querySelectorAll('.in-watch'));
+  watches.forEach(function (w) {
+    Array.prototype.slice.call(w.querySelectorAll('.rv')).forEach(function (el, i) {
+      el.style.setProperty('--d', Math.min(i * .07, .5) + 's');
+    });
+  });
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) e.target.classList.add('in'); });
+    }, { threshold: .22 });
+    watches.forEach(function (w) { io.observe(w); });
+  } else {
+    watches.forEach(function (w) { w.classList.add('in'); });
+  }
+
+  // ---- herói em cascata: frames (vídeo real) → procedural → gradiente ----
+  var ActiveHero = null, heroOn = false;
+  window.__heroMode = 'gradient';
+
+  function useGradient() {
+    ActiveHero = null; heroOn = false;
+    doc.classList.add('no-webgl');
+    if (reduced) doc.classList.add('static-hero');
+    window.__heroMode = 'gradient';
+  }
+  function loadScript(url, onok, onerr) {
+    var s = document.createElement('script');
+    s.src = url; s.async = true;
+    s.onload = onok; s.onerror = onerr;
+    document.head.appendChild(s);
+  }
+  function freshCanvas() {
+    // o canvas já recebeu um contexto 2d na tentativa de frames — WebGL
+    // exige um canvas virgem, então troca o elemento no lugar
+    var nc = canvas.cloneNode(false);
+    canvas.parentNode.replaceChild(nc, canvas);
+    canvas = nc;
+    return nc;
+  }
+  function tryProcedural() {                 // three.min.js (603 KB) só baixa AQUI
+    heroOn = false; ActiveHero = null;
+    if (reduced) { useGradient(); return; }
+    loadScript('apresentacao-assets/three.min.js', function () {
+      if (HeroSourceProcedural.init(freshCanvas(), { reduced: reduced })) {
+        ActiveHero = HeroSourceProcedural; heroOn = true;
+        window.__heroMode = 'procedural';
+        fit();
+      } else useGradient();
+    }, useGradient);
+  }
+
+  heroOn = HeroSourceFrames.init(canvas, { reduced: reduced });
+  if (heroOn) {
+    ActiveHero = HeroSourceFrames;
+    window.__heroMode = reduced ? 'poster' : 'frames';
+    HeroSourceFrames.onfail = tryProcedural; // frames 404/corrompidos → fallback
+  } else {
+    tryProcedural();
+  }
+
+  function fit() {
+    if (heroOn && ActiveHero) ActiveHero.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1);
+  }
+  fit();
+  window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', fit);
+
+  // ---- laço principal: lerp do scroll ----
+  var target = 0, smooth = 0, lastT = performance.now();
+  window.__heroStats = { frames: 0, t0: performance.now() }; // p/ medição externa
+  function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+
+  function frame(now) {
+    var dt = Math.min(50, now - lastT); lastT = now;
+    var vh = window.innerHeight;
+    var max = doc.scrollHeight - vh;
+    var y = window.scrollY || window.pageYOffset || 0;
+    target = max > 0 ? y / max : 0;
+    smooth += (target - smooth) * Math.min(1, .11 * (dt / 16.7));
+    if (Math.abs(target - smooth) < .0004) smooth = target;
+    window.__heroProgress = smooth;
+
+    // barra de progresso
+    pbar.style.width = (target * 100).toFixed(2) + '%';
+
+    // capa: texto sobe e some no 1º ato (transform/opacity apenas)
+    if (!reduced && heroCopy) {
+      var hp = clamp01(y / (vh * .8));
+      heroCopy.style.transform = 'translateY(' + (-hp * 12) + 'svh)';
+      heroCopy.style.opacity = String(1 - hp * 1.25);
+    }
+
+    // a dor: quotes esfregadas pelo scroll (posição crua = resposta imediata ao dedo)
+    if (!reduced && dorSec) {
+      var r = dorSec.getBoundingClientRect();
+      var span = r.height - vh;
+      var q = span > 0 ? clamp01(-r.top / span) : 0;
+      var N = dorItems.length; // 4 quotes + fecho
+      for (var i = 0; i < N; i++) {
+        var c = (i + .5) / (N + 1);                 // centro da janela da quote i
+        var d = (q - c) * (N + 1);                  // -1..1 dentro da janela
+        // platô: a quote fica 100% opaca perto do centro e o crossfade é curto
+        // (sobre o vídeo, opacidade parcial deixava o texto ilegível)
+        var op = clamp01(1.45 - Math.abs(d) * 2.1);
+        var el = dorItems[i];
+        el.style.opacity = String(op);
+        el.style.transform = 'translateY(' + ((d) * -34) + 'px)';
+        el.style.visibility = op <= 0 ? 'hidden' : 'visible';
+      }
+      var cc = clamp01((q - .86) / .12);
+      dorClose.style.opacity = String(cc);
+      dorClose.style.transform = 'translateY(' + ((1 - cc) * 24) + 'px)';
+      dorClose.style.visibility = cc <= 0 ? 'hidden' : 'visible';
+    }
+
+    // zona sólida cobrindo o viewport → pausa o render (economia real de
+    // bateria). O CTA fica FORA da zona: o herói volta com o carro fechado.
+    var covered = false;
+    if (solid) {
+      var sr = solid.getBoundingClientRect();
+      covered = sr.top <= 1 && sr.bottom >= vh - 1;
+    }
+    if (topbar) topbar.classList.toggle('off', covered);
+    if (heroOn && ActiveHero) {
+      ActiveHero.setPaused(covered || document.hidden);
+      stage.classList.toggle('off', covered);
+      if (!covered && !document.hidden) {
+        ActiveHero.draw(smooth, now / 1000);
+        window.__heroStats.frames++;
+      }
+    } else {
+      stage.classList.toggle('off', covered);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
