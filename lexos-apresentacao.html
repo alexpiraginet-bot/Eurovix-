@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>LexOS — O sistema operacional da oficina</title>
-<meta name="description" content="LexOS, por Lex Technology. Site, agendamento, app do cliente, painel de operação e a IA que lê o laudo do scanner. Já rodando numa oficina em Vitória/ES.">
+<meta name="description" content="LexOS, por Lex Technology. Site, agendamento, app do cliente, painel de operação e a IA que lê o laudo do scanner.">
 <meta name="theme-color" content="#06070A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +14,8 @@
    LexOS — apresentação cinemática (scrollytelling)
    Identidade da casa (assets/css/lexos.css): cockpit escuro,
    Poppins, gradiente #3B86F2 → #5A5FEA → #8B3FE8, marca X.
-   Herói: canvas fixo dirigido pelo scroll (HeroSource).
+   Herói: vídeo NATIVO (autoplay muted loop playsinline) preso às
+   duas primeiras dobras; do 3º ato em diante, fundo sólido.
    ============================================================ */
 :root{
   --void:#06070A; --cockpit:#0B111D; --card:#121A2B; --card-2:#18233A;
@@ -40,26 +41,16 @@ body{
 img,svg{display:block;max-width:100%}
 a{color:inherit}
 
-/* ---------- Herói fixo (canvas + fallbacks) ---------- */
-.hero-stage{position:fixed;inset:0;z-index:0;pointer-events:none;transition:opacity .5s var(--ease)}
-.hero-stage.off{opacity:0}
-#heroCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.hero-fallback{
-  position:absolute;inset:0;display:none;
-  background:
-    radial-gradient(90% 70% at 18% 18%,rgba(59,134,242,.20),transparent 60%),
-    radial-gradient(80% 66% at 84% 30%,rgba(139,63,232,.16),transparent 62%),
-    radial-gradient(70% 60% at 50% 88%,rgba(90,95,234,.14),transparent 64%),
-    var(--void);
-  background-size:160% 160%,150% 150%,170% 170%,100% 100%;
-  animation:drift 22s var(--ease) infinite alternate;
+/* ---------- Herói: vídeo nativo nas 2 primeiras dobras ---------- */
+#video-hero{position:relative}
+.video-pin{
+  position:sticky;top:0;height:100svh;
+  overflow:hidden;z-index:0;background:var(--void);
 }
-@keyframes drift{
-  0%{background-position:0% 0%,100% 0%,50% 100%,0 0}
-  100%{background-position:60% 40%,40% 60%,30% 40%,0 0}
-}
-.no-webgl .hero-fallback{display:block}
-.no-webgl #heroCanvas{display:none}
+.vh-copy{position:relative;z-index:1;margin-top:-100svh}
+.video-pin .media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+video.media{opacity:0;transition:opacity .6s var(--ease);pointer-events:none}
+.video-pin.has-video video.media{opacity:1}
 .veil{ /* vinheta p/ legibilidade do texto sobre o vídeo */
   position:absolute;inset:0;
   background:
@@ -67,23 +58,19 @@ a{color:inherit}
     radial-gradient(130% 90% at 50% -12%,rgba(6,7,10,.78),transparent 54%),
     linear-gradient(rgba(6,7,10,.30),rgba(6,7,10,.30));
 }
-/* modo reduzido com poster: canvas parado, sem vídeo */
-.static-hero #heroCanvas{filter:saturate(.9)}
-/* faixa de leitura atrás dos painéis de texto que passam sobre o vídeo
-   (os blocos com fundo próprio — quote, gate, tiers — dispensam) */
-.panel:not(.cta){position:relative}
-.panel:not(.cta)::before{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(180deg,transparent 0%,rgba(6,7,10,.60) 16%,rgba(6,7,10,.60) 84%,transparent 100%);
-}
-@media (max-width:820px){
-  .panel:not(.cta)::before{
-    background:linear-gradient(180deg,transparent 0%,rgba(6,7,10,.68) 12%,rgba(6,7,10,.68) 88%,transparent 100%);
+@media (orientation:landscape){
+  .veil{
+    background:
+      radial-gradient(120% 86% at 50% 108%,rgba(6,7,10,.88),transparent 58%),
+      radial-gradient(130% 90% at 50% -12%,rgba(6,7,10,.72),transparent 54%),
+      linear-gradient(90deg,rgba(6,7,10,.62) 0%,rgba(6,7,10,.30) 40%,rgba(6,7,10,.06) 66%),
+      linear-gradient(rgba(6,7,10,.22),rgba(6,7,10,.22));
   }
 }
+.vh-copy section{position:relative}
+/* do 3º ato em diante o fundo é o sólido da identidade — sem vídeo, sem scrim */
+.panel{position:relative}
 .panel>.wrap{position:relative;z-index:1}
-/* CTA fora da zona sólida: o carro fechado aparece por trás */
-.panel.cta{background:linear-gradient(180deg,rgba(6,7,10,.0) 0%,rgba(6,7,10,.66) 26%,rgba(6,7,10,.88) 60%,rgba(6,7,10,.94) 100%)}
 
 /* ---------- Chrome fixo ---------- */
 .topbar{
@@ -163,8 +150,7 @@ strong{color:var(--t1);font-weight:600}
 .gate p{font-size:clamp(14px,1.8vw,16.5px);line-height:1.55;color:var(--t2)}
 
 /* ---------- Capa (ato 1) ---------- */
-#hero{height:185svh}
-.hero-pin{position:sticky;top:0;height:100svh;display:flex;align-items:center;overflow:hidden}
+#hero{min-height:100svh;display:flex;align-items:center;padding:clamp(84px,12svh,130px) 0}
 .hero-copy{will-change:transform,opacity;text-shadow:0 1px 16px rgba(6,7,10,.92),0 0 40px rgba(6,7,10,.6)}
 .hero-copy .telem{
   font-size:clamp(10px,1.3vw,12px);letter-spacing:.3em;text-transform:uppercase;
@@ -173,17 +159,9 @@ strong{color:var(--t1);font-weight:600}
 .hero-copy .telem span{color:var(--blue-2)}
 .bigwm{font-weight:800;letter-spacing:-.045em;line-height:.9;font-size:clamp(64px,15vw,150px)}
 .bigwm .a{color:var(--t1)}
-.bigwm .b{background:var(--grad-txt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bigwm .b{background:var(--grad-txt);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 3px 20px rgba(6,7,10,.9)) drop-shadow(0 1px 4px rgba(6,7,10,.7))}
 .hero-copy .tag{font-size:clamp(19px,3vw,30px);font-weight:600;letter-spacing:-.015em;margin-top:clamp(14px,2.4svh,24px)}
 .hero-copy .sub{color:var(--t2);font-size:clamp(15px,2vw,18.5px);margin-top:14px;max-width:46ch;line-height:1.6}
-.live{
-  display:inline-flex;align-items:center;gap:10px;margin-top:clamp(18px,3svh,28px);
-  border:1px solid rgba(62,207,119,.42);background:rgba(62,207,119,.09);
-  border-radius:40px;padding:8px 16px;
-  font-size:clamp(10.5px,1.3vw,12px);font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ok);
-}
-.live i{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:pulse 2.2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 .scrollhint{
   position:absolute;left:50%;bottom:26px;transform:translateX(-50%);
   font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--t3);font-weight:600;text-align:center;
@@ -193,20 +171,20 @@ strong{color:var(--t1);font-weight:600}
   animation:bob 2.1s var(--ease) infinite}
 @keyframes bob{0%,100%{transform:rotate(45deg) translate(0,0)}50%{transform:rotate(45deg) translate(3px,3px)}}
 
-/* ---------- A dor (scrub) ---------- */
-#dor{height:340svh}
-.dor-pin{position:sticky;top:0;height:100svh;display:flex;align-items:center;overflow:hidden}
-.dor-pin::before{ /* leitura das quotes sobre o vídeo */
+/* ---------- A dor (2ª dobra, ainda sobre o vídeo) ---------- */
+#dor{min-height:100svh;display:flex;align-items:center;padding:clamp(84px,12svh,130px) 0}
+#dor::before{ /* leitura das quotes sobre o vídeo */
   content:"";position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(180deg,transparent 0%,rgba(6,7,10,.55) 26%,rgba(6,7,10,.55) 74%,transparent 100%);
+  background:linear-gradient(180deg,transparent 0%,rgba(6,7,10,.58) 14%,rgba(6,7,10,.58) 86%,transparent 100%);
 }
-.dor-item{position:absolute;left:0;right:0;opacity:0;will-change:transform,opacity}
-.dor-item .quote{margin:0 auto}
-.dor-close{position:absolute;left:0;right:0;opacity:0;text-align:center;will-change:transform,opacity}
-.dor-close .p{max-width:44ch;margin:0 auto}
-.dor-kick{position:absolute;top:clamp(84px,13svh,130px);left:0;right:0}
+#dor .wrap{position:relative}
+.dor-kick{margin-bottom:clamp(18px,3svh,28px)}
 .dor-kick .eyebrow{justify-content:center}
 .dor-kick .eyebrow::before{display:none}
+.dor-item .quote{margin:0 auto}
+.dor-item+.dor-item{margin-top:clamp(12px,2svh,18px)}
+.dor-close{margin-top:clamp(22px,3.6svh,34px);text-align:center}
+.dor-close .p{max-width:44ch;margin:0 auto}
 
 /* ---------- Mecanismo (pergunta → resposta) ---------- */
 .answer .quote{margin-bottom:clamp(18px,3svh,28px)}
@@ -279,14 +257,6 @@ strong{color:var(--t1);font-weight:600}
   .scan-lists{display:block}
 }
 
-/* ---------- Prova ---------- */
-.proof{text-align:center}
-.proof .live{margin-top:0}
-.proof h2{margin:clamp(16px,2.6svh,24px) auto}
-.url{font-size:clamp(19px,4vw,30px);font-weight:600;letter-spacing:-.02em;word-break:break-word}
-.url .s{color:var(--t3);font-weight:400}
-.proof .p{max-width:52ch;margin:clamp(14px,2.4svh,22px) auto 0}
-
 /* ---------- Ativação ---------- */
 .steps{border-top:1px solid var(--line);max-width:640px}
 .step{display:flex;justify-content:space-between;gap:18px;align-items:baseline;padding:clamp(13px,2svh,18px) 0;border-bottom:1px solid var(--line)}
@@ -294,9 +264,8 @@ strong{color:var(--t1);font-weight:600}
 .step .s span{display:block;font-size:clamp(13px,1.6vw,14.5px);font-weight:400;color:var(--t2);margin-top:4px}
 .step .w{flex:none;font-size:12px;font-weight:600;color:var(--blue-2);letter-spacing:.1em;text-transform:uppercase}
 
-/* ---------- Zona sólida (planos → CTA): cobre o herói ---------- */
-#solid-zone{background:var(--void);box-shadow:0 -80px 120px -60px rgba(6,7,10,.95)}
-#solid-zone .panel{background:transparent}
+/* ---------- Planos → roadmap ---------- */
+#solid-zone{background:var(--void)}
 
 /* planos */
 .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:980px;margin-top:clamp(22px,4svh,36px)}
@@ -317,8 +286,20 @@ strong{color:var(--t1);font-weight:600}
 .cta{text-align:center;background:radial-gradient(84% 60% at 50% 42%,rgba(59,134,242,.12),transparent 64%)}
 .cta h2{font-size:clamp(36px,7vw,68px)}
 .cta .p{max-width:46ch;margin:clamp(14px,2.4svh,22px) auto 0}
-.contact{margin-top:clamp(24px,4svh,36px);font-size:clamp(17px,2.6vw,22px);font-weight:600;color:var(--blue-2);letter-spacing:-.012em;word-break:break-word}
-.contact span{display:block;color:var(--t2);font-weight:400;font-size:clamp(13.5px,1.7vw,15.5px);margin-top:8px;letter-spacing:0}
+.cta-acts{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:clamp(26px,4.4svh,40px)}
+.btn-wa{
+  display:inline-flex;align-items:center;justify-content:center;gap:11px;
+  width:min(100%,380px);min-height:56px;padding:16px 30px;
+  background:var(--grad);color:#fff;text-decoration:none;
+  font-weight:700;font-size:clamp(15.5px,2.1vw,17.5px);letter-spacing:-.01em;
+  border-radius:14px;box-shadow:0 20px 48px -20px rgba(93,95,234,.95);
+  transition:transform .15s var(--ease),filter .15s var(--ease);
+}
+.btn-wa:hover{transform:translateY(-2px);filter:brightness(1.07)}
+.btn-wa svg{width:21px;height:21px;flex:none}
+.cta-mail{font-size:clamp(14px,1.8vw,16px);color:var(--t2)}
+.cta-mail a{color:var(--blue-2);font-weight:600;text-decoration:none}
+.cta-mail a:hover{text-decoration:underline}
 .byline{margin-top:clamp(26px,4svh,40px);font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--t3);font-weight:600}
 .legal{margin-top:16px;font-size:11px;color:var(--t3);max-width:62ch;margin-left:auto;margin-right:auto;line-height:1.6}
 
@@ -326,21 +307,13 @@ strong{color:var(--t1);font-weight:600}
 .js .rv{opacity:0;transform:translateY(22px);transition:opacity .8s var(--ease),transform .8s var(--ease);transition-delay:var(--d,0s)}
 .js .in .rv{opacity:1;transform:none}
 
-/* ---------- Reduced motion / sem scrub ---------- */
-.static-hero #hero{height:100svh}
-.static-hero .hero-copy{transform:none!important;opacity:1!important}
-.static-hero #dor{height:auto}
-.static-hero .dor-pin{position:static;height:auto;display:block;padding:clamp(90px,14svh,140px) 0}
-.static-hero .dor-item,.static-hero .dor-close{position:static;opacity:1;transform:none!important}
-.static-hero .dor-item+.dor-item{margin-top:16px}
-.static-hero .dor-close{margin-top:26px}
-.static-hero .dor-kick{position:static;margin-bottom:26px}
+/* ---------- Reduced motion: poster estático, tudo em fluxo ---------- */
 @media (prefers-reduced-motion:reduce){
-  .hero-fallback,.live i,.scrollhint::after,.badge{animation:none}
+  .scrollhint::after,.badge{animation:none}
   .js .rv{transition:none;opacity:1;transform:none}
+  video.media{display:none}
 }
 </style>
-<link rel="stylesheet" href="assets/css/mobile.css"><!-- por último: correções de celular (iOS) -->
 </head>
 <body>
 <script>document.documentElement.className+=' js';</script>
@@ -360,13 +333,6 @@ strong{color:var(--t1);font-weight:600}
   </defs>
 </svg>
 
-<!-- ============ HERÓI FIXO ============ -->
-<div class="hero-stage" id="heroStage" aria-hidden="true">
-  <canvas id="heroCanvas"></canvas>
-  <div class="hero-fallback"></div>
-  <div class="veil"></div>
-</div>
-
 <div class="progress" aria-hidden="true"><i id="pbar"></i></div>
 <header class="topbar">
   <span class="wm"><svg aria-hidden="true"><use href="#xmark"/></svg><span class="a">Lex</span><span class="b">OS</span></span>
@@ -375,37 +341,46 @@ strong{color:var(--t1);font-weight:600}
 
 <main>
 
-  <!-- ============ ATO 1 · CAPA ============ -->
-  <section id="hero" aria-label="Capa">
-    <div class="hero-pin">
+  <!-- ============ ATOS 1–2 · VÍDEO NAS 2 PRIMEIRAS DOBRAS ============ -->
+  <div id="video-hero">
+    <div class="video-pin" id="videoPin" aria-hidden="true">
+      <picture>
+        <source media="(orientation: landscape)" srcset="apresentacao-assets/video/poster-horizontal.webp">
+        <img class="media" src="apresentacao-assets/video/poster-vertical.webp" alt="" decoding="async">
+      </picture>
+      <!-- o <video> nativo entra aqui via JS; o poster acima é o fallback -->
+      <div class="veil"></div>
+    </div>
+
+    <div class="vh-copy">
+    <!-- ATO 1 · CAPA -->
+    <section id="hero" aria-label="Capa">
       <div class="wrap">
         <div class="hero-copy" id="heroCopy">
           <p class="telem">VIN <span>·</span> Ordem de serviço <span>·</span> Tempo real</p>
           <h1 class="bigwm"><span class="a">Lex</span><span class="b">OS</span></h1>
           <p class="tag">O sistema operacional da oficina.</p>
           <p class="sub">Site, agendamento, app do cliente, painel de operação — e a IA que lê o laudo do scanner.</p>
-          <p class="live"><i></i> Já rodando em Vitória/ES</p>
         </div>
       </div>
       <p class="scrollhint">Role</p>
-    </div>
-  </section>
+    </section>
 
-  <!-- ============ ATO 2 · A DOR (scrub) ============ -->
-  <section id="dor" aria-label="As frases que toda oficina conhece">
-    <div class="dor-pin">
-      <div class="dor-kick"><p class="eyebrow">Você já ouviu isso</p></div>
-      <div class="wrap" style="position:relative;width:100%">
-        <div class="dor-item" data-q="0"><div class="quote"><p>“Eu não autorizei esse serviço.”</p></div></div>
-        <div class="dor-item" data-q="1"><div class="quote"><p>“E aí, meu carro já está pronto?”</p></div></div>
-        <div class="dor-item" data-q="2"><div class="quote"><p>“O carro voltou com o mesmo problema.”</p></div></div>
-        <div class="dor-item" data-q="3"><div class="quote"><p>“Trocaram a peça e não resolveu.”</p></div></div>
-        <div class="dor-close">
+    <!-- ATO 2 · A DOR -->
+    <section id="dor" aria-label="As frases que toda oficina conhece">
+      <div class="wrap in-watch">
+        <div class="dor-kick"><p class="eyebrow rv">Você já ouviu isso</p></div>
+        <div class="dor-item rv"><div class="quote"><p>“Eu não autorizei esse serviço.”</p></div></div>
+        <div class="dor-item rv"><div class="quote"><p>“E aí, meu carro já está pronto?”</p></div></div>
+        <div class="dor-item rv"><div class="quote"><p>“O carro voltou com o mesmo problema.”</p></div></div>
+        <div class="dor-item rv"><div class="quote"><p>“Trocaram a peça e não resolveu.”</p></div></div>
+        <div class="dor-close rv">
           <p class="p">Cada uma dessas frases custa dinheiro, tempo ou cliente.<br><strong>O LexOS foi desenhado em cima delas.</strong></p>
         </div>
       </div>
+    </section>
     </div>
-  </section>
+  </div>
 
   <!-- ============ ATO 3 · TRÊS FRENTES ============ -->
   <section class="panel" id="frentes" aria-label="Uma plataforma, três frentes">
@@ -585,17 +560,7 @@ strong{color:var(--t1);font-weight:600}
     </div>
   </section>
 
-  <!-- ============ ATO 7 · PROVA ============ -->
-  <section class="panel proof" aria-label="Oficina piloto no ar">
-    <div class="wrap in-watch">
-      <p class="live rv"><i></i> No ar agora</p>
-      <h2 class="rv">Não é promessa.<br><span class="hl">Já está rodando.</span></h2>
-      <p class="url rv"><span class="s">https://</span>eurovix<span class="s">.vercel.app</span></p>
-      <p class="p rv">A <strong>EUROVIX</strong>, oficina especializada em BMW em Vitória/ES, é a nossa piloto. Site, app do cliente e painel funcionando de verdade. Abra no seu celular antes de decidir.</p>
-    </div>
-  </section>
-
-  <!-- ============ ATO 8 · ATIVAÇÃO ============ -->
+  <!-- ============ ATO 7 · ATIVAÇÃO ============ -->
   <section class="panel" aria-label="Como entra no ar">
     <div class="wrap in-watch">
       <p class="eyebrow rv">Ativação</p>
@@ -662,13 +627,16 @@ strong{color:var(--t1);font-weight:600}
         <p class="eyebrow rv" style="justify-content:center">Vamos ligar a sua</p>
         <h2 class="rv">Ative a sua <span class="gr">oficina</span>.</h2>
         <p class="p rv">Manda o nome da oficina, a cidade e o que você faz hoje. A gente monta o seu ambiente e mostra funcionando, com os seus serviços.</p>
-        <p class="contact rv">
-          contato@lextechnology.com.br
-          <span>WhatsApp (27) 99599-9995</span>
-          <span>Sua oficina em suaoficina.lexos.app</span>
-        </p>
+        <div class="cta-acts rv">
+          <a class="btn-wa" href="https://wa.me/5527995999995?text=Ol%C3%A1!%20Quero%20ativar%20minha%20oficina%20no%20LexOS." target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9.4 8.35 8.7 8.7 0 0 1-3.1-.85L3 20l1.05-5.3a8.4 8.4 0 1 1 16.95-3.2Z"/></svg>
+            Chamar no WhatsApp
+          </a>
+          <p class="cta-mail">ou escreva para <a href="mailto:contato@lextechnology.com.br">contato@lextechnology.com.br</a></p>
+          <p class="note">WhatsApp (27) 99599-9995 · Sua oficina em suaoficina.lexos.app</p>
+        </div>
         <p class="byline rv">LexOS · por Lex Technology</p>
-        <p class="legal rv">BMW é marca registrada de BMW AG; a EUROVIX é uma oficina independente. ISTA, ODIS, XENTRY, VIDA e PIWIS pertencem aos respectivos fabricantes — o LexOS não é afiliado a eles.</p>
+        <p class="legal rv">ISTA, ODIS, XENTRY, VIDA e PIWIS são sistemas e marcas dos respectivos fabricantes. O LexOS lê relatórios gerados por esses aparelhos e não é patrocinado nem homologado por nenhum deles.</p>
       </div>
     </section>
 
@@ -676,444 +644,25 @@ strong{color:var(--t1);font-weight:600}
 
 <script>
 /* ============================================================
-   Herói cinematográfico — CONTRATO (a página só fala por aqui):
-     .init(canvas, {reduced}) -> bool   (monta a fonte)
-     .resize(w, h, dpr)                 (viewport mudou)
-     .draw(progress, timeSec)           (progress 0..1 JÁ suavizado)
-     .setPaused(bool)                   (herói coberto/oculto)
-
-   FONTE PRINCIPAL: HeroSourceFrames — o VÍDEO real do cliente como
-   sequência de frames WebP desenhada em canvas 2D com cover-fit.
-     apresentacao-assets/hero/     121 frames 1280×720 (desktop)
-     apresentacao-assets/hero-sm/   97 frames  960×540 (celular)
-   Carga mobile-first: poster pinta JÁ; ~10 frames uniformes formam o
-   esqueleto do scrub; o resto preenche os vãos (binary-fill) em
-   requestIdleCallback. draw() usa o frame carregado mais próximo do
-   pedido (preferindo o anterior) — nunca espera rede.
-   Beats amarrados às seções reais: fechado na capa → abrindo nas
-   dores → aberto na IA → remontando na prova/planos → fechado no CTA
-   (a emenda do retorno acontece sob a zona sólida, invisível).
-
-   FALLBACKS em cascata: frames indisponíveis → herói procedural
-   three.js (three.min.js só é baixado NESSE caso) → sem WebGL →
-   gradiente CSS. prefers-reduced-motion → poster estático.
-   ============================================================ */
-var HeroSourceFrames = (function () {
-  var cv = null, cx = null, ok = false, paused = false, reduced = false, dead = false;
-  var DIR = '', N = 0;
-  var frames = [], have = [], loadedCount = 0, failCount = 0;
-  var posterImg = null, posterOk = false;
-  var lastKey = -9, inFlight = 0, queue = [];
-  var map = null, mapH = 0, mapW = 0;
-  var stats = { t0: 0, posterAt: 0, firstDrawAt: 0, loaded: 0, total: 0, set: '' };
-  var api;
-
-  function pickSet() {
-    var w = window.innerWidth, h = window.innerHeight, d = window.devicePixelRatio || 1;
-    var small = w <= 820 || (d >= 2.5 && Math.min(w, h) <= 520);
-    if (small) { DIR = 'apresentacao-assets/hero-sm/'; N = 97; }
-    else { DIR = 'apresentacao-assets/hero/'; N = 121; }
-    stats.total = N; stats.set = small ? 'hero-sm' : 'hero';
-  }
-  function pad4(n) { n = String(n); while (n.length < 4) n = '0' + n; return n; }
-  function src(i) { return DIR + 'frame_' + pad4(i + 1) + '.webp'; }
-
-  function store(i, im) {
-    var done = function (pic) { frames[i] = pic; have[i] = true; loadedCount++; stats.loaded = loadedCount; };
-    if (window.createImageBitmap) {
-      createImageBitmap(im).then(done, function () { done(im); });
-    } else done(im);
-  }
-  function die() {
-    if (dead) return;
-    dead = true; ok = false;
-    if (api && api.onfail) api.onfail();
-  }
-  function pump() {
-    while (inFlight < 3 && queue.length && !dead) {
-      (function (i) {
-        if (i == null || have[i]) return;
-        inFlight++;
-        var im = new Image();
-        im.decoding = 'async';
-        im.onload = function () {
-          var fin = function () { inFlight--; pump(); };
-          if (im.decode) im.decode().then(function () { store(i, im); fin(); }, function () { store(i, im); fin(); });
-          else { store(i, im); fin(); }
-        };
-        im.onerror = function () {
-          inFlight--; failCount++;
-          if (failCount >= 3 && loadedCount === 0 && !posterOk) die(); else pump();
-        };
-        im.src = src(i);
-      })(queue.shift());
-    }
-  }
-  // ordem de carga: esqueleto uniforme → binary-fill dos vãos → varredura final
-  function buildOrder() {
-    var order = [], seen = {};
-    function add(x) { var i = Math.max(0, Math.min(N - 1, Math.round(x))); if (!seen[i]) { seen[i] = 1; order.push(i); } }
-    var SK = 10;
-    for (var k = 0; k < SK; k++) add(k * (N - 1) / (SK - 1));
-    var step = (N - 1) / (SK - 1);
-    while (step > 1) { step /= 2; for (var x = step; x < N - 1; x += step * 2) add(x); }
-    for (var i = 0; i < N; i++) add(i);
-    return order;
-  }
-  function ric(fn) { (window.requestIdleCallback || function (f) { setTimeout(function () { f(); }, 90); })(fn); }
-  function scheduleRest(order) {
-    var idx = 0;
-    (function tick() {
-      if (dead) return;
-      var pushed = 0;
-      while (idx < order.length && pushed < 6) { queue.push(order[idx++]); pushed++; }
-      pump();
-      if (idx < order.length) ric(tick);
-    })();
-  }
-
-  function init(canvas, opts) {
-    cv = canvas; reduced = !!(opts && opts.reduced);
-    try { cx = cv.getContext('2d', { alpha: false }); } catch (e) { cx = null; }
-    if (!cx) return false;
-    pickSet();
-    stats.t0 = performance.now();
-    posterImg = new Image();
-    posterImg.decoding = 'async';
-    posterImg.onload = function () {
-      posterOk = true;
-      stats.posterAt = Math.round(performance.now() - stats.t0);
-      if (lastKey < 0) { blit(posterImg); lastKey = -2; }   // 1º paint: não espera nada
-    };
-    posterImg.onerror = function () { if (reduced) die(); else if (loadedCount === 0 && failCount >= 3) die(); };
-    posterImg.src = DIR + 'poster.webp';
-    if (!reduced) {
-      var order = buildOrder();
-      for (var k = 0; k < 10 && k < order.length; k++) queue.push(order[k]); // esqueleto já
-      pump();
-      scheduleRest(order.slice(10));
-    }
-    window.addEventListener('resize', function () { map = null; });
-    ok = true;
-    return true;
-  }
-
-  function resize(w, h, dpr) {
-    if (!cx) return;
-    var pr = Math.min(dpr || 1, 2);
-    var mp = w * h * pr * pr;
-    if (mp > 2300000) pr *= Math.sqrt(2300000 / mp); // teto de pixels internos
-    cv.width = Math.round(w * pr); cv.height = Math.round(h * pr);
-    map = null; lastKey = -9;                          // força remedida + repintura
-    if (posterOk && !have.some(Boolean)) { blit(posterImg); lastKey = -2; }
-  }
-
-  // beats do vídeo amarrados às SEÇÕES REAIS (medidas do DOM):
-  // v = fração 0..1 da sequência (0 = carro fechado, 1 = fim da remontagem)
-  function topOf(sel) {
-    var el = document.querySelector(sel);
-    if (!el) return null;
-    return el.getBoundingClientRect().top + (window.scrollY || 0);
-  }
-  function measure() {
-    var vh = window.innerHeight;
-    var total = document.documentElement.scrollHeight - vh;
-    if (total <= 0) { map = null; return; }
-    var dor = topOf('#dor'), fre = topOf('#frentes'), ia = topOf('.ia-glow'),
-        sca = topOf('#scanners'), pro = topOf('.proof'), sol = topOf('#solid-zone'),
-        cta = topOf('.cta');
-    var pts = [[0, 0]];
-    function push(y, v) { if (y != null) { var p = Math.max(0, Math.min(1, y / total)); if (p > pts[pts.length - 1][0]) pts.push([p, v]); } }
-    push(dor, .08);                 // capa termina: começando a abrir
-    push(fre - vh * .5, .34);       // as dores percorrem a abertura
-    push(ia - vh * .35, .55);       // chega aberto na seção de IA
-    push(sca, .66);                 // aberto, girando
-    push(pro - vh * .3, .72);       // começa a remontar na prova
-    push(sol - vh * .5, 1);         // remontagem completa ao ser coberto
-    if (cta != null) {              // emenda invisível sob a zona sólida:
-      push(cta - vh, .20);          // reaparece quase fechado…
-      pts.push([1, 0]);             // …e assenta fechado no CTA (= capa)
-    } else pts.push([1, 1]);
-    map = pts; mapH = document.documentElement.scrollHeight; mapW = window.innerWidth;
-  }
-  function frameFor(p) {
-    if (!map || Math.abs(document.documentElement.scrollHeight - mapH) > 2 || window.innerWidth !== mapW) measure();
-    if (!map) return 0;
-    var v = 0;
-    for (var i = 1; i < map.length; i++) {
-      if (p <= map[i][0] || i === map.length - 1) {
-        var a = map[i - 1], b = map[i];
-        var t = b[0] > a[0] ? (p - a[0]) / (b[0] - a[0]) : 1;
-        v = a[1] + (b[1] - a[1]) * Math.max(0, Math.min(1, t));
-        break;
-      }
-    }
-    return Math.max(0, Math.min(N - 1, Math.round(v * (N - 1))));
-  }
-  // frame carregado mais próximo do pedido (empate → o anterior): nunca trava
-  function nearestLoaded(idx) {
-    if (have[idx]) return idx;
-    for (var d = 1; d < N; d++) {
-      if (idx - d >= 0 && have[idx - d]) return idx - d;
-      if (idx + d < N && have[idx + d]) return idx + d;
-    }
-    return -1;
-  }
-  function blit(im) {
-    var iw = im.width, ih = im.height;
-    if (!iw || !ih || !cv.width) return;
-    var s = Math.max(cv.width / iw, cv.height / ih);        // cover-fit
-    var dw = iw * s, dh = ih * s;
-    cx.imageSmoothingEnabled = true;
-    if ('imageSmoothingQuality' in cx) cx.imageSmoothingQuality = 'medium';
-    cx.drawImage(im, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh);
-  }
-  function draw(p) {
-    if (!ok || paused || !cx) return;
-    if (reduced) { if (posterOk && lastKey !== -2) { blit(posterImg); lastKey = -2; } return; }
-    var idx = frameFor(p);
-    var use = nearestLoaded(idx);
-    var key = use >= 0 ? use : (posterOk ? -2 : -9);
-    if (key === lastKey || key === -9) return;
-    blit(use >= 0 ? frames[use] : posterImg);
-    lastKey = key;
-    if (!stats.firstDrawAt && use >= 0) stats.firstDrawAt = Math.round(performance.now() - stats.t0);
-    stats.idx = use;
-  }
-  api = {
-    init: init, resize: resize, draw: draw,
-    setPaused: function (v) { paused = !!v; },
-    onfail: null,
-    get ok() { return ok; },
-    get stats() { return stats; }
-  };
-  window.__heroFramesStats = stats;
-  return api;
-})();
-
-/* ---------- Fallback procedural (three.js, carregado só se precisar) ---------- */
-var HeroSourceProcedural = (function () {
-  var renderer, scene, camera, carGroup, tunnel, points, ok = false, paused = false;
-  var RING_N = 24, RING_SPACING = 18, TUNNEL_LEN = RING_N * RING_SPACING;
-  var rings = [], streaks;
-
-  // gradiente LexOS: #3B86F2 → #5A5FEA → #8B3FE8
-  var C1 = { r: 0x3B / 255, g: 0x86 / 255, b: 0xF2 / 255 };
-  var C2 = { r: 0x5A / 255, g: 0x5F / 255, b: 0xEA / 255 };
-  var C3 = { r: 0x8B / 255, g: 0x3F / 255, b: 0xE8 / 255 };
-  function grad(t, out) { // t 0..1 → cor no gradiente
-    var a, b; t = Math.max(0, Math.min(1, t));
-    if (t < .52) { a = C1; b = C2; t = t / .52; } else { a = C2; b = C3; t = (t - .52) / .48; }
-    out[0] = a.r + (b.r - a.r) * t; out[1] = a.g + (b.g - a.g) * t; out[2] = a.b + (b.b - a.b) * t;
-    return out;
-  }
-
-  // ---- perfil do sedã (vista lateral, x: -2.5 frente → 2.5 traseira) ----
-  var TOP = [[-2.5, .42], [-2.2, .52], [-1.7, .60], [-1.15, .68], [-.72, .72], [-.45, .84], [-.1, 1.06], [.35, 1.12], [.8, 1.10], [1.2, .99], [1.5, .84], [1.9, .74], [2.2, .70], [2.5, .56]];
-  var BELT = [[-2.5, .40], [-1.7, .56], [-.9, .66], [0, .70], [.9, .70], [1.7, .66], [2.5, .52]];
-  var WID = [[-2.5, .46], [-2.1, .68], [-1.4, .84], [-.6, .92], [.4, .93], [1.2, .90], [1.9, .80], [2.5, .52]];
-  function interp(tab, x) {
-    if (x <= tab[0][0]) return tab[0][1];
-    for (var i = 1; i < tab.length; i++) {
-      if (x <= tab[i][0]) {
-        var t = (x - tab[i - 1][0]) / (tab[i][0] - tab[i - 1][0]);
-        t = t * t * (3 - 2 * t); // suaviza
-        return tab[i - 1][1] + (tab[i][1] - tab[i - 1][1]) * t;
-      }
-    }
-    return tab[tab.length - 1][1];
-  }
-  var BOT = [[-2.5, .34], [-2.15, .18], [-1.0, .15], [1.1, .15], [2.1, .18], [2.5, .32]];
-  function yBot(x) { return interp(BOT, x); }
-
-  // pontos de uma secção transversal do carro em x (loop fechado)
-  function section(x, K) {
-    var w = interp(WID, x), yTop = interp(TOP, x), yBelt = Math.min(interp(BELT, x), yTop - .02);
-    var yb = yBot(x);
-    var pts = [], i, t, ang, gw = w * .82; // greenhouse mais estreito
-    pts.push([-w, yb]);                          // piso esq.
-    pts.push([-w, yBelt]);                       // lateral esq. até a cintura
-    var topN = K - 6;                            // arco do teto
-    for (i = 0; i <= topN; i++) {
-      t = i / topN; ang = Math.PI * (1 - t);
-      var zz = Math.cos(ang), ww = (yTop - yBelt) < .12 ? w : gw; // sem "cabine" nas pontas
-      pts.push([zz * (w * (1 - Math.pow(Math.sin(ang), 1.4)) + ww * Math.pow(Math.sin(ang), 1.4)),
-                yBelt + (yTop - yBelt) * Math.pow(Math.sin(ang), .85)]);
-    }
-    pts.push([w, yBelt]);                        // desce lateral dir.
-    pts.push([w, yb]);                           // piso dir.
-    return pts;                                  // fechar ligando ao 1º
-  }
-
-  function buildCar() {
-    var g = new THREE.Group();
-    var segs = [], cols = [], i, j, k;
-    var NX = 24, K = 22;
-    var xs = [], secs = [];
-    for (i = 0; i <= NX; i++) { var x = -2.5 + 5 * i / NX; xs.push(x); secs.push(section(x, K)); }
-    var c = [0, 0, 0];
-    function push(x1, y1, z1, x2, y2, z2, t) {
-      segs.push(x1, y1, z1, x2, y2, z2);
-      grad(t, c); cols.push(c[0], c[1], c[2], c[0], c[1], c[2]);
-    }
-    // costelas (secções)
-    for (i = 0; i <= NX; i += 2) {
-      var s = secs[i], t = i / NX;
-      for (j = 0; j < s.length; j++) {
-        var a = s[j], b = s[(j + 1) % s.length];
-        push(xs[i], a[1], a[0], xs[i], b[1], b[0], t);
-      }
-    }
-    // longarinas
-    var L = secs[0].length;
-    for (k = 0; k < L; k += 2) {
-      for (i = 0; i < NX; i++) {
-        var p1 = secs[i][k], p2 = secs[i + 1][k];
-        push(xs[i], p1[1], p1[0], xs[i + 1], p2[1], p2[0], (i + .5) / NX);
-      }
-    }
-    // rodas: 4 aros (círculo externo + interno)
-    var wheels = [[-1.52, 1], [-1.52, -1], [1.55, 1], [1.55, -1]];
-    for (i = 0; i < wheels.length; i++) {
-      var wx = wheels[i][0], side = wheels[i][1], wz = interp(WID, wx) * .99 * side;
-      var R = .40, RN = 26, r2 = .17, tcol = (wx + 2.5) / 5;
-      for (j = 0; j < RN; j++) {
-        var a1 = j / RN * Math.PI * 2, a2 = (j + 1) / RN * Math.PI * 2;
-        push(wx + Math.cos(a1) * R, .42 + Math.sin(a1) * R, wz, wx + Math.cos(a2) * R, .42 + Math.sin(a2) * R, wz, tcol);
-        if (j % 2 === 0) push(wx + Math.cos(a1) * r2, .42 + Math.sin(a1) * r2, wz, wx + Math.cos(a2) * r2, .42 + Math.sin(a2) * r2, wz, tcol);
-      }
-    }
-    var geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(segs, 3));
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-    var mat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false });
-    g.add(new THREE.LineSegments(geo, mat));
-
-    // nuvem de partículas sobre a carroceria
-    var P = 2200, pos = [], pc = [], n = 0;
-    while (n < P) {
-      var px = -2.5 + Math.random() * 5;
-      var s2 = section(px, K), idx = Math.floor(Math.random() * s2.length);
-      var pt = s2[idx];
-      pos.push(px + (Math.random() - .5) * .05, pt[1] + (Math.random() - .5) * .045, pt[0] + (Math.random() - .5) * .05);
-      grad((px + 2.5) / 5, c);
-      var lum = .55 + Math.random() * .6;
-      pc.push(c[0] * lum, c[1] * lum, c[2] * lum);
-      n++;
-    }
-    var pgeo = new THREE.BufferGeometry();
-    pgeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    pgeo.setAttribute('color', new THREE.Float32BufferAttribute(pc, 3));
-    points = new THREE.Points(pgeo, new THREE.PointsMaterial({ size: .045, vertexColors: true, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }));
-    g.add(points);
-    return g;
-  }
-
-  function buildTunnel() {
-    var g = new THREE.Group(), i, j, c = [0, 0, 0];
-    for (i = 0; i < RING_N; i++) {
-      var segsN = 36, arr = [], cols = [];
-      for (j = 0; j <= segsN; j++) {
-        var a = j / segsN * Math.PI * 2;
-        arr.push(Math.cos(a) * 7.6, 1.4 + Math.sin(a) * 4.6, 0);
-        grad(j / segsN, c);
-        cols.push(c[0], c[1], c[2]);
-      }
-      var geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
-      geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-      var ring = new THREE.Line(geo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: .16, blending: THREE.AdditiveBlending, depthWrite: false }));
-      ring.userData.base = i * RING_SPACING;
-      rings.push(ring); g.add(ring);
-    }
-    // faixas de velocidade (pontos esticados pelo movimento)
-    var S = 460, pos = [], cols2 = [];
-    for (i = 0; i < S; i++) {
-      var ang = Math.random() * Math.PI * 2, rr = 5 + Math.random() * 3.4;
-      pos.push(Math.cos(ang) * rr * 1.25, 1.4 + Math.sin(ang) * rr * .78, Math.random() * TUNNEL_LEN);
-      grad(Math.random(), c);
-      cols2.push(c[0] * .9, c[1] * .9, c[2] * .9);
-    }
-    var sg = new THREE.BufferGeometry();
-    sg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    sg.setAttribute('color', new THREE.Float32BufferAttribute(cols2, 3));
-    streaks = new THREE.Points(sg, new THREE.PointsMaterial({ size: .09, vertexColors: true, transparent: true, opacity: .5, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }));
-    g.add(streaks);
-    return g;
-  }
-
-  function init(canvas) {
-    try {
-      if (!window.THREE) return false;
-      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
-      renderer.setClearColor(0x06070A, 1);
-    } catch (e) { return false; }
-    scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x06070A, 0.0135);
-    camera = new THREE.PerspectiveCamera(46, 1, .1, 260);
-    carGroup = buildCar(); scene.add(carGroup);
-    tunnel = buildTunnel(); scene.add(tunnel);
-    ok = true;
-    return true;
-  }
-
-  function resize(w, h, dpr) {
-    if (!ok) return;
-    // teto de DPR 2 + teto de pixels internos (~1.15 Mpx): o brilho aditivo
-    // esconde a reamostragem e o herói roda liso em aparelho mediano.
-    var pr = Math.min(dpr || 1, 2);
-    var cap = Math.sqrt(1150000 / (w * h * pr * pr));
-    renderer.setPixelRatio(pr * Math.min(1, cap));
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-  }
-
-  function draw(p, time) {
-    if (!ok || paused) return;
-    // câmera orbita o carro num percurso amarrado ao scroll
-    var th = -1.85 + p * 4.35;
-    var portrait = camera.aspect < 1 ? 1.28 : 1;
-    var r = (8.6 - 2.7 * Math.sin(p * Math.PI)) * portrait;
-    var cy = 1.35 + (1 - p) * 1.5 + 1.05 * Math.sin(p * 2.6 + .4);
-    camera.position.set(Math.sin(th) * r, cy, Math.cos(th) * r);
-    camera.lookAt(0, .58, 0);
-    camera.rotation.z += Math.sin(p * 5.4) * .03;
-    // respiração sutil do carro
-    carGroup.position.y = Math.sin(time * 1.1) * .02;
-    if (points) points.material.opacity = .72 + .2 * Math.sin(time * 2.1);
-    // túnel fluindo: scroll acelera a viagem
-    var off = p * 300 + time * 7;
-    for (var i = 0; i < rings.length; i++) {
-      var z = ((rings[i].userData.base + off) % TUNNEL_LEN);
-      rings[i].position.z = z - TUNNEL_LEN * .72;
-      rings[i].material.opacity = .05 + .16 * (z / TUNNEL_LEN);
-    }
-    if (streaks) streaks.position.z = -((off * 1.35) % RING_SPACING);
-    renderer.render(scene, camera);
-  }
-
-  return {
-    init: init, resize: resize, draw: draw,
-    setPaused: function (v) { paused = !!v; },
-    get ok() { return ok; }
-  };
-})();
-
-/* ============================================================
-   Motor da página: scroll nativo + lerp próprio (sem libs).
+   Herói: vídeo NATIVO <video autoplay muted loop playsinline>,
+   decodificado por hardware — liso por construção. Vive só nas
+   DUAS primeiras dobras (capa + dores) num .video-pin sticky que
+   rola para fora naturalmente com a página; do 3º ato em diante
+   é fundo sólido, sem vídeo. Um IntersectionObserver pausa o
+   playback fora de vista (bateria). A orientação escolhe a fonte
+   no boot (e refaz a escolha se o aparelho girar):
+     retrato  → hero-vertical.mp4  720×1280 + poster-vertical
+     paisagem → hero-horizontal.mp4 1280×720 + poster-horizontal
+   Fallbacks: prefers-reduced-motion OU autoplay bloqueado →
+   poster estático (o <picture> já pintado). Sem canvas, sem
+   frames, sem three.js.
    ============================================================ */
 (function () {
   var doc = document.documentElement;
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var stage = document.getElementById('heroStage');
-  var canvas = document.getElementById('heroCanvas');
+  var wrapper = document.getElementById('video-hero');
+  var pin = document.getElementById('videoPin');
   var heroCopy = document.getElementById('heroCopy');
-  var heroSec = document.getElementById('hero');
-  var dorSec = document.getElementById('dor');
-  var dorItems = Array.prototype.slice.call(document.querySelectorAll('.dor-item'));
-  var dorClose = document.querySelector('.dor-close');
-  var solid = document.getElementById('solid-zone');
   var pbar = document.getElementById('pbar');
 
   // ---- reveals (IntersectionObserver) ----
@@ -1132,126 +681,88 @@ var HeroSourceProcedural = (function () {
     watches.forEach(function (w) { w.classList.add('in'); });
   }
 
-  // ---- herói em cascata: frames (vídeo real) → procedural → gradiente ----
-  var ActiveHero = null, heroOn = false;
-  window.__heroMode = 'gradient';
-
-  function useGradient() {
-    ActiveHero = null; heroOn = false;
-    doc.classList.add('no-webgl');
-    if (reduced) doc.classList.add('static-hero');
-    window.__heroMode = 'gradient';
+  // ---- vídeo nativo nas 2 primeiras dobras ----
+  var video = null;
+  window.__heroMode = 'poster';
+  var VDIR = 'apresentacao-assets/video/';
+  function fontes(retrato) {
+    return {
+      src: VDIR + (retrato ? 'hero-vertical.mp4' : 'hero-horizontal.mp4'),
+      poster: VDIR + (retrato ? 'poster-vertical.webp' : 'poster-horizontal.webp')
+    };
   }
-  function loadScript(url, onok, onerr) {
-    var s = document.createElement('script');
-    s.src = url; s.async = true;
-    s.onload = onok; s.onerror = onerr;
-    document.head.appendChild(s);
+  function tentaTocar(v) {
+    var p = v.play();
+    if (p && p.catch) p.catch(function () {
+      // autoplay bloqueado (raro com muted+playsinline): fica o poster
+      if (window.__heroMode !== 'video' && video) { video.remove(); video = null; }
+    });
   }
-  function freshCanvas() {
-    // o canvas já recebeu um contexto 2d na tentativa de frames — WebGL
-    // exige um canvas virgem, então troca o elemento no lugar
-    var nc = canvas.cloneNode(false);
-    canvas.parentNode.replaceChild(nc, canvas);
-    canvas = nc;
-    return nc;
-  }
-  function tryProcedural() {                 // three.min.js (603 KB) só baixa AQUI
-    heroOn = false; ActiveHero = null;
-    if (reduced) { useGradient(); return; }
-    loadScript('apresentacao-assets/three.min.js', function () {
-      if (HeroSourceProcedural.init(freshCanvas(), { reduced: reduced })) {
-        ActiveHero = HeroSourceProcedural; heroOn = true;
-        window.__heroMode = 'procedural';
-        fit();
-      } else useGradient();
-    }, useGradient);
-  }
-
-  heroOn = HeroSourceFrames.init(canvas, { reduced: reduced });
-  if (heroOn) {
-    ActiveHero = HeroSourceFrames;
-    window.__heroMode = reduced ? 'poster' : 'frames';
-    HeroSourceFrames.onfail = tryProcedural; // frames 404/corrompidos → fallback
-  } else {
-    tryProcedural();
+  if (!reduced && pin) {
+    var mq = window.matchMedia('(orientation: portrait)');
+    var v = document.createElement('video');
+    v.muted = true; v.loop = true; v.autoplay = true;
+    v.setAttribute('muted', ''); v.setAttribute('autoplay', ''); v.setAttribute('loop', '');
+    v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
+    v.preload = 'auto';
+    v.disablePictureInPicture = true;
+    v.tabIndex = -1;
+    v.className = 'media';
+    var f0 = fontes(mq.matches);
+    v.poster = f0.poster; v.src = f0.src;
+    v.addEventListener('playing', function () { pin.classList.add('has-video'); window.__heroMode = 'video'; });
+    pin.insertBefore(v, pin.querySelector('.veil'));
+    video = v;
+    tentaTocar(v);
+    // girou o aparelho: refaz a escolha da fonte (troca simples, decidida uma vez)
+    var rot = function (e) {
+      if (!video) return;
+      var f = fontes(e.matches);
+      if (video.src.indexOf(f.src) === -1) { video.poster = f.poster; video.src = f.src; tentaTocar(video); }
+    };
+    if (mq.addEventListener) mq.addEventListener('change', rot);
+    else if (mq.addListener) mq.addListener(rot);
   }
 
-  function fit() {
-    if (heroOn && ActiveHero) ActiveHero.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1);
+  // pausa fora de vista / aba oculta — economia real de bateria
+  function vistoAgora() {
+    if (!wrapper) return false;
+    var r = wrapper.getBoundingClientRect();
+    return r.bottom > 0 && r.top < window.innerHeight;
   }
-  fit();
-  window.addEventListener('resize', fit);
-  window.addEventListener('orientationchange', fit);
+  function playPause(on) {
+    if (!video) return;
+    if (on && !document.hidden) tentaTocar(video); else video.pause();
+  }
+  if ('IntersectionObserver' in window && wrapper) {
+    // dois thresholds (0 e ~0) garantem notificação também na transição
+    // toque-de-borda ⇄ visível — com threshold só em 0 o navegador não
+    // renotifica enquanto isIntersecting não flipa. Registros chegam em
+    // lote: vale o MAIS RECENTE; ratio > 0 = tem pixel de vídeo na tela.
+    var vio = new IntersectionObserver(function (es) { playPause(es[es.length - 1].intersectionRatio > 0); }, { threshold: [0, 1e-4] });
+    vio.observe(wrapper);
+  }
+  document.addEventListener('visibilitychange', function () { playPause(vistoAgora()); });
 
-  // ---- laço principal: lerp do scroll ----
-  var target = 0, smooth = 0, lastT = performance.now();
-  window.__heroStats = { frames: 0, t0: performance.now() }; // p/ medição externa
+  // ---- barra de progresso + fade da capa (scroll passivo, rAF-throttle) ----
+  var ticking = false;
   function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
-
-  function frame(now) {
-    var dt = Math.min(50, now - lastT); lastT = now;
-    var vh = window.innerHeight;
+  function paint() {
+    ticking = false;
+    var vh = window.innerHeight || 1;
     var max = doc.scrollHeight - vh;
     var y = window.scrollY || window.pageYOffset || 0;
-    target = max > 0 ? y / max : 0;
-    smooth += (target - smooth) * Math.min(1, .11 * (dt / 16.7));
-    if (Math.abs(target - smooth) < .0004) smooth = target;
-    window.__heroProgress = smooth;
-
-    // barra de progresso
-    pbar.style.width = (target * 100).toFixed(2) + '%';
-
-    // capa: texto sobe e some no 1º ato (transform/opacity apenas)
+    pbar.style.width = (max > 0 ? (y / max) * 100 : 0).toFixed(2) + '%';
     if (!reduced && heroCopy) {
       var hp = clamp01(y / (vh * .8));
       heroCopy.style.transform = 'translateY(' + (-hp * 12) + 'svh)';
-      heroCopy.style.opacity = String(1 - hp * 1.25);
+      heroCopy.style.opacity = String(clamp01(1 - hp * 1.25));
     }
-
-    // a dor: quotes esfregadas pelo scroll (posição crua = resposta imediata ao dedo)
-    if (!reduced && dorSec) {
-      var r = dorSec.getBoundingClientRect();
-      var span = r.height - vh;
-      var q = span > 0 ? clamp01(-r.top / span) : 0;
-      var N = dorItems.length; // 4 quotes + fecho
-      for (var i = 0; i < N; i++) {
-        var c = (i + .5) / (N + 1);                 // centro da janela da quote i
-        var d = (q - c) * (N + 1);                  // -1..1 dentro da janela
-        // platô: a quote fica 100% opaca perto do centro e o crossfade é curto
-        // (sobre o vídeo, opacidade parcial deixava o texto ilegível)
-        var op = clamp01(1.45 - Math.abs(d) * 2.1);
-        var el = dorItems[i];
-        el.style.opacity = String(op);
-        el.style.transform = 'translateY(' + ((d) * -34) + 'px)';
-        el.style.visibility = op <= 0 ? 'hidden' : 'visible';
-      }
-      var cc = clamp01((q - .86) / .12);
-      dorClose.style.opacity = String(cc);
-      dorClose.style.transform = 'translateY(' + ((1 - cc) * 24) + 'px)';
-      dorClose.style.visibility = cc <= 0 ? 'hidden' : 'visible';
-    }
-
-    // zona sólida cobrindo o viewport → pausa o render (economia real de
-    // bateria). O CTA fica FORA da zona: o herói volta com o carro fechado.
-    var covered = false;
-    if (solid) {
-      var sr = solid.getBoundingClientRect();
-      covered = sr.top <= 1 && sr.bottom >= vh - 1;
-    }
-    if (heroOn && ActiveHero) {
-      ActiveHero.setPaused(covered || document.hidden);
-      stage.classList.toggle('off', covered);
-      if (!covered && !document.hidden) {
-        ActiveHero.draw(smooth, now / 1000);
-        window.__heroStats.frames++;
-      }
-    } else {
-      stage.classList.toggle('off', covered);
-    }
-    requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
+  function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(paint); } }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+  paint();
 })();
 </script>
 </body>
