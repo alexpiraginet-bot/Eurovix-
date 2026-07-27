@@ -114,9 +114,43 @@
     localStorage.setItem(LKEY, JSON.stringify(list)); return { ok: true };
   }
   async function delOficina(id) {
-    if (CLOUD) { var r = await sb.from('oficinas').delete().eq('id', id); if (r.error) return { ok: false, erro: r.error.message }; return { ok: true }; }
+    if (CLOUD) {
+      // .select() devolve as linhas REALMENTE apagadas. Sem isso, quando a RLS
+      // bloqueia, o Postgres apaga 0 linhas e NÃO retorna erro — a tela dizia
+      // "excluída" e a oficina continuava na lista (o bug relatado).
+      var r = await sb.from('oficinas').delete().eq('id', id).select('id');
+      if (r.error) return { ok: false, erro: r.error.message };
+      if (!r.data || !r.data.length) {
+        return { ok: false, erro: 'Nada foi excluído — sua conta precisa estar em public.lex_admins (admin LexOS). Confira o e-mail logado e rode o ADMIN-OFICINAS.sql.' };
+      }
+      return { ok: true };
+    }
     var list; try { list = JSON.parse(localStorage.getItem(LKEY) || '[]'); } catch (_) { list = []; }
     localStorage.setItem(LKEY, JSON.stringify(list.filter(function (x) { return x.id !== id; }))); return { ok: true };
+  }
+
+  /* ---------- destino dos agendamentos do site (config explícita) ----------
+     Marca UMA oficina como a que recebe os agendamentos vindos do site
+     (oficinas.recebe_agendamentos). A RPC agendar_publico respeita essa marca —
+     fim do "chute" pela oficina mais antiga. */
+  async function setRecebeAgendamentos(id) {
+    if (!CLOUD) {
+      var list; try { list = JSON.parse(localStorage.getItem(LKEY) || '[]'); } catch (_) { list = []; }
+      list.forEach(function (o) { o.recebe_agendamentos = (o.id === id); });
+      localStorage.setItem(LKEY, JSON.stringify(list));
+      return { ok: true };
+    }
+    // desmarca as outras primeiro (só uma pode receber)
+    var off = await sb.from('oficinas').update({ recebe_agendamentos: false }).neq('id', id).eq('recebe_agendamentos', true);
+    if (off.error && !/column .*recebe_agendamentos/i.test(off.error.message || '')) return { ok: false, erro: off.error.message };
+    var on = await sb.from('oficinas').update({ recebe_agendamentos: true }).eq('id', id).select('id');
+    if (on.error) {
+      if (/column .*recebe_agendamentos/i.test(on.error.message || ''))
+        return { ok: false, erro: 'Rode supabase/CORRIGIR-AGENDA.sql no SQL Editor — falta a coluna de configuração.' };
+      return { ok: false, erro: on.error.message };
+    }
+    if (!on.data || !on.data.length) return { ok: false, erro: 'Sem permissão (precisa ser admin LexOS).' };
+    return { ok: true };
   }
 
   /* ---------- convite de acesso da oficina (o dono cria a própria senha) ---------- */
@@ -161,6 +195,28 @@
     Array.prototype.forEach.call(document.querySelectorAll('.lk .cp'), function (b) { b.addEventListener('click', function () { copy(b.getAttribute('data-copy')); }); });
   }
 
+  /* ---------- confirmação própria (não usa confirm() do navegador) ----------
+     Em PWA/iOS o confirm() nativo pode ser suprimido: o clique em "excluir"
+     simplesmente não fazia nada. Este modal funciona em qualquer contexto. */
+  function confirmar(titulo, texto, rotuloOk) {
+    return new Promise(function (resolve) {
+      var ov = document.createElement('div');
+      ov.className = 'modal on';
+      ov.innerHTML = '<div class="card" style="max-width:420px">' +
+        '<h3>' + esc(titulo) + '</h3>' +
+        '<p style="font-size:13.5px;color:var(--lex-t2);line-height:1.6;margin-bottom:18px">' + esc(texto) + '</p>' +
+        '<div class="macts">' +
+          '<button type="button" class="btn-ghost" data-no>Cancelar</button>' +
+          '<button type="button" class="btn-primary" data-yes>' + esc(rotuloOk || 'Confirmar') + '</button>' +
+        '</div></div>';
+      document.body.appendChild(ov);
+      var fim = function (v) { ov.remove(); resolve(v); };
+      ov.querySelector('[data-no]').addEventListener('click', function () { fim(false); });
+      ov.querySelector('[data-yes]').addEventListener('click', function () { fim(true); });
+      ov.addEventListener('click', function (e) { if (e.target === ov) fim(false); });
+    });
+  }
+
   /* ---------- render: tabela de oficinas ---------- */
   function planoPill(p) { var cls = p === 'Marca própria' ? 'pl-marca' : p === 'Digital' ? 'pl-digital' : 'pl-conecta'; return '<span class="pill ' + cls + '">' + esc(p || '—') + '</span>'; }
   function statusPill(s) { return '<span class="pill st-' + esc(s || 'lead') + '">' + esc(s || 'lead') + '</span>'; }
@@ -179,6 +235,7 @@
           '<td><span class="act">' +
           (o.whatsapp ? '<button data-wa="' + esc(waDigits(o.whatsapp)) + '" title="WhatsApp">💬</button>' : '') +
           '<button data-convite="' + esc(o.id) + '" data-wpp="' + esc(waDigits(o.whatsapp || '')) + '" data-nome="' + esc(o.nome || '') + '" title="Gerar link de acesso do dono da oficina">🔗 acesso</button>' +
+          '<button data-recebe="' + esc(o.id) + '" data-nome="' + esc(o.nome || '') + '" title="' + (o.recebe_agendamentos ? 'Esta oficina recebe os agendamentos do site' : 'Fazer esta oficina receber os agendamentos do site') + '">' + (o.recebe_agendamentos ? '📅 recebe ✓' : '📅 receber') + '</button>' +
           '<button data-reset="' + esc(o.id) + '" data-email="' + esc(o.email || '') + '" data-wpp="' + esc(waDigits(o.whatsapp || '')) + '" data-nome="' + esc(o.nome || '') + '" title="Gerar link de NOVA SENHA da oficina">🔑 senha</button>' +
           '<button data-edit="' + esc(o.id) + '">editar</button>' +
           '<button class="danger" data-del="' + esc(o.id) + '" data-nome="' + esc(o.nome || '') + '">excluir</button>' +
@@ -204,6 +261,17 @@
           }
         });
       });
+      Array.prototype.forEach.call(tb.querySelectorAll('[data-recebe]'), function (b) {
+        b.addEventListener('click', async function () {
+          var id = b.getAttribute('data-recebe'), nome = b.getAttribute('data-nome') || 'esta oficina';
+          b.disabled = true; var orig = b.textContent; b.textContent = 'salvando…';
+          var r = await setRecebeAgendamentos(id);
+          b.disabled = false; b.textContent = orig;
+          if (!r.ok) { toast('Destino: ' + r.erro); return; }
+          toast('Agendamentos do site agora vão para ' + nome + ' ✓');
+          renderTable();
+        });
+      });
       Array.prototype.forEach.call(tb.querySelectorAll('[data-reset]'), function (b) {
         b.addEventListener('click', async function () {
           var nome = b.getAttribute('data-nome') || 'a oficina';
@@ -224,10 +292,16 @@
       });
       Array.prototype.forEach.call(tb.querySelectorAll('[data-del]'), function (b) {
         b.addEventListener('click', async function () {
-          if (!confirm('Excluir a oficina "' + b.getAttribute('data-nome') + '"? Esta ação não volta.')) return;
+          var nome = b.getAttribute('data-nome') || 'esta oficina';
+          var okc = await confirmar('Excluir oficina',
+            'Excluir "' + nome + '"? Some também o que está vinculado a ela (equipe, OS, veículos, agendamentos). Esta ação não volta.',
+            'Excluir');
+          if (!okc) return;
+          b.disabled = true; var orig = b.textContent; b.textContent = 'excluindo…';
           var r = await delOficina(b.getAttribute('data-del'));
-          if (!r.ok) { toast('Erro: ' + r.erro); return; }
-          toast('Oficina excluída'); renderTable();
+          b.disabled = false; b.textContent = orig;
+          if (!r.ok) { toast('Não excluiu — ' + r.erro); return; }
+          toast('Oficina excluída ✓'); renderTable();
         });
       });
     }

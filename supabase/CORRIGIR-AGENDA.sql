@@ -1,24 +1,42 @@
 -- ============================================================
--- LexOS · CORREÇÃO — agendamentos do site não apareciam na agenda
+-- LexOS · CORREÇÃO + CONFIGURAÇÃO — destino dos agendamentos do site
 -- ------------------------------------------------------------
--- SINTOMA: o cliente agenda no site, a linha É criada em
--- public.agendamentos, mas nenhuma oficina vê o agendamento.
+-- SINTOMA 1: o cliente agenda no site, a linha É criada em
+--   public.agendamentos, mas a oficina não vê nada na agenda.
+-- SINTOMA 2: o agendamento chega na oficina ERRADA.
 --
--- CAUSA: agendar_publico() resolvia a oficina como "a primeira ATIVA
--- por data de criação". Se esse registro mais antigo não tiver NENHUM
--- membro em public.staff (cadastro órfão/legado), o agendamento cai
--- numa oficina que ninguém opera — e a RLS (que filtra pela oficina do
--- usuário) esconde a linha de todo mundo. A fila fica "vazia".
+-- CAUSA: agendar_publico() escolhia a oficina "no chute" — a primeira
+--   ATIVA por data de criação. Se esse registro for um cadastro órfão
+--   (sem ninguém em public.staff), o agendamento cai numa oficina que
+--   ninguém opera e a RLS esconde a linha de todos.
 --
--- CORREÇÃO (2 partes, idempotente — pode rodar mais de uma vez):
---   1. a resolução passa a exigir oficina ATIVA **com equipe**;
---   2. os agendamentos já presos em oficinas sem equipe são movidos
---      para a oficina resolvida (nada é apagado).
+-- SOLUÇÃO: passa a existir uma CONFIGURAÇÃO EXPLÍCITA —
+--   oficinas.recebe_agendamentos. Você marca no Central Admin qual
+--   oficina recebe os agendamentos do site (botão "📅 recebe") e
+--   acabou o chute.
 --
+-- Ordem de decisão do destino:
+--   1) subdomínio, quando o site informar (multi-tenant futuro);
+--   2) a oficina marcada com recebe_agendamentos = true;   ← a config
+--   3) a primeira ativa QUE TENHA EQUIPE (fallback seguro);
+--   4) a primeira ativa (instalação nova, ninguém cadastrado ainda).
+--
+-- Idempotente: pode rodar quantas vezes quiser.
 -- Como rodar: Supabase → SQL Editor → cole tudo → Run.
 -- ============================================================
 
--- 1 ·  Resolução da oficina agora exige EQUIPE ---------------------------
+-- 1 ·  Configuração: qual oficina recebe os agendamentos do site --------
+alter table public.oficinas
+  add column if not exists recebe_agendamentos boolean not null default false;
+
+comment on column public.oficinas.recebe_agendamentos is
+  'true na ÚNICA oficina que recebe os agendamentos do site (marcada no Central Admin).';
+
+-- só uma oficina pode estar marcada por vez
+create unique index if not exists oficinas_recebe_agendamentos_unica
+  on public.oficinas ((true)) where recebe_agendamentos;
+
+-- 2 ·  Resolução do destino (config → equipe → primeira ativa) ----------
 create or replace function public.agendar_publico(p_dados jsonb, p_oficina text default null)
 returns jsonb
 language plpgsql
@@ -43,20 +61,23 @@ begin
     return jsonb_build_object('ok', false, 'erro', 'Informe o nome');
   end if;
 
-  -- por subdomínio (se o site informar) …
+  -- (1) por subdomínio, se o site informar
   if p_oficina is not null and btrim(p_oficina) <> '' then
     select id into v_ofi from public.oficinas where lower(subdominio) = lower(btrim(p_oficina)) limit 1;
   end if;
-  -- … senão, a primeira ATIVA **QUE TENHA EQUIPE** (alguém precisa poder atender)
+  -- (2) a oficina CONFIGURADA no Central Admin
   if v_ofi is null then
-    select o.id into v_ofi
-      from public.oficinas o
+    select id into v_ofi from public.oficinas
+     where recebe_agendamentos and status = 'ativa' limit 1;
+  end if;
+  -- (3) fallback: primeira ativa COM EQUIPE (alguém precisa poder atender)
+  if v_ofi is null then
+    select o.id into v_ofi from public.oficinas o
      where o.status = 'ativa'
        and exists (select 1 from public.staff s where s.oficina_id = o.id)
-     order by o.criado_em asc
-     limit 1;
+     order by o.criado_em asc limit 1;
   end if;
-  -- instalação nova (ninguém cadastrado ainda): mantém o comportamento antigo
+  -- (4) instalação nova: primeira ativa
   if v_ofi is null then
     select id into v_ofi from public.oficinas where status = 'ativa' order by criado_em asc limit 1;
   end if;
@@ -95,26 +116,28 @@ $$;
 revoke all on function public.agendar_publico(jsonb, text) from public;
 grant execute on function public.agendar_publico(jsonb, text) to anon, authenticated;
 
--- 2 ·  Resgata os agendamentos presos em oficinas SEM equipe -------------
---     (move para a oficina ativa com equipe mais antiga — nada é apagado)
-with destino as (
-  select o.id
-    from public.oficinas o
-   where o.status = 'ativa'
-     and exists (select 1 from public.staff s where s.oficina_id = o.id)
-   order by o.criado_em asc
-   limit 1
-)
+-- 3 ·  Marca um destino inicial se nenhum estiver configurado -----------
+--      (a primeira ativa COM equipe — você pode trocar depois no admin)
+update public.oficinas set recebe_agendamentos = true
+ where id = (
+   select o.id from public.oficinas o
+    where o.status = 'ativa'
+      and exists (select 1 from public.staff s where s.oficina_id = o.id)
+    order by o.criado_em asc limit 1)
+   and not exists (select 1 from public.oficinas where recebe_agendamentos);
+
+-- 4 ·  Resgata agendamentos presos em oficina sem equipe ----------------
+--      (move para o destino configurado — nada é apagado)
 update public.agendamentos a
-   set oficina_id = (select id from destino)
- where (select id from destino) is not null
-   and a.oficina_id is distinct from (select id from destino)
+   set oficina_id = (select id from public.oficinas where recebe_agendamentos limit 1)
+ where exists (select 1 from public.oficinas where recebe_agendamentos)
+   and a.oficina_id is distinct from (select id from public.oficinas where recebe_agendamentos limit 1)
    and not exists (select 1 from public.staff s where s.oficina_id = a.oficina_id);
 
--- 3 ·  Confere o resultado ----------------------------------------------
-select o.nome as oficina, count(a.id) as agendamentos,
-       (select count(*) from public.staff s where s.oficina_id = o.id) as equipe
+-- 5 ·  Confere ----------------------------------------------------------
+select o.nome as oficina,
+       o.recebe_agendamentos as recebe_do_site,
+       (select count(*) from public.staff s where s.oficina_id = o.id) as equipe,
+       (select count(*) from public.agendamentos a where a.oficina_id = o.id) as agendamentos
   from public.oficinas o
-  left join public.agendamentos a on a.oficina_id = o.id
- group by o.id, o.nome
- order by agendamentos desc;
+ order by o.recebe_agendamentos desc, o.criado_em;
