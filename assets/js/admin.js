@@ -115,14 +115,29 @@
   }
   async function delOficina(id) {
     if (CLOUD) {
-      // .select() devolve as linhas REALMENTE apagadas. Sem isso, quando a RLS
-      // bloqueia, o Postgres apaga 0 linhas e NÃO retorna erro — a tela dizia
-      // "excluída" e a oficina continuava na lista (o bug relatado).
-      var r = await sb.from('oficinas').delete().eq('id', id).select('id');
-      if (r.error) return { ok: false, erro: r.error.message };
-      if (!r.data || !r.data.length) {
-        return { ok: false, erro: 'Nada foi excluído — sua conta precisa estar em public.lex_admins (admin LexOS). Confira o e-mail logado e rode o ADMIN-OFICINAS.sql.' };
+      // Excluir pela RPC: o log de auditoria (eventos_log) é append-only e o
+      // cascade da oficina esbarrava nele ("eventos_log é imutável") — a exclusão
+      // inteira era cancelada. A RPC valida admin LexOS e libera a purga só
+      // naquela transação. Fallback no delete direto (banco sem a migração).
+      var rp = await sb.rpc('excluir_oficina', { p_id: id });
+      if (!rp.error) {
+        var d = rp.data || {};
+        if (d.ok) return { ok: true };
+        return { ok: false, erro: d.erro || 'A oficina não foi excluída.' };
       }
+      var m = rp.error.message || '';
+      if (/administradores LexOS/i.test(m)) return { ok: false, erro: 'Só admin LexOS pode excluir (seu e-mail precisa estar em public.lex_admins).' };
+      if (!/could not find the function|does not exist|PGRST202/i.test(m) && rp.error.code !== 'PGRST202') {
+        return { ok: false, erro: m };
+      }
+      // banco antigo: tenta o delete direto e confere o que saiu de fato
+      var r = await sb.from('oficinas').delete().eq('id', id).select('id');
+      if (r.error) {
+        if (/imut[áa]vel|append-only/i.test(r.error.message || ''))
+          return { ok: false, erro: 'O log de auditoria bloqueia a exclusão — rode supabase/CORRIGIR-AGENDA.sql (cria a função excluir_oficina).' };
+        return { ok: false, erro: r.error.message };
+      }
+      if (!r.data || !r.data.length) return { ok: false, erro: 'Nada foi excluído — sua conta precisa estar em public.lex_admins (admin LexOS).' };
       return { ok: true };
     }
     var list; try { list = JSON.parse(localStorage.getItem(LKEY) || '[]'); } catch (_) { list = []; }
