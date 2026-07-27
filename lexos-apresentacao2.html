@@ -42,7 +42,7 @@ img,svg{display:block;max-width:100%}
 a{color:inherit}
 
 /* ---------- Herói fixo (canvas + fallbacks) ---------- */
-.hero-stage{position:fixed;inset:0;z-index:0;pointer-events:none;transition:opacity .5s var(--ease)}
+.hero-stage{position:fixed;inset:0;z-index:0;pointer-events:none;transition:opacity .7s var(--ease)}
 .hero-stage.off{opacity:0}
 #heroCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hero-fallback{
@@ -68,8 +68,29 @@ a{color:inherit}
     radial-gradient(130% 90% at 50% -12%,rgba(6,7,10,.78),transparent 54%),
     linear-gradient(rgba(6,7,10,.30),rgba(6,7,10,.30));
 }
-/* modo reduzido com poster: canvas parado, sem vídeo */
-.static-hero #heroCanvas{filter:saturate(.9)}
+
+/* ---------- Núcleo orgânico 3D: assume o fundo após o vídeo ---------- */
+.organic-stage{
+  position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;visibility:hidden;
+  transition:opacity .9s var(--ease),visibility 0s linear .9s;
+  background:
+    radial-gradient(64% 54% at 50% 48%,rgba(76,155,255,.09),transparent 68%),
+    radial-gradient(54% 46% at 54% 52%,rgba(139,63,232,.08),transparent 72%);
+}
+.organic-stage.on{opacity:1;visibility:visible;transition-delay:0s}
+#organicCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.organic-stage::after{
+  content:"";position:absolute;inset:0;
+  background:
+    radial-gradient(80% 68% at 50% 50%,transparent 25%,rgba(6,7,10,.36) 72%,rgba(6,7,10,.74) 100%),
+    linear-gradient(180deg,rgba(6,7,10,.38),rgba(6,7,10,.08) 35%,rgba(6,7,10,.44));
+}
+.organic-stage.fallback{
+  background:
+    radial-gradient(circle at 50% 48%,rgba(76,155,255,.24),transparent 16%),
+    radial-gradient(circle at 50% 48%,rgba(139,63,232,.14),transparent 34%),
+    var(--void);
+}
 /* faixa de leitura atrás dos painéis de texto que passam sobre o vídeo
    (os blocos com fundo próprio — quote, gate, tiers — dispensam) */
 .panel:not(.cta){position:relative}
@@ -83,7 +104,7 @@ a{color:inherit}
   }
 }
 .panel>.wrap{position:relative;z-index:1}
-/* CTA fora da zona sólida: o carro fechado aparece por trás */
+/* CTA mantém o núcleo orgânico como presença de fundo */
 .panel.cta{background:linear-gradient(180deg,rgba(6,7,10,.0) 0%,rgba(6,7,10,.66) 26%,rgba(6,7,10,.88) 60%,rgba(6,7,10,.94) 100%)}
 
 /* ---------- Chrome fixo ---------- */
@@ -108,7 +129,7 @@ a{color:inherit}
 main{position:relative;z-index:1}
 section{position:relative}
 .wrap{width:100%;max-width:var(--maxw);margin:0 auto;padding:0 clamp(20px,5vw,48px)}
-.panel{min-height:100svh;display:flex;align-items:center;padding:clamp(72px,12svh,120px) 0}
+.panel{display:flex;align-items:center;padding:clamp(72px,10svh,104px) 0}
 .eyebrow{
   display:flex;align-items:flex-start;gap:12px;
   font-size:clamp(10.5px,1.3vw,12.5px);font-weight:600;line-height:1.5;
@@ -165,7 +186,7 @@ strong{color:var(--t1);font-weight:600}
 .gate p{font-size:clamp(14px,1.8vw,16.5px);line-height:1.55;color:var(--t2)}
 
 /* ---------- Capa (ato 1) ---------- */
-#hero{height:185svh}
+#hero{height:140svh}
 .hero-pin{position:sticky;top:0;height:100svh;display:flex;align-items:center;overflow:hidden}
 .hero-copy{will-change:transform,opacity;text-shadow:0 1px 16px rgba(6,7,10,.92),0 0 40px rgba(6,7,10,.6)}
 .hero-copy .telem{
@@ -196,7 +217,7 @@ strong{color:var(--t1);font-weight:600}
 @keyframes bob{0%,100%{transform:rotate(45deg) translate(0,0)}50%{transform:rotate(45deg) translate(3px,3px)}}
 
 /* ---------- A dor (scrub) ---------- */
-#dor{height:340svh}
+#dor{height:195svh}
 .dor-pin{position:sticky;top:0;height:100svh;display:flex;align-items:center;overflow:hidden}
 .dor-pin::before{ /* leitura das quotes sobre o vídeo */
   content:"";position:absolute;inset:0;pointer-events:none;
@@ -215,8 +236,50 @@ strong{color:var(--t1);font-weight:600}
 .answer h2{margin-bottom:clamp(14px,2.4svh,22px);max-width:16ch}
 .answer .ticks{margin-top:clamp(6px,1svh,10px)}
 
+/* Depois do vídeo, os mecanismos viram um fluxo contínuo de cards.
+   Menos "slides", mais leitura natural sobre o núcleo 3D fixo. */
+.feature-chapter{padding:clamp(82px,11svh,118px) 0;position:relative}
+.feature-chapter::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(6,7,10,.72),rgba(6,7,10,.34) 18%,rgba(6,7,10,.34) 82%,rgba(6,7,10,.72));
+}
+.feature-chapter>.wrap{position:relative;z-index:1}
+.chapter-head{max-width:700px;margin-bottom:clamp(28px,5svh,48px)}
+.chapter-head h2{max-width:15ch}
+.feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.feature-card{
+  min-width:0;border:1px solid var(--line);border-radius:18px;
+  padding:clamp(20px,2.6vw,30px);
+  background:linear-gradient(155deg,rgba(18,26,43,.93),rgba(11,17,29,.78));
+  box-shadow:0 26px 70px -44px rgba(0,0,0,.96);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+}
+.feature-card .eyebrow{margin-bottom:16px}
+.feature-card .quote{margin-bottom:20px;padding:15px 17px}
+.feature-card .quote p{font-size:clamp(15px,1.8vw,19px)}
+.feature-card h3{
+  font-size:clamp(24px,3.4vw,34px);line-height:1.08;letter-spacing:-.028em;
+  margin-bottom:18px;color:var(--t1)
+}
+.feature-card h3 .hl{color:var(--blue-2)}
+.feature-card h3 .gr{background:var(--grad-txt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.feature-card .ticks li{font-size:clamp(13.5px,1.45vw,15.5px)}
+.feature-card.wide{grid-column:1/-1}
+.feature-card.wide>.ticks{max-width:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.feature-card.wide>.ticks li+li{margin-top:0}
+.feature-card.wide .gate-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.feature-card.wide .gate{margin:0;max-width:none}
+
 /* ---------- IA ---------- */
 .ia-glow{background:radial-gradient(86% 60% at 50% 34%,rgba(59,134,242,.14),transparent 66%)}
+
+@media (max-width:760px){
+  .feature-grid{grid-template-columns:1fr;gap:14px}
+  .feature-card.wide{grid-column:auto}
+  .feature-card.wide>.ticks{grid-template-columns:1fr;gap:14px}
+  .feature-card.wide .gate-grid{grid-template-columns:1fr}
+  .feature-chapter{padding:72px 0}
+}
 
 /* ---------- Scanners ---------- */
 #scanners{background:linear-gradient(180deg,transparent,rgba(11,17,29,.9) 18%,rgba(11,17,29,.9) 82%,transparent)}
@@ -282,10 +345,14 @@ strong{color:var(--t1);font-weight:600}
 }
 
 /* ---------- Capítulos visuais ---------- */
-.visual-story{position:relative;z-index:2;background:var(--void)}
+.visual-story{
+  position:relative;z-index:2;background:rgba(6,7,10,.86);
+  display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:14px;
+  padding:14px;min-height:clamp(620px,86svh,860px);
+}
 .visual-card{
-  position:relative;min-height:100svh;overflow:hidden;
-  display:grid;align-items:end;background:var(--void);
+  position:relative;min-height:0;overflow:hidden;border-radius:18px;
+  display:grid;align-items:end;background:var(--void);border:1px solid var(--line);
 }
 .visual-card img{
   position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
@@ -296,19 +363,27 @@ strong{color:var(--t1);font-weight:600}
   background:linear-gradient(180deg,rgba(6,7,10,.08) 42%,rgba(6,7,10,.92) 100%);
 }
 .visual-card figcaption{
-  position:relative;z-index:1;width:min(100%,720px);margin:0 auto;
-  padding:clamp(28px,7svh,72px) clamp(20px,6vw,56px);
+  position:relative;z-index:1;width:100%;margin:0 auto;
+  padding:clamp(22px,4svh,42px) clamp(18px,3.2vw,34px);
 }
 .visual-card figcaption span{
   display:block;font-size:10px;font-weight:700;letter-spacing:.24em;
   text-transform:uppercase;color:var(--blue-2);margin-bottom:10px;
 }
 .visual-card figcaption strong{
-  display:block;font-size:clamp(24px,7vw,48px);line-height:1.06;
+  display:block;font-size:clamp(20px,3.4vw,38px);line-height:1.08;
   letter-spacing:-.035em;text-wrap:balance;
 }
 @media (max-width:720px){
+  .visual-story{
+    grid-template-columns:1fr 1fr;grid-template-rows:62svh 46svh;
+    min-height:auto;padding:10px;gap:10px;
+  }
+  .visual-card:first-child{grid-column:1/-1}
   .visual-card img{object-fit:cover}
+  .visual-card figcaption{padding:20px 16px}
+  .visual-card figcaption span{font-size:8.5px;letter-spacing:.18em}
+  .visual-card figcaption strong{font-size:clamp(17px,5vw,23px)}
 }
 
 /* ---------- Ativação ---------- */
@@ -318,8 +393,8 @@ strong{color:var(--t1);font-weight:600}
 .step .s span{display:block;font-size:clamp(13px,1.6vw,14.5px);font-weight:400;color:var(--t2);margin-top:4px}
 .step .w{flex:none;font-size:12px;font-weight:600;color:var(--blue-2);letter-spacing:.1em;text-transform:uppercase}
 
-/* ---------- Zona sólida (planos → CTA): cobre o herói ---------- */
-#solid-zone{background:var(--void);box-shadow:0 -80px 120px -60px rgba(6,7,10,.95)}
+/* ---------- Zona de decisão: mantém o núcleo só como presença sutil ---------- */
+#solid-zone{background:rgba(6,7,10,.90);box-shadow:0 -80px 120px -60px rgba(6,7,10,.95)}
 #solid-zone .panel{background:transparent}
 
 /* planos */
@@ -337,7 +412,7 @@ strong{color:var(--t1);font-weight:600}
 .soon li::before{content:"";position:absolute;left:0;top:1.55em;width:13px;height:1px;background:var(--warn)}
 
 /* CTA */
-.cta{text-align:center;background:radial-gradient(84% 60% at 50% 42%,rgba(59,134,242,.12),transparent 64%)}
+.cta{min-height:100svh;text-align:center;background:radial-gradient(84% 60% at 50% 42%,rgba(59,134,242,.12),transparent 64%)}
 .cta h2{font-size:clamp(36px,7vw,68px)}
 .cta .p{max-width:46ch;margin:clamp(14px,2.4svh,22px) auto 0}
 .contact{margin-top:clamp(24px,4svh,36px);font-size:clamp(17px,2.6vw,22px);font-weight:600;color:var(--blue-2);letter-spacing:-.012em;word-break:break-word}
@@ -349,15 +424,8 @@ strong{color:var(--t1);font-weight:600}
 .js .rv{opacity:0;transform:translateY(22px);transition:opacity .8s var(--ease),transform .8s var(--ease);transition-delay:var(--d,0s)}
 .js .in .rv{opacity:1;transform:none}
 
-/* ---------- Reduced motion / sem scrub ---------- */
-.static-hero #hero{height:100svh}
-.static-hero .hero-copy{transform:none!important;opacity:1!important}
-.static-hero #dor{height:auto}
-.static-hero .dor-pin{position:static;height:auto;display:block;padding:clamp(90px,14svh,140px) 0}
-.static-hero .dor-item,.static-hero .dor-close{position:static;opacity:1;transform:none!important}
-.static-hero .dor-item+.dor-item{margin-top:16px}
-.static-hero .dor-close{margin-top:26px}
-.static-hero .dor-kick{position:static;margin-bottom:26px}
+/* Movimento reduzido desliga animações automáticas, mas mantém o scrub
+   comandado pelo dedo: o iPhone não cai mais num poster estático. */
 @media (prefers-reduced-motion:reduce){
   .hero-fallback,.live i,.scrollhint::after,.badge{animation:none}
   .js .rv{transition:none;opacity:1;transform:none}
@@ -388,6 +456,10 @@ strong{color:var(--t1);font-weight:600}
   <canvas id="heroCanvas"></canvas>
   <div class="hero-fallback"></div>
   <div class="veil"></div>
+</div>
+
+<div class="organic-stage" id="organicStage" aria-hidden="true">
+  <canvas id="organicCanvas"></canvas>
 </div>
 
 <div class="progress" aria-hidden="true"><i id="pbar"></i></div>
@@ -443,113 +515,119 @@ strong{color:var(--t1);font-weight:600}
     </div>
   </section>
 
-  <!-- ============ ATO 4 · MECANISMO ============ -->
-  <section class="panel answer" aria-label="Aprovação com prova">
-    <div class="wrap in-watch">
-      <p class="eyebrow rv">Disputa</p>
-      <div class="quote rv"><p>“Eu não autorizei esse serviço.”</p></div>
-      <h2 class="rv">Agora existe prova.</h2>
-      <ul class="ticks">
-        <li class="rv">O cliente aprova <strong>item por item</strong>, no app dele.</li>
-        <li class="rv">Cada aceite guarda <strong>assinatura, data, hora e o endereço de onde veio</strong>, com um código de verificação que não se altera depois.</li>
-        <li class="rv">O que ele recusou não desaparece: volta como <strong>pendência</strong> na próxima visita.</li>
-      </ul>
-    </div>
-  </section>
+  <!-- ============ ATO 4 · MECANISMOS EM FLUXO ============ -->
+  <section class="feature-chapter" id="mechanisms" aria-label="Como o LexOS resolve as dores da oficina">
+    <div class="wrap">
+      <div class="chapter-head in-watch">
+        <p class="eyebrow rv">Da frase à solução</p>
+        <h2 class="rv">Menos ruído.<br><span class="hl">Mais controle.</span></h2>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card in-watch" aria-label="Aprovação com prova">
+          <p class="eyebrow rv">Disputa</p>
+          <div class="quote rv"><p>“Eu não autorizei esse serviço.”</p></div>
+          <h3 class="rv">Agora existe prova.</h3>
+          <ul class="ticks">
+            <li class="rv">O cliente aprova <strong>item por item</strong>, no app dele.</li>
+            <li class="rv">Cada aceite guarda <strong>assinatura, data, hora e o endereço de onde veio</strong>, com código de verificação.</li>
+            <li class="rv">O que ele recusou volta como <strong>pendência</strong> na próxima visita.</li>
+          </ul>
+        </article>
 
-  <section class="panel answer" aria-label="Orçamento com imagem">
-    <div class="wrap in-watch">
-      <p class="eyebrow rv">Aprovação travada</p>
-      <div class="quote rv"><p>“Vou pensar, depois eu te falo.”</p></div>
-      <h2 class="rv">Ele aprova o que <span class="hl">consegue ver</span>.</h2>
-      <ul class="ticks">
-        <li class="rv">Diagnóstico em <strong>três cores</strong>: o que é urgente, o que é atenção, o que está bom.</li>
-        <li class="rv">Item vermelho ou amarelo <strong>só entra no diagnóstico com foto ou vídeo</strong>. É regra do sistema, não combinado de equipe.</li>
-        <li class="rv">As avarias ficam marcadas num <strong>carro em 3D que ele gira na tela</strong> do app.</li>
-      </ul>
-    </div>
-  </section>
+        <article class="feature-card in-watch" aria-label="Orçamento com imagem">
+          <p class="eyebrow rv">Aprovação travada</p>
+          <div class="quote rv"><p>“Vou pensar, depois eu te falo.”</p></div>
+          <h3 class="rv">Ele aprova o que <span class="hl">consegue ver</span>.</h3>
+          <ul class="ticks">
+            <li class="rv">Diagnóstico em <strong>três cores</strong>: urgente, atenção e tudo certo.</li>
+            <li class="rv">Item vermelho ou amarelo <strong>só entra com foto ou vídeo</strong>.</li>
+            <li class="rv">As avarias ficam marcadas num <strong>carro em 3D</strong> no app.</li>
+          </ul>
+        </article>
 
-  <section class="panel answer" aria-label="Acompanhamento sem telefone">
-    <div class="wrap in-watch">
-      <p class="eyebrow rv">O telefone não para</p>
-      <div class="quote rv"><p>“E aí, meu carro já está pronto?”</p></div>
-      <h2 class="rv">Ele acompanha sem ligar.</h2>
-      <ul class="ticks">
-        <li class="rv">A ordem de serviço anda na tela dele como <strong>rastreio de encomenda</strong>.</li>
-        <li class="rv">Peça atrasada aparece como <strong>“aguardando peça”</strong>, com o prazo à vista — quem cobra é o sistema, não você.</li>
-        <li class="rv">Dúvida vira <strong>conversa no app</strong>, com o consultor, e fica registrada na ordem.</li>
-      </ul>
-    </div>
-  </section>
+        <article class="feature-card in-watch" aria-label="Acompanhamento sem telefone">
+          <p class="eyebrow rv">O telefone não para</p>
+          <div class="quote rv"><p>“E aí, meu carro já está pronto?”</p></div>
+          <h3 class="rv">Ele acompanha sem ligar.</h3>
+          <ul class="ticks">
+            <li class="rv">A ordem anda como <strong>rastreio de encomenda</strong>.</li>
+            <li class="rv">Peça atrasada aparece como <strong>“aguardando peça”</strong>, com prazo à vista.</li>
+            <li class="rv">Dúvida vira <strong>conversa no app</strong> e fica registrada.</li>
+          </ul>
+        </article>
 
-  <section class="panel answer" aria-label="Controle de qualidade">
-    <div class="wrap in-watch">
-      <p class="eyebrow rv">Retrabalho</p>
-      <div class="quote rv"><p>“O carro voltou com o mesmo problema.”</p></div>
-      <h2 class="rv">Nada sai sem passar pela dupla.</h2>
-      <ul class="ticks">
-        <li class="rv">Antes da entrega: <strong>checklist obrigatório</strong> e test-drive com a quilometragem registrada.</li>
-        <li class="rv">Duas pessoas assinam a conferência — <strong>quem fez e quem revisou</strong>.</li>
-        <li class="rv">Sem essa conferência, o sistema <strong>não deixa fechar</strong> a ordem nem cobrar.</li>
-      </ul>
-    </div>
-  </section>
+        <article class="feature-card in-watch" aria-label="Controle de qualidade">
+          <p class="eyebrow rv">Retrabalho</p>
+          <div class="quote rv"><p>“O carro voltou com o mesmo problema.”</p></div>
+          <h3 class="rv">Nada sai sem passar pela dupla.</h3>
+          <ul class="ticks">
+            <li class="rv"><strong>Checklist obrigatório</strong> e test-drive antes da entrega.</li>
+            <li class="rv">Duas pessoas assinam: <strong>quem fez e quem revisou</strong>.</li>
+            <li class="rv">Sem conferência, o sistema <strong>não deixa fechar</strong> a ordem.</li>
+          </ul>
+        </article>
 
-  <section class="panel answer" aria-label="Histórico, garantia e caixa">
-    <div class="wrap in-watch">
-      <p class="eyebrow rv">O mês fechado</p>
-      <h2 class="rv">Histórico, garantia<br>e caixa no lugar.</h2>
-      <ul class="ticks" style="margin-top:clamp(14px,2.4svh,22px)">
-        <li class="rv">Cada <strong>garantia fica por item</strong>, com o prazo correndo à vista do cliente no app.</li>
-        <li class="rv">O histórico é <strong>do chassi</strong>, não da pessoa: carro vendido migra para o novo dono no próximo check-in.</li>
-        <li class="rv">Fatura com <strong>Pix copia-e-cola</strong>, resultado por ordem de serviço, comissão por tempo e curva ABC — <strong>tudo exportável</strong>.</li>
-      </ul>
+        <article class="feature-card wide in-watch" aria-label="Histórico, garantia e caixa">
+          <p class="eyebrow rv">O mês fechado</p>
+          <h3 class="rv">Histórico, garantia e caixa no lugar.</h3>
+          <ul class="ticks">
+            <li class="rv">Cada <strong>garantia fica por item</strong>, com prazo à vista no app.</li>
+            <li class="rv">O histórico é <strong>do chassi</strong> e migra quando o carro muda de dono.</li>
+            <li class="rv">Fatura, Pix, resultado por ordem, comissão e curva ABC — <strong>tudo exportável</strong>.</li>
+          </ul>
+        </article>
+      </div>
     </div>
   </section>
 
   <!-- ============ ATO 5 · IA ============ -->
-  <section class="panel answer ia-glow" aria-label="A IA lê o laudo do scanner">
-    <div class="wrap in-watch">
-      <p class="eyebrow rv">O laudo do scanner</p>
-      <div class="quote rv"><p>“Só o mecânico mais experiente entende esse relatório.”</p></div>
-      <h2 class="rv">A IA lê e <span class="gr">traduz para você</span>.</h2>
-      <ul class="ticks">
-        <li class="rv">Vale <strong>foto da tela</strong> do scanner ou o <strong>PDF exportado</strong> — de dezenas de páginas.</li>
-        <li class="rv">Volta em <strong>português claro</strong>, com um resumo que o consultor lê para o cliente na hora.</li>
-        <li class="rv">Códigos <strong>priorizados</strong>: crítico primeiro, cosmético por último.</li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="panel answer" aria-label="Causa provável e consequência">
-    <div class="wrap in-watch">
-      <p class="eyebrow rv">Peça trocada em vão</p>
-      <div class="quote rv"><p>“Trocaram a peça e não resolveu.”</p></div>
-      <h2 class="rv">Trinta códigos,<br>um problema só.</h2>
-      <ul class="ticks">
-        <li class="rv">Bateria fraca, massa ruim ou um módulo sem comunicação <strong>acendem dezenas de códigos de uma vez</strong>.</li>
-        <li class="rv">A IA marca quais são <strong>só consequência</strong> e aponta a <strong>causa provável</strong> — como hipótese a confirmar.</li>
-        <li class="rv">E avisa, escrito: <strong>não troque peça por código</strong>. Antes, meça — ela diz o que medir.</li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="panel" aria-label="Travas de segurança">
-    <div class="wrap in-watch">
-      <p class="eyebrow rv">Sua proteção</p>
-      <h2 class="rv" style="margin-bottom:clamp(18px,3svh,28px)">Airbag e freio<br>não passam batido.</h2>
-      <div class="gate rv">
-        <span class="k">A IA nunca libera</span>
-        <p>Falha de airbag, cinto, freio ou direção: ela <strong>não diz que o carro está liberado</strong> e <strong>não sugere apagar o código</strong>. Marca como crítico e exige a confirmação do técnico.</p>
+  <section class="feature-chapter ia-glow" id="intelligence" aria-label="Inteligência para o diagnóstico">
+    <div class="wrap">
+      <div class="chapter-head in-watch">
+        <p class="eyebrow rv">Inteligência aplicada</p>
+        <h2 class="rv">O laudo vira<br><span class="gr">decisão clara.</span></h2>
       </div>
-      <div class="gate rv">
-        <span class="k">A IA nunca chuta</span>
-        <p>Laudo borrado ou cortado: ela <strong>pede outra captura</strong> em vez de inventar código. Nada sai no relatório que não esteja escrito no laudo.</p>
-      </div>
-      <div class="gate rv">
-        <span class="k">O orçamento é seu</span>
-        <p>Ela <strong>não gera peça, preço, nem tempo de mão de obra</strong>. E o chassi do cliente não sai por extenso no relatório.</p>
+      <div class="feature-grid">
+        <article class="feature-card in-watch" aria-label="A IA lê o laudo do scanner">
+          <p class="eyebrow rv">O laudo do scanner</p>
+          <div class="quote rv"><p>“Só o mecânico mais experiente entende esse relatório.”</p></div>
+          <h3 class="rv">A IA lê e <span class="gr">traduz para você</span>.</h3>
+          <ul class="ticks">
+            <li class="rv">Vale <strong>foto da tela</strong> ou <strong>PDF exportado</strong>.</li>
+            <li class="rv">Volta em <strong>português claro</strong>, pronto para explicar ao cliente.</li>
+            <li class="rv">Códigos <strong>priorizados</strong>: crítico primeiro.</li>
+          </ul>
+        </article>
+
+        <article class="feature-card in-watch" aria-label="Causa provável e consequência">
+          <p class="eyebrow rv">Peça trocada em vão</p>
+          <div class="quote rv"><p>“Trocaram a peça e não resolveu.”</p></div>
+          <h3 class="rv">Trinta códigos,<br>um problema só.</h3>
+          <ul class="ticks">
+            <li class="rv">Subtensão ou falha de comunicação pode <strong>acender dezenas de códigos</strong>.</li>
+            <li class="rv">A IA separa <strong>consequência</strong> de <strong>causa provável</strong>.</li>
+            <li class="rv">E avisa: <strong>não troque peça por código</strong>. Antes, meça.</li>
+          </ul>
+        </article>
+
+        <article class="feature-card wide in-watch" aria-label="Travas de segurança">
+          <p class="eyebrow rv">Sua proteção</p>
+          <h3 class="rv">Airbag e freio não passam batido.</h3>
+          <div class="gate-grid">
+            <div class="gate rv">
+              <span class="k">A IA nunca libera</span>
+              <p>Falha de airbag, cinto, freio ou direção fica crítica e exige confirmação do técnico.</p>
+            </div>
+            <div class="gate rv">
+              <span class="k">A IA nunca chuta</span>
+              <p>Laudo borrado ou cortado gera pedido de outra captura, não um diagnóstico inventado.</p>
+            </div>
+            <div class="gate rv">
+              <span class="k">O orçamento é seu</span>
+              <p>Ela não gera peça, preço ou tempo de mão de obra. O chassi não sai por extenso.</p>
+            </div>
+          </div>
+        </article>
       </div>
     </div>
   </section>
@@ -698,7 +776,7 @@ strong{color:var(--t1);font-weight:600}
 
 <script>
 /* ============================================================
-   Herói cinematográfico — CONTRATO (a página só fala por aqui):
+   Abertura cinematográfica — CONTRATO do vídeo:
      .init(canvas, {reduced}) -> bool   (monta a fonte)
      .resize(w, h, dpr)                 (viewport mudou)
      .draw(progress, timeSec)           (progress 0..1 JÁ suavizado)
@@ -712,13 +790,13 @@ strong{color:var(--t1);font-weight:600}
    esqueleto do scrub; o resto preenche os vãos (binary-fill) em
    requestIdleCallback. draw() usa o frame carregado mais próximo do
    pedido (preferindo o anterior) — nunca espera rede.
-   Beats amarrados às seções reais: fechado na capa → abrindo nas
-   dores → aberto na IA → frames percorridos ao contrário durante a
-   ativação → fechado antes da zona sólida e do CTA.
+   Beats amarrados apenas à abertura: fechado na capa → abrindo nas
+   dores → totalmente aberto antes de "Três frentes". Depois o canvas
+   sai de cena e o núcleo orgânico 3D assume o fundo.
 
-   FALLBACKS em cascata: frames indisponíveis → herói procedural
-   three.js (three.min.js só é baixado NESSE caso) → sem WebGL →
-   gradiente CSS. prefers-reduced-motion → poster estático.
+   FALLBACK do vídeo: frames indisponíveis → gradiente CSS. A
+   preferência de movimento reduzido preserva o scrub comandado pelo
+   dedo e desliga somente o giro automático do núcleo.
    ============================================================ */
 var HeroSourceFrames = (function () {
   var cv = null, cx = null, ok = false, paused = false, reduced = false, dead = false;
@@ -830,9 +908,8 @@ var HeroSourceFrames = (function () {
     if (posterOk && !have.some(Boolean)) { blit(posterImg); lastKey = -2; }
   }
 
-  // beats do vídeo amarrados às SEÇÕES REAIS (medidas do DOM):
-  // v = fração 0..1 da sequência original (0 = fechado, 1 = aberto).
-  // A remontagem percorre os mesmos frames no sentido inverso.
+  // O vídeo vive só na abertura. Ele completa a desmontagem antes de
+  // "Três frentes"; dali em diante o núcleo 3D assume o fundo.
   function topOf(sel) {
     var el = document.querySelector(sel);
     if (!el) return null;
@@ -842,20 +919,17 @@ var HeroSourceFrames = (function () {
     var vh = window.innerHeight;
     var total = document.documentElement.scrollHeight - vh;
     if (total <= 0) { map = null; return; }
-    var dor = topOf('#dor'), fre = topOf('#frentes'), ia = topOf('.ia-glow'),
-        sca = topOf('#scanners'), vis = topOf('.visual-story'),
-        act = topOf('#activation'), sol = topOf('#solid-zone'), cta = topOf('.cta');
+    var dorEl = document.querySelector('#dor');
+    var dor = topOf('#dor'), fre = topOf('#frentes');
+    var dorSpan = dorEl ? Math.max(vh, dorEl.getBoundingClientRect().height - vh) : vh;
     var pts = [[0, 0]];
     function push(y, v) { if (y != null) { var p = Math.max(0, Math.min(1, y / total)); if (p > pts[pts.length - 1][0]) pts.push([p, v]); } }
-    push(dor, .08);                 // capa termina: começando a abrir
-    push(fre - vh * .5, .30);       // as dores percorrem a abertura
-    push(ia - vh * .35, .68);       // componentes já visíveis na IA
-    push(sca, .92);                 // quase totalmente aberto nos scanners
-    push(vis, 1);                   // aberto no interlúdio visual
-    push(act - vh * .3, .58);       // percorre os frames ao contrário
-    push(sol - vh * .5, 0);         // fechado antes de a zona sólida cobrir
-    if (cta != null) push(cta - vh, 0);
-    pts.push([1, 0]);               // mantém fechado até o CTA
+    push(dor, .16);
+    push(dor + dorSpan * .28, .38);
+    push(dor + dorSpan * .58, .66);
+    push(dor + dorSpan * .82, .88);
+    push(fre - vh * .18, 1);
+    pts.push([1, 1]);
     map = pts; mapH = document.documentElement.scrollHeight; mapW = window.innerWidth;
   }
   function frameFor(p) {
@@ -913,7 +987,7 @@ var HeroSourceFrames = (function () {
   return api;
 })();
 
-/* ---------- Fallback procedural (three.js, carregado só se precisar) ---------- */
+/* ---------- Núcleo orgânico 3D (three.js, carregado após o vídeo) ---------- */
 var HeroSourceProcedural = (function () {
   var renderer, scene, camera, carGroup, tunnel, points, ok = false, paused = false;
   var RING_N = 24, RING_SPACING = 18, TUNNEL_LEN = RING_N * RING_SPACING;
@@ -930,104 +1004,61 @@ var HeroSourceProcedural = (function () {
     return out;
   }
 
-  // ---- perfil do sedã (vista lateral, x: -2.5 frente → 2.5 traseira) ----
-  var TOP = [[-2.5, .42], [-2.2, .52], [-1.7, .60], [-1.15, .68], [-.72, .72], [-.45, .84], [-.1, 1.06], [.35, 1.12], [.8, 1.10], [1.2, .99], [1.5, .84], [1.9, .74], [2.2, .70], [2.5, .56]];
-  var BELT = [[-2.5, .40], [-1.7, .56], [-.9, .66], [0, .70], [.9, .70], [1.7, .66], [2.5, .52]];
-  var WID = [[-2.5, .46], [-2.1, .68], [-1.4, .84], [-.6, .92], [.4, .93], [1.2, .90], [1.9, .80], [2.5, .52]];
-  function interp(tab, x) {
-    if (x <= tab[0][0]) return tab[0][1];
-    for (var i = 1; i < tab.length; i++) {
-      if (x <= tab[i][0]) {
-        var t = (x - tab[i - 1][0]) / (tab[i][0] - tab[i - 1][0]);
-        t = t * t * (3 - 2 * t); // suaviza
-        return tab[i - 1][1] + (tab[i][1] - tab[i - 1][1]) * t;
-      }
-    }
-    return tab[tab.length - 1][1];
-  }
-  var BOT = [[-2.5, .34], [-2.15, .18], [-1.0, .15], [1.1, .15], [2.1, .18], [2.5, .32]];
-  function yBot(x) { return interp(BOT, x); }
-
-  // pontos de uma secção transversal do carro em x (loop fechado)
-  function section(x, K) {
-    var w = interp(WID, x), yTop = interp(TOP, x), yBelt = Math.min(interp(BELT, x), yTop - .02);
-    var yb = yBot(x);
-    var pts = [], i, t, ang, gw = w * .82; // greenhouse mais estreito
-    pts.push([-w, yb]);                          // piso esq.
-    pts.push([-w, yBelt]);                       // lateral esq. até a cintura
-    var topN = K - 6;                            // arco do teto
-    for (i = 0; i <= topN; i++) {
-      t = i / topN; ang = Math.PI * (1 - t);
-      var zz = Math.cos(ang), ww = (yTop - yBelt) < .12 ? w : gw; // sem "cabine" nas pontas
-      pts.push([zz * (w * (1 - Math.pow(Math.sin(ang), 1.4)) + ww * Math.pow(Math.sin(ang), 1.4)),
-                yBelt + (yTop - yBelt) * Math.pow(Math.sin(ang), .85)]);
-    }
-    pts.push([w, yBelt]);                        // desce lateral dir.
-    pts.push([w, yb]);                           // piso dir.
-    return pts;                                  // fechar ligando ao 1º
-  }
-
   function buildCar() {
     var g = new THREE.Group();
-    var segs = [], cols = [], i, j, k;
-    var NX = 24, K = 22;
-    var xs = [], secs = [];
-    for (i = 0; i <= NX; i++) { var x = -2.5 + 5 * i / NX; xs.push(x); secs.push(section(x, K)); }
-    var c = [0, 0, 0];
-    function push(x1, y1, z1, x2, y2, z2, t) {
-      segs.push(x1, y1, z1, x2, y2, z2);
-      grad(t, c); cols.push(c[0], c[1], c[2], c[0], c[1], c[2]);
-    }
-    // costelas (secções)
-    for (i = 0; i <= NX; i += 2) {
-      var s = secs[i], t = i / NX;
-      for (j = 0; j < s.length; j++) {
-        var a = s[j], b = s[(j + 1) % s.length];
-        push(xs[i], a[1], a[0], xs[i], b[1], b[0], t);
-      }
-    }
-    // longarinas
-    var L = secs[0].length;
-    for (k = 0; k < L; k += 2) {
-      for (i = 0; i < NX; i++) {
-        var p1 = secs[i][k], p2 = secs[i + 1][k];
-        push(xs[i], p1[1], p1[0], xs[i + 1], p2[1], p2[0], (i + .5) / NX);
-      }
-    }
-    // rodas: 4 aros (círculo externo + interno)
-    var wheels = [[-1.52, 1], [-1.52, -1], [1.55, 1], [1.55, -1]];
-    for (i = 0; i < wheels.length; i++) {
-      var wx = wheels[i][0], side = wheels[i][1], wz = interp(WID, wx) * .99 * side;
-      var R = .40, RN = 26, r2 = .17, tcol = (wx + 2.5) / 5;
-      for (j = 0; j < RN; j++) {
-        var a1 = j / RN * Math.PI * 2, a2 = (j + 1) / RN * Math.PI * 2;
-        push(wx + Math.cos(a1) * R, .42 + Math.sin(a1) * R, wz, wx + Math.cos(a2) * R, .42 + Math.sin(a2) * R, wz, tcol);
-        if (j % 2 === 0) push(wx + Math.cos(a1) * r2, .42 + Math.sin(a1) * r2, wz, wx + Math.cos(a2) * r2, .42 + Math.sin(a2) * r2, wz, tcol);
-      }
-    }
-    var geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(segs, 3));
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-    var mat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false });
-    g.add(new THREE.LineSegments(geo, mat));
+    var geo = new THREE.IcosahedronBufferGeometry(2.05, 4);
+    var pos = geo.getAttribute('position');
 
-    // nuvem de partículas sobre a carroceria
-    var P = 2200, pos = [], pc = [], n = 0;
-    while (n < P) {
-      var px = -2.5 + Math.random() * 5;
-      var s2 = section(px, K), idx = Math.floor(Math.random() * s2.length);
-      var pt = s2[idx];
-      pos.push(px + (Math.random() - .5) * .05, pt[1] + (Math.random() - .5) * .045, pt[0] + (Math.random() - .5) * .05);
-      grad((px + 2.5) / 5, c);
-      var lum = .55 + Math.random() * .6;
-      pc.push(c[0] * lum, c[1] * lum, c[2] * lum);
-      n++;
+    // Assimetria determinística: transforma a esfera num volume vivo, sem
+    // gerar ruído novo a cada carregamento.
+    for (var i = 0; i < pos.count; i++) {
+      var x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      var len = Math.sqrt(x * x + y * y + z * z) || 1;
+      var wave = Math.sin(x * 2.2 + z * .7) + Math.sin(y * 2.9 - x * .6) + Math.sin(z * 2.5 + y * .8);
+      var scale = 1 + wave * .045 + (y / len) * .055;
+      pos.setXYZ(i, x * scale * 1.04, y * scale * .94, z * scale);
     }
-    var pgeo = new THREE.BufferGeometry();
-    pgeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    pgeo.setAttribute('color', new THREE.Float32BufferAttribute(pc, 3));
-    points = new THREE.Points(pgeo, new THREE.PointsMaterial({ size: .045, vertexColors: true, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }));
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
+
+    var body = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+      color: 0x152a55, emissive: 0x173b86, emissiveIntensity: .72,
+      metalness: .58, roughness: .30, transparent: true, opacity: .72,
+      side: THREE.DoubleSide
+    }));
+    g.add(body);
+
+    var wire = new THREE.LineSegments(
+      new THREE.WireframeGeometry(geo),
+      new THREE.LineBasicMaterial({
+        color: 0x6fa7ff, transparent: true, opacity: .34,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      })
+    );
+    wire.scale.setScalar(1.012);
+    g.add(wire);
+
+    points = new THREE.Points(
+      geo,
+      new THREE.PointsMaterial({
+        color: 0xb082ff, size: .027, transparent: true, opacity: .66,
+        blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
+      })
+    );
+    points.scale.setScalar(1.025);
     g.add(points);
+
+    var ringMat = new THREE.MeshBasicMaterial({
+      color: 0x6f75ff, wireframe: true, transparent: true, opacity: .22,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    for (var r = 0; r < 3; r++) {
+      var halo = new THREE.Mesh(new THREE.TorusGeometry(2.78 + r * .26, .016, 5, 150), ringMat.clone());
+      halo.rotation.x = .55 + r * .62;
+      halo.rotation.y = .32 + r * .48;
+      halo.userData.speed = (r % 2 ? -1 : 1) * (.16 + r * .045);
+      g.add(halo);
+    }
     return g;
   }
 
@@ -1067,14 +1098,19 @@ var HeroSourceProcedural = (function () {
   function init(canvas) {
     try {
       if (!window.THREE) return false;
-      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
-      renderer.setClearColor(0x06070A, 1);
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: true, powerPreference: 'high-performance' });
+      renderer.setClearColor(0x06070A, 0);
     } catch (e) { return false; }
     scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x06070A, 0.0135);
+    scene.fog = new THREE.FogExp2(0x06070A, 0.0105);
     camera = new THREE.PerspectiveCamera(46, 1, .1, 260);
     carGroup = buildCar(); scene.add(carGroup);
     tunnel = buildTunnel(); scene.add(tunnel);
+    scene.add(new THREE.AmbientLight(0x7996ff, .72));
+    var key = new THREE.PointLight(0x4c9bff, 2.1, 18);
+    key.position.set(4, 4, 5); scene.add(key);
+    var rim = new THREE.PointLight(0xa96ff9, 1.6, 16);
+    rim.position.set(-4, -2, 3); scene.add(rim);
     ok = true;
     return true;
   }
@@ -1093,25 +1129,32 @@ var HeroSourceProcedural = (function () {
 
   function draw(p, time) {
     if (!ok || paused) return;
-    // câmera orbita o carro num percurso amarrado ao scroll
-    var th = -1.85 + p * 4.35;
-    var portrait = camera.aspect < 1 ? 1.28 : 1;
-    var r = (8.6 - 2.7 * Math.sin(p * Math.PI)) * portrait;
-    var cy = 1.35 + (1 - p) * 1.5 + 1.05 * Math.sin(p * 2.6 + .4);
-    camera.position.set(Math.sin(th) * r, cy, Math.cos(th) * r);
-    camera.lookAt(0, .58, 0);
-    camera.rotation.z += Math.sin(p * 5.4) * .03;
-    // respiração sutil do carro
-    carGroup.position.y = Math.sin(time * 1.1) * .02;
-    if (points) points.material.opacity = .72 + .2 * Math.sin(time * 2.1);
-    // túnel fluindo: scroll acelera a viagem
-    var off = p * 300 + time * 7;
+    var portrait = camera.aspect < 1 ? 1.22 : 1;
+    camera.position.set(0, .15, 7.1 * portrait);
+    camera.lookAt(0, 0, 0);
+
+    // O volume gira sozinho e recebe um impulso extra da rolagem.
+    carGroup.rotation.y = time * .18 + p * 2.8;
+    carGroup.rotation.x = .16 + Math.sin(time * .23 + p * 3.4) * .16;
+    carGroup.rotation.z = Math.sin(time * .17 - p * 2.2) * .08;
+    var breath = 1 + Math.sin(time * .72) * .025;
+    carGroup.scale.setScalar(breath);
+    if (points) points.material.opacity = .54 + .18 * Math.sin(time * 1.35);
+    for (var h = 3; h < carGroup.children.length; h++) {
+      carGroup.children[h].rotation.z = time * carGroup.children[h].userData.speed + p * (h - 2) * .34;
+    }
+
+    // O túnel fica quase imóvel: profundidade sem disputar atenção com o texto.
+    var off = p * 62 + time * .9;
     for (var i = 0; i < rings.length; i++) {
       var z = ((rings[i].userData.base + off) % TUNNEL_LEN);
       rings[i].position.z = z - TUNNEL_LEN * .72;
-      rings[i].material.opacity = .05 + .16 * (z / TUNNEL_LEN);
+      rings[i].material.opacity = .018 + .06 * (z / TUNNEL_LEN);
     }
-    if (streaks) streaks.position.z = -((off * 1.35) % RING_SPACING);
+    if (streaks) {
+      streaks.position.z = -((off * .4) % RING_SPACING);
+      streaks.material.opacity = .16;
+    }
     renderer.render(scene, camera);
   }
 
@@ -1130,9 +1173,12 @@ var HeroSourceProcedural = (function () {
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var stage = document.getElementById('heroStage');
   var canvas = document.getElementById('heroCanvas');
+  var organicStage = document.getElementById('organicStage');
+  var organicCanvas = document.getElementById('organicCanvas');
   var heroCopy = document.getElementById('heroCopy');
   var heroSec = document.getElementById('hero');
   var dorSec = document.getElementById('dor');
+  var frontsSec = document.getElementById('frentes');
   var dorItems = Array.prototype.slice.call(document.querySelectorAll('.dor-item'));
   var dorClose = document.querySelector('.dor-close');
   var solid = document.getElementById('solid-zone');
@@ -1155,57 +1201,77 @@ var HeroSourceProcedural = (function () {
     watches.forEach(function (w) { w.classList.add('in'); });
   }
 
-  // ---- herói em cascata: frames (vídeo real) → procedural → gradiente ----
+  // ---- fase 1: vídeo real; fase 2: núcleo orgânico 3D ----
   var ActiveHero = null, heroOn = false;
+  var organicReady = false, organicLoading = false, organicFailed = false;
   window.__heroMode = 'gradient';
+  window.__organicMode = 'waiting';
 
   function useGradient() {
     ActiveHero = null; heroOn = false;
     doc.classList.add('no-webgl');
-    if (reduced) doc.classList.add('static-hero');
     window.__heroMode = 'gradient';
   }
   function loadScript(url, onok, onerr) {
+    if (window.THREE) { onok(); return; }
+    var existing = document.querySelector('script[data-three-loader]');
+    if (existing) {
+      existing.addEventListener('load', onok, { once: true });
+      existing.addEventListener('error', onerr, { once: true });
+      return;
+    }
     var s = document.createElement('script');
-    s.src = url; s.async = true;
+    s.src = url; s.async = true; s.setAttribute('data-three-loader', '');
     s.onload = onok; s.onerror = onerr;
     document.head.appendChild(s);
   }
-  function freshCanvas() {
-    // o canvas já recebeu um contexto 2d na tentativa de frames — WebGL
-    // exige um canvas virgem, então troca o elemento no lugar
-    var nc = canvas.cloneNode(false);
-    canvas.parentNode.replaceChild(nc, canvas);
-    canvas = nc;
-    return nc;
+
+  function initOrganic() {
+    if (organicReady || organicFailed) return;
+    if (HeroSourceProcedural.init(organicCanvas)) {
+      organicReady = true;
+      window.__organicMode = 'webgl';
+      organicStage.classList.remove('fallback');
+      fit();
+    } else {
+      organicFailed = true;
+      window.__organicMode = 'gradient';
+      organicStage.classList.add('fallback');
+    }
   }
-  function tryProcedural() {                 // three.min.js (603 KB) só baixa AQUI
-    heroOn = false; ActiveHero = null;
-    if (reduced) { useGradient(); return; }
+  function ensureOrganic() {
+    if (organicReady || organicLoading || organicFailed) return;
+    organicLoading = true;
+    window.__organicMode = 'loading';
     loadScript('apresentacao-assets/three.min.js', function () {
-      if (HeroSourceProcedural.init(freshCanvas(), { reduced: reduced })) {
-        ActiveHero = HeroSourceProcedural; heroOn = true;
-        window.__heroMode = 'procedural';
-        fit();
-      } else useGradient();
-    }, useGradient);
+      organicLoading = false;
+      initOrganic();
+    }, function () {
+      organicLoading = false; organicFailed = true;
+      window.__organicMode = 'gradient';
+      organicStage.classList.add('fallback');
+    });
   }
 
-  heroOn = HeroSourceFrames.init(canvas, { reduced: reduced });
+  // Mesmo com "Reduzir Movimento", o scrub continua porque é comandado
+  // diretamente pelo dedo; apenas o giro automático do núcleo é removido.
+  heroOn = HeroSourceFrames.init(canvas, { reduced: false });
   if (heroOn) {
     ActiveHero = HeroSourceFrames;
-    window.__heroMode = reduced ? 'poster' : 'frames';
-    HeroSourceFrames.onfail = tryProcedural; // frames 404/corrompidos → fallback
+    window.__heroMode = 'frames';
+    HeroSourceFrames.onfail = useGradient;
   } else {
-    tryProcedural();
+    useGradient();
   }
 
   function fit() {
     if (heroOn && ActiveHero) ActiveHero.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1);
+    if (organicReady) HeroSourceProcedural.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1);
   }
   fit();
   window.addEventListener('resize', fit);
   window.addEventListener('orientationchange', fit);
+  (window.requestIdleCallback || function (fn) { setTimeout(fn, 900); })(ensureOrganic);
 
   // ---- laço principal: lerp do scroll ----
   var target = 0, smooth = 0, lastT = performance.now();
@@ -1226,14 +1292,14 @@ var HeroSourceProcedural = (function () {
     pbar.style.width = (target * 100).toFixed(2) + '%';
 
     // capa: texto sobe e some no 1º ato (transform/opacity apenas)
-    if (!reduced && heroCopy) {
+    if (heroCopy) {
       var hp = clamp01(y / (vh * .8));
       heroCopy.style.transform = 'translateY(' + (-hp * 12) + 'svh)';
       heroCopy.style.opacity = String(1 - hp * 1.25);
     }
 
     // a dor: quotes esfregadas pelo scroll (posição crua = resposta imediata ao dedo)
-    if (!reduced && dorSec) {
+    if (dorSec) {
       var r = dorSec.getBoundingClientRect();
       var span = r.height - vh;
       var q = span > 0 ? clamp01(-r.top / span) : 0;
@@ -1255,23 +1321,39 @@ var HeroSourceProcedural = (function () {
       dorClose.style.visibility = cc <= 0 ? 'hidden' : 'visible';
     }
 
-    // zona sólida cobrindo o viewport → pausa o render (economia real de
-    // bateria). O CTA fica FORA da zona: o herói volta com o carro fechado.
+    // Transição de linguagem visual: o vídeo termina cedo e o núcleo 3D
+    // permanece fixo durante todo o restante da apresentação.
+    var frontsTop = frontsSec ? frontsSec.getBoundingClientRect().top + y : vh * 3;
+    var videoEnd = Math.max(vh, frontsTop - vh * .18);
+    var organicOn = y >= videoEnd;
+    if (y >= videoEnd - vh * 1.2) ensureOrganic();
+    var organicProgress = max > videoEnd ? clamp01((y - videoEnd) / (max - videoEnd)) : 0;
+    window.__visualPhase = organicOn ? 'organic' : 'video';
+    window.__organicProgress = organicProgress;
+
     var covered = false;
     if (solid) {
       var sr = solid.getBoundingClientRect();
       covered = sr.top <= 1 && sr.bottom >= vh - 1;
     }
     if (topbar) topbar.classList.toggle('off', covered);
+
+    // Sem frames, mantém o poster/fallback visível até a entrada do núcleo.
+    stage.classList.toggle('off', organicOn);
+    organicStage.classList.toggle('on', organicOn);
+
     if (heroOn && ActiveHero) {
-      ActiveHero.setPaused(covered || document.hidden);
-      stage.classList.toggle('off', covered);
-      if (!covered && !document.hidden) {
+      ActiveHero.setPaused(organicOn || document.hidden);
+      if (!organicOn && !document.hidden) {
         ActiveHero.draw(smooth, now / 1000);
         window.__heroStats.frames++;
       }
-    } else {
-      stage.classList.toggle('off', covered);
+    }
+    if (organicReady) {
+      HeroSourceProcedural.setPaused(!organicOn || document.hidden);
+      if (organicOn && !document.hidden) {
+        HeroSourceProcedural.draw(organicProgress, reduced ? 0 : now / 1000);
+      }
     }
     requestAnimationFrame(frame);
   }
