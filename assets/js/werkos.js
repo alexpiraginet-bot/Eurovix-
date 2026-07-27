@@ -41,17 +41,66 @@
   const aceiteHash = (os) => `${djb2(JSON.stringify(os.itens.map(i => [i.id, i.aprovacao, i.nivelEscolhido])))}…${djb2(os.vin)}`.slice(0, 18);
 
   /* ---------- compressão de foto → thumbnail dataURL ---------- */
-  function fileToThumb(file, cb) {
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      const k = Math.min(1, 480 / Math.max(img.width, img.height));
-      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      cb(c.toDataURL('image/jpeg', 0.55));
-      URL.revokeObjectURL(img.src);
+  /* Foto do check-in → JPEG otimizado para a LEITURA POR IA.
+     ------------------------------------------------------------
+     Antes: 480px/0.55 e SEM tratamento de erro — se o navegador não
+     decodificasse a imagem (HEIC do iPhone, arquivo grande, formato
+     recusado), o onload nunca disparava e a foto sumia calada. Era o
+     motivo de "tiro a foto, uso a foto e ela não anexa".
+     Agora: 3 tentativas em cascata e SEMPRE responde (sucesso ou erro).
+       1) createImageBitmap — aceita mais formatos (inclusive HEIC no iOS);
+       2) <img> clássico;
+       3) o arquivo original em dataURL (anexa mesmo sem redimensionar).
+     Resolução 1400px e qualidade 0.75: o suficiente para a IA ler
+     odômetro, luzes de painel e riscos finos, sem estourar o payload. */
+  const FOTO_LADO = 1400, FOTO_Q = 0.75;
+  function fileToThumb(file, cb, onErro) {
+    const falhou = (motivo) => { if (typeof onErro === 'function') onErro(motivo); };
+    if (!file) { falhou('arquivo vazio'); return; }
+
+    const desenhar = (src, w, h, limpar) => {
+      try {
+        const c = document.createElement('canvas');
+        const k = Math.min(1, FOTO_LADO / Math.max(w, h));
+        c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+        c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+        const url = c.toDataURL('image/jpeg', FOTO_Q);
+        if (limpar) limpar();
+        if (!url || url.length < 32) { bruto(); return; }   // canvas vazio (ex.: iOS sem memória)
+        cb(url);
+      } catch (e) { if (limpar) limpar(); bruto(); }
     };
-    img.src = URL.createObjectURL(file);
+
+    // Último recurso: o arquivo como veio — mas SÓ nos formatos que a leitura por
+    // IA aceita (jpeg/png/gif/webp). HEIC do iPhone que não decodificou aqui não
+    // adianta anexar: a análise recusaria. Nesse caso explicamos como resolver.
+    const bruto = () => {
+      try {
+        const r = new FileReader();
+        r.onload = () => {
+          const d = String(r.result || '');
+          if (/^data:image\/(jpeg|jpg|png|gif|webp);base64,/i.test(d)) cb(d);
+          else if (/hei[cf]/i.test(file.type || file.name || '')) falhou('formato HEIC do iPhone — em Ajustes › Câmera › Formatos, escolha "Mais Compatível"');
+          else falhou('formato de imagem não suportado');
+        };
+        r.onerror = () => falhou('não foi possível ler o arquivo');
+        r.readAsDataURL(file);
+      } catch (e) { falhou('não foi possível ler o arquivo'); }
+    };
+
+    const viaImg = () => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => desenhar(img, img.width, img.height, () => URL.revokeObjectURL(url));
+      img.onerror = () => { URL.revokeObjectURL(url); bruto(); };   // ← o que faltava
+      img.src = url;
+    };
+
+    if (typeof createImageBitmap === 'function') {
+      createImageBitmap(file)
+        .then(bm => desenhar(bm, bm.width, bm.height, () => { try { bm.close(); } catch (_) {} }))
+        .catch(viaImg);
+    } else viaImg();
   }
 
   // Logo da oficina → dataURL PNG (preserva transparência; até 400px no maior lado).
@@ -689,7 +738,9 @@
         // dispara a câmera duas vezes no iOS Safari e a foto some ao confirmar.
         inp.addEventListener('change', () => {
           if (!inp.files[0]) return;
-          fileToThumb(inp.files[0], (url) => { ck.fotos[slot.dataset.i] = url; snap2(); renderCheckin(); });
+          fileToThumb(inp.files[0],
+            (url) => { ck.fotos[slot.dataset.i] = url; snap2(); renderCheckin(); },
+            (motivo) => { inp.value = ''; toast('Foto não anexada', (motivo || 'tente de novo') + ' — tire outra ou escolha da galeria.'); });
         });
       });
       const _map = $('#carMap');
@@ -1509,6 +1560,10 @@
         mediaThumb = url;
         $('#ni-media-slot').classList.add('filled');
         $('#ni-media-label').textContent = 'foto anexada ✓';
+      }, (motivo) => {
+        niMedia.value = '';
+        $('#ni-media-label').textContent = 'anexar foto/vídeo';
+        toast('Foto não anexada', (motivo || 'tente de novo') + ' — escolha outra imagem.');
       });
     });
     const niAdd = $('#ni-add');
