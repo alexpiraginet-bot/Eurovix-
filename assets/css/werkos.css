@@ -109,6 +109,17 @@ body.werk-body .btn-primary:hover{box-shadow:0 14px 32px rgba(59,134,242,.42)}
   padding:11px 13px;font-size:13.5px;color:var(--txt);
 }
 .wfield input:focus,.wfield select:focus,.wfield textarea:focus{border-color:var(--red);outline:none}
+/* iOS: QUALQUER campo com fonte < 16px faz o Safari dar zoom sozinho ao focar —
+   a tela "cresce", sai do lugar e o usuário precisa fechar o zoom na mão. No
+   celular subimos todos os campos para 16px (no desktop o desenho continua
+   compacto). Isto NÃO usa maximum-scale/user-scalable=no: o pinça-para-ampliar
+   continua disponível, que é o certo para acessibilidade. */
+@media (max-width:900px){
+  .wfield input,.wfield select,.wfield textarea,
+  .chat-send input,
+  #wkMain input,#wkMain select,#wkMain textarea,
+  .wk-lock-card input{ font-size:16px }
+}
 .wfield .hintline{font-size:10.5px;color:var(--txt-3);margin-top:5px}
 .wfield .hintline.ok{color:var(--ok)}
 .wfield .hintline.err{color:var(--wk-on)}
@@ -156,6 +167,26 @@ body.werk-body .btn-primary:hover{box-shadow:0 14px 32px rgba(59,134,242,.42)}
 .media-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .media-slot.filled{border-style:solid;border-color:var(--ok)}
 .media-slot .tagok{position:absolute;top:5px;right:5px;background:var(--ok);color:#fff;border-radius:6px;font-size:8.5px;font-weight:800;padding:2px 6px;z-index:2}
+/* O <input type=file> NÃO pode ser display:none/hidden: no iOS Safari um input
+   escondido assim não é ativado de forma confiável pelo clique no <label>, e a
+   câmera não abre (ou abre a galeria). O padrão que funciona é deixá-lo
+   renderizado cobrindo o slot, porém invisível — o toque cai direto nele. */
+.media-slot .slot-file,
+#ckGaleriaBtn .slot-file{
+  position:absolute;inset:0;width:100%;height:100%;
+  opacity:0;border:0;padding:0;margin:0;cursor:pointer;z-index:3;
+  font-size:16px;                 /* ≥16px evita o zoom automático do iOS */
+  -webkit-appearance:none;appearance:none;
+}
+#ckGaleriaBtn{position:relative;overflow:hidden}
+/* Converter uma foto de iPhone leva alguns segundos: sem sinal na tela o
+   consultor acha que não anexou e toca de novo. Este é o sinal. */
+.media-slot.lendo,#ckGaleriaBtn.lendo{opacity:.55;pointer-events:none}
+.media-slot.lendo::after,#ckGaleriaBtn.lendo::after{
+  content:"anexando…";position:absolute;inset:auto 0 0 0;z-index:4;
+  background:var(--blue-light);color:#fff;font-size:9.5px;font-weight:800;
+  letter-spacing:.04em;text-align:center;padding:3px 0;
+}
 
 /* Assinatura */
 .sig-pad{background:#F5F6F8;border-radius:12px;border:1px solid var(--line-strong);position:relative}
@@ -392,6 +423,17 @@ html[data-theme="light"] .kcard:hover{border-color:var(--red-border)}
 .ck-ai-btn:disabled,.ck-ai-btn.loading{opacity:.6;cursor:progress}
 .ck-ai-btn svg{flex:none}
 
+/* Faixa "você tinha um check-in em andamento" — aparece quando existe rascunho
+   gravado e o consultor entrou no check-in por conta própria. */
+.ck-rascunho{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;
+  background:var(--blue-soft);border:1px solid var(--blue-border);border-radius:12px;
+  padding:11px 14px;font-size:12.5px;color:var(--txt-2);
+}
+.ck-rascunho span{flex:1;min-width:180px}
+.ck-rascunho b{color:var(--txt);font-family:var(--font-display);margin-right:6px}
+.ck-rascunho .btn{padding:8px 14px;font-size:11.5px}
+
 .ck-ia-panel{border-color:var(--red-border);box-shadow:0 0 0 1px rgba(59,134,242,.14) inset}
 .ck-ia-panel h3{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .ck-ia-badge{font-family:ui-monospace,'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
@@ -498,6 +540,10 @@ html[data-theme="light"] .kcard:hover{border-color:var(--red-border)}
 .wk-lock-card .wfield input{width:100%}
 .wk-lock-alt{display:inline-block;margin-top:16px;font-size:12px;color:var(--txt-3);text-decoration:none}
 .wk-lock-alt:hover{color:var(--red)}
+/* "Manter conectado" e "Ativar Face ID" — linhas de opção do login */
+.wk-manter{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12.5px;color:var(--txt-2);cursor:pointer;text-align:left}
+.wk-manter input{width:16px;height:16px;flex:none;accent-color:var(--blue-light);cursor:pointer}
+.wk-bio{margin-top:10px;width:100%}
 /* Chip de conta logada na sidebar (quem/qual oficina) */
 .wk-account{display:flex;align-items:center;gap:9px;margin:0 0 12px;padding:9px 11px;border:1px solid var(--line);
   border-radius:11px;background:var(--navy)}
