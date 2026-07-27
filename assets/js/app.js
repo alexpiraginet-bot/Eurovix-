@@ -934,7 +934,7 @@
 
       <div class="sec-label">Conta</div>
       <div class="plist">
-        <a class="prow" href="index.html">${EVX.icon('home', 20)}<div><b>Site da ${brandNome()}</b><span>Serviços e contato</span></div><span class="chev">›</span></a>
+        <a class="prow" href="oficina.html">${EVX.icon('home', 20)}<div><b>Site da ${brandNome()}</b><span>Serviços e contato</span></div><span class="chev">›</span></a>
         <a class="prow" href="werkos.html" target="_blank">${EVX.icon('tool', 20)}<div><b>WERK OS — painel da oficina</b><span>Abra lado a lado e veja o tempo real</span></div><span class="chev">›</span></a>
         <a class="prow" href="apresentacao.html">${EVX.icon('doc', 20)}<div><b>Apresentação da marca</b><span>Identidade & ecossistema</span></div><span class="chev">›</span></a>
       </div>

@@ -294,7 +294,7 @@
             if (!up.ok) { toast('Land page: ' + up.erro); return; }
             b.setAttribute('data-slug', slug);
           }
-          var land = origin + '/index.html?of=' + encodeURIComponent(slug);
+          var land = origin + '/oficina.html?of=' + encodeURIComponent(slug);
           var agenda = origin + '/agendamento.html?of=' + encodeURIComponent(slug);
           try { if (navigator.clipboard) await navigator.clipboard.writeText(land); } catch (_) {}
           window.prompt('Land page de ' + nome + ' (copiada). Agendamentos feitos por ela caem NESTA oficina.\n\nAgendar direto: ' + agenda + '\n\nLink da land page:', land);
