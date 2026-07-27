@@ -7,6 +7,12 @@
 (function () {
   'use strict';
 
+  /* Land page por cliente: ?of=<slug> (o subdomínio da oficina no Central Admin).
+     O agendamento feito nesta página vai EXATAMENTE para essa oficina — sem
+     heurística. Sem ?of=, cai na oficina configurada com "📅 receber". */
+  const OF_SLUG = (new URLSearchParams(location.search).get('of') || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+  let ofPub = null;   // { nome, slug, cidade, whatsapp } — identidade pública da oficina
+
   const state = {
     step: 1,
     veiculo: { modelo: '', ano: '', placa: '', km: '' },
@@ -241,7 +247,9 @@
       `Veículo: ${appt.veiculo}${appt.placa ? ' (' + appt.placa + ')' : ''}\n` +
       `Serviço: ${appt.servicoNome}\n` +
       `Data: ${appt.dataLabel} às ${appt.hora}`;
-    $('#whatsLink').href = `https://wa.me/${EVX.CONTACT.whatsapp}?text=${encodeURIComponent(msg)}`;
+    // WhatsApp da oficina desta land page (?of=), com o número padrão como reserva
+    const zap = (ofPub && ofPub.whatsapp) ? (ofPub.whatsapp.length <= 11 ? '55' + ofPub.whatsapp : ofPub.whatsapp) : EVX.CONTACT.whatsapp;
+    $('#whatsLink').href = `https://wa.me/${zap}?text=${encodeURIComponent(msg)}`;
 
     /* WERK OS · Agenda — envia o agendamento também para a fila da oficina
        (RPC pública agendar_publico, chave anônima). MELHOR ESFORÇO: o sucesso
@@ -255,6 +263,7 @@
           auth: { persistSession: false, autoRefreshToken: false }, // página anônima: não toca na sessão do app
         });
         sb.rpc('agendar_publico', {
+          p_oficina: OF_SLUG || null,   // land page do cliente → cai na oficina dele
           p_dados: {
             nome: appt.contato.nome,
             telefone: appt.contato.tel,
@@ -281,6 +290,27 @@
     else show(state.step + 1);
   });
   btnBack.addEventListener('click', () => show(Math.max(1, state.step - 1)));
+
+  /* Land page do cliente: veste a página com o nome da oficina do ?of=.
+     Melhor esforço — sem nuvem ou slug inválido, a página segue como está. */
+  (function marcarOficina() {
+    if (!OF_SLUG) return;
+    var env = window.EVX_ENV || {};
+    if (!(env.SUPABASE_URL && env.SUPABASE_ANON_KEY && typeof supabase !== 'undefined' && supabase.createClient)) return;
+    try {
+      var sb = supabase.createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      sb.rpc('oficina_publica', { p_slug: OF_SLUG }).then(function (r) {
+        if (r.error || !r.data) return;
+        ofPub = r.data;
+        try {
+          document.title = ofPub.nome + ' — Agendamento';
+          document.querySelectorAll('[data-of-nome]').forEach(function (el) { el.textContent = ofPub.nome; });
+        } catch (_) {}
+      });
+    } catch (_) { /* land page nunca quebra por causa disso */ }
+  })();
 
   show(1);
 })();
