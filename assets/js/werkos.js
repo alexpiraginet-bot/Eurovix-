@@ -684,7 +684,9 @@
       $$('#ckItens .check-tile input').forEach(cb => cb.addEventListener('change', () => cb.closest('.check-tile').classList.toggle('on', cb.checked)));
       $$('#fotoGrid .media-slot').forEach(slot => {
         const inp = $('input', slot);
-        slot.addEventListener('click', () => inp.click());
+        // Não chamar inp.click() aqui: o <input> já está dentro do <label>,
+        // que ativa o input nativamente ao ser clicado. Chamar .click() de novo
+        // dispara a câmera duas vezes no iOS Safari e a foto some ao confirmar.
         inp.addEventListener('change', () => {
           if (!inp.files[0]) return;
           fileToThumb(inp.files[0], (url) => { ck.fotos[slot.dataset.i] = url; snap2(); renderCheckin(); });
