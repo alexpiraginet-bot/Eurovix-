@@ -1,0 +1,58 @@
+/* ============================================================
+   LexOS · WERK OS — camada MOBILE (iPhone / Android)
+   ------------------------------------------------------------
+   Carregada por ÚLTIMO em todas as páginas. Resolve três defeitos
+   que só aparecem no celular e que nenhuma folha de estilo de
+   página deveria precisar repetir:
+
+   1) ZOOM AUTOMÁTICO AO DIGITAR
+      O iOS Safari amplia a tela sozinho quando o campo que recebe
+      o foco tem fonte menor que 16px. A página "cresce", sai do
+      centro e o usuário tem de fechar o zoom na mão a cada campo.
+      Aqui todo campo vai a 16px no celular (no desktop o desenho
+      compacto de cada tela continua intacto).
+      NÃO usamos maximum-scale / user-scalable=no: isso mataria o
+      pinça-para-ampliar, que é recurso de acessibilidade.
+
+   2) ROLAGEM LATERAL ("espaço pra correr pro lado")
+      Basta um elemento alguns pixels mais largo que a tela para o
+      Safari encolher tudo para caber — a página abre já reduzida e
+      desalinhada. `overflow-x:clip` corta o excesso SEM criar um
+      contêiner de rolagem, então `position:sticky` (cabeçalhos)
+      continua funcionando — o que `overflow-x:hidden` quebraria.
+
+   3) TEXTO INFLADO
+      O iOS aumenta a fonte por conta própria em blocos que julga
+      "longos". `text-size-adjust:100%` desliga esse reajuste.
+   ============================================================ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (max-width: 900px) {
+
+  /* --- 2) nada mais largo que a tela --- */
+  html, body { max-width: 100%; overflow-x: clip; }
+
+  /* Mídia e incorporações nunca estouram a largura. */
+  img, video, canvas, svg, iframe, model-viewer { max-width: 100%; }
+
+  /* --- 1) campos a 16px: o único jeito de o iOS não dar zoom ---
+     Precisa vencer as regras de cada tela (ex.: `.wfield input`),
+     que são mais específicas — daí o !important. `max-width:100%`
+     junto porque um campo maior não pode virar rolagem lateral. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+    max-width: 100%;
+  }
+
+  /* Tabelas largas rolam dentro do próprio contêiner. */
+  table { max-width: 100%; }
+
+  /* Palavra gigante sem espaço (URL, VIN, e-mail) não alarga a tela. */
+  body { overflow-wrap: break-word; }
+}

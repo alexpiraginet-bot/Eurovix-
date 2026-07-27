@@ -240,6 +240,7 @@
     // persistida qualquer (cliente, ativação stale, conta sem equipe) NÃO entra.
     if (WERK.cloud && !(WERK.authUser() && WERK.staffPerfil())) { renderStaffLock(); return; }
     const [v, param] = (location.hash.replace(/^#\//, '') || 'kanban').split('/');
+    if (v !== 'checkin') ckSaiuDoCheckin();          // volta a poder oferecer o rascunho
     $$('.wk-nav button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
     (views[v] || views.kanban)(param);
     wrapTables();
@@ -497,7 +498,102 @@
   // do wizard. O reset abaixo é TOTAL — então o pré-preenchimento tem que ser
   // aplicado DEPOIS dele, senão seria apagado junto.
   let ckPrefill = null;
+  // Um check-in EM ANDAMENTO nunca pode ser zerado por um re-render de fundo.
+  // No iPhone isso acontecia o tempo todo: abrir a câmera manda a página para
+  // segundo plano; ao voltar, a nuvem re-hidrata e dispara evx:sync → route() →
+  // views.checkin() → tudo apagado. Era a foto "que não anexava".
+  const ckEmAndamento = () => !ck.osNum && !!(
+    ck.cliente || ck.telefone || ck.placa || ck.vin || ck.odometro ||
+    (ck.fotos && Object.keys(ck.fotos).length) || (ck.danos && ck.danos.length)
+  );
+
+  /* ---------- RASCUNHO PERSISTENTE DO CHECK-IN ----------------------------
+     A guarda acima só protege o que está na memória. No iPhone o problema é
+     mais duro: quando a câmera abre em tela cheia, o iOS manda o Safari para
+     segundo plano e, sob pressão de memória, DESCARTA a página. Ao confirmar a
+     foto o navegador recarrega tudo do zero — e o wizard inteiro (com a foto)
+     se perde. É exatamente o "tiro a foto e ela não anexa".
+     Solução: gravar o rascunho fora da memória e devolvê-lo ao voltar.
+     Usamos IndexedDB porque as fotos são dataURL de centenas de KB e o
+     localStorage do Safari estoura em ~5 MB (e lança QuotaExceededError). */
+  const CK_DB = 'evx.werk', CK_STORE = 'rascunho', CK_KEY = 'checkin';
+  const CK_VALIDADE = 12 * 60 * 60 * 1000;                     // 12h — depois disso é lixo
+  // Só campos serializáveis: `_v3` (instância do carro 3D) e afins ficam de fora.
+  const CK_CAMPOS = ['step', 'fotos', 'danos', 'sig', 'veic', 'veiculoNome', 'veicCor', 'veicComb',
+    'veicAnoMod', 'placa', 'vin', 'decoded', 'cliente', 'telefone', 'sintoma', 'tecnico',
+    'odometro', 'combustivel', 'luzes', 'itens', 'agendamento', 'iaResumo', 'iaOrcamento', 'view3'];
+
+  function ckIdb(modo, fn) {
+    return new Promise((ok, err) => {
+      if (!window.indexedDB) { err(new Error('sem indexedDB')); return; }
+      const abrir = indexedDB.open(CK_DB, 1);
+      abrir.onupgradeneeded = () => {
+        const db = abrir.result;
+        if (!db.objectStoreNames.contains(CK_STORE)) db.createObjectStore(CK_STORE);
+      };
+      abrir.onerror = () => err(abrir.error);
+      abrir.onsuccess = () => {
+        const db = abrir.result;
+        try {
+          const tx = db.transaction(CK_STORE, modo);
+          const req = fn(tx.objectStore(CK_STORE));
+          tx.oncomplete = () => { db.close(); ok(req ? req.result : null); };
+          tx.onerror = () => { db.close(); err(tx.error); };
+          tx.onabort = () => { db.close(); err(tx.error); };
+        } catch (e) { db.close(); err(e); }
+      };
+    });
+  }
+  // Grava/limpa nunca podem derrubar a tela: falha de cota ou modo privado só some
+  // com a rede de segurança — o check-in em si continua funcionando na memória.
+  function ckSalvarRascunho() {
+    if (ck.osNum || !ckEmAndamento()) return Promise.resolve();
+    const d = { em: Date.now() };
+    CK_CAMPOS.forEach(k => { if (ck[k] !== undefined) d[k] = ck[k]; });
+    return ckIdb('readwrite', st => st.put(d, CK_KEY)).catch(() => {});
+  }
+  function ckApagarRascunho() {
+    return ckIdb('readwrite', st => st.delete(CK_KEY)).catch(() => {});
+  }
+  function ckLerRascunho() {
+    return ckIdb('readonly', st => st.get(CK_KEY))
+      .then(d => (d && d.em && (Date.now() - d.em) < CK_VALIDADE) ? d : null)
+      .catch(() => null);
+  }
+  function ckAplicarRascunho(d) {
+    CK_CAMPOS.forEach(k => { if (d[k] !== undefined) ck[k] = d[k]; });
+    ck.osNum = null; ck.clienteRec = null;
+  }
+  // Lê para `ck` tudo que estiver na tela AGORA (etapa 1 ou 2, o que existir).
+  // Chamado antes de gravar: garante que o que o consultor acabou de digitar
+  // entra no rascunho mesmo sem ele ter clicado em "Continuar".
+  function ckLerTela() {
+    const v = (id) => { const el = $(id); return el ? el.value : undefined; };
+    const set = (k, val) => { if (val !== undefined) ck[k] = typeof val === 'string' ? val.trim() : val; };
+    set('vin', v('#ck-vin')); set('placa', v('#ck-placa'));
+    set('veiculoNome', v('#ck-modelo')); set('veicAnoMod', v('#ck-anomod'));
+    set('veicCor', v('#ck-cor')); set('veicComb', v('#ck-comb'));
+    set('cliente', v('#ck-cli')); set('telefone', v('#ck-tel')); set('sintoma', v('#ck-sintoma'));
+    const tec = v('#ck-tec'); if (tec !== undefined) ck.tecnico = tec.split(' — ')[0];
+    set('odometro', v('#ck-odo'));
+    const fuel = v('#ck-fuel'); if (fuel !== undefined) ck.combustivel = +fuel;
+    const luz = v('#ck-luzes'); if (luz !== undefined) ck.luzes = luz.split(',').map(s => s.trim()).filter(Boolean);
+    if ($('#ckItens')) ck.itens = $$('#ckItens input').map(c => c.checked);
+  }
+  // Último instante antes de o iOS tirar a página do ar (abrir a câmera, trocar de
+  // app, bloquear a tela): grava o que estiver na tela. `pagehide` é o evento que
+  // o Safari realmente dispara — `beforeunload` não é confiável no iOS.
+  const ckGuardarAgora = () => {
+    if (!location.hash.startsWith('#/checkin') || ck.osNum) return;
+    ckLerTela(); ckSalvarRascunho();
+  };
+  window.addEventListener('pagehide', ckGuardarAgora);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') ckGuardarAgora(); });
+
   views.checkin = () => {
+    // Re-entrou no check-in com trabalho em andamento (re-render da nuvem, voltar
+    // da câmera, trocar de aba): CONTINUA de onde estava, não recomeça.
+    if (ckEmAndamento() && !ckPrefill) { renderCheckin(); return; }
     // Novo check-in = tudo em branco: nunca herda dados (veículo NEM cliente) do
     // check-in anterior. Antes só o veículo era limpo — o nome/telefone do cliente
     // anterior vazava para a próxima entrada.
@@ -512,7 +608,47 @@
     renderCheckin();
     // Veio com placa do agendamento? já puxa os dados do veículo (check-in facilitado).
     if (ck.placa && ck.agendamento) { const b = $('#ckPlaca'); if (b) b.click(); }
+    // Existe rascunho gravado? Se a página acabou de ser recarregada JÁ no
+    // check-in (o caso da câmera do iPhone), devolvemos na hora — o consultor
+    // não escolheu perder nada. Em qualquer outra entrada, só oferecemos.
+    ckOferecerRascunho();
   };
+
+  // Recarregou dentro do próprio check-in = a página caiu sozinha (purga de
+  // memória do iOS ao voltar da câmera). Fora disso, o consultor pode ter vindo
+  // pelo menu para abrir um check-in NOVO — aí perguntamos antes.
+  let ckBootHash = location.hash;
+  let ckJaOfereceu = false;
+  function ckSaiuDoCheckin() { ckJaOfereceu = false; }
+  function ckOferecerRascunho() {
+    if (ckJaOfereceu || ck.osNum) return;
+    ckJaOfereceu = true;
+    ckLerRascunho().then(d => {
+      if (!d) return;
+      const fotos = d.fotos ? Object.keys(d.fotos).length : 0;
+      const quem = [d.placa, d.cliente].filter(Boolean).join(' · ') || 'sem identificação ainda';
+      const resumo = quem + (fotos ? ' · ' + fotos + ' foto' + (fotos > 1 ? 's' : '') : '');
+      const retomar = () => {
+        ckAplicarRascunho(d); renderCheckin();
+        toast('Check-in recuperado', resumo + ' — de volta de onde você parou.');
+      };
+      // Recarregamento involuntário: recupera sem perguntar.
+      if (ckBootHash.startsWith('#/checkin')) { ckBootHash = ''; retomar(); return; }
+      const barra = document.createElement('div');
+      barra.className = 'ck-rascunho';
+      barra.innerHTML = `<span><b>Check-in em andamento</b> ${esc(resumo)}</span>
+        <button class="btn btn-primary" type="button" data-r="sim">Retomar</button>
+        <button class="btn btn-secondary" type="button" data-r="nao">Começar novo</button>`;
+      const alvo = $('#ckBody');
+      if (!alvo) return;
+      alvo.parentNode.insertBefore(barra, alvo);
+      barra.addEventListener('click', e => {
+        const r = e.target.dataset && e.target.dataset.r;
+        if (r === 'sim') retomar();
+        else if (r === 'nao') { ckApagarRascunho(); barra.remove(); }
+      });
+    });
+  }
 
   const FOTO_SLOTS = ['Frente', 'Traseira', 'Lateral esq.', 'Lateral dir.', 'Teto', 'Interior', 'Painel/odômetro', 'Porta-malas'];
 
@@ -654,7 +790,7 @@
           telefone: $('#ck-tel').value, tecnico: $('#ck-tec').value.split(' — ')[0], sintoma: $('#ck-sintoma').value.trim(),
           decoded,
         });
-        ck.step = 2; renderCheckin();
+        ck.step = 2; ckSalvarRascunho(); renderCheckin();
       });
     }
 
@@ -684,9 +820,18 @@
               ${FOTO_SLOTS.map((s, i) => `
                 <label class="media-slot ${ck.fotos[i] ? 'filled' : ''}" data-i="${i}">
                   ${ck.fotos[i] ? `<img src="${ck.fotos[i]}" alt=""><span class="tagok">OK</span>` : `${I('scan', 18)}<span>${s}</span>`}
-                  <input type="file" accept="image/*" capture="environment" hidden>
+                  <input type="file" accept="image/*" capture="environment" class="slot-file" aria-label="Foto: ${s}">
                 </label>`).join('')}
             </div>
+            <!-- Alternativa explícita à câmera: em parte dos iPhones o atributo
+                 "capture" é ignorado e o Safari abre a galeria mesmo assim. Aqui o
+                 consultor escolhe de propósito — e manda VÁRIAS fotos de uma vez,
+                 que é como a oficina realmente trabalha (fotografa o carro inteiro
+                 e depois anexa tudo). Preenche os espaços vazios na ordem. -->
+            <label class="ck-ai-btn" id="ckGaleriaBtn" style="display:flex;justify-content:center;margin-top:8px;cursor:pointer">
+              ${I('scan', 15)} Escolher da galeria — várias de uma vez
+              <input type="file" accept="image/*" multiple id="ckGaleria" class="slot-file" style="position:absolute;inset:0;width:100%;height:100%">
+            </label>
             <button type="button" class="ck-ai-btn primary" id="ckAnalisar">${I('scan', 15)} Analisar fotos com IA — km, combustível, luzes e avarias</button>
           </div>
           <div class="wk-panel">
@@ -738,10 +883,34 @@
         // dispara a câmera duas vezes no iOS Safari e a foto some ao confirmar.
         inp.addEventListener('change', () => {
           if (!inp.files[0]) return;
+          // Aviso imediato: no iPhone a conversão de uma foto grande leva alguns
+          // segundos e, sem retorno visual, parece que "não anexou".
+          slot.classList.add('lendo');
           fileToThumb(inp.files[0],
-            (url) => { ck.fotos[slot.dataset.i] = url; snap2(); renderCheckin(); },
-            (motivo) => { inp.value = ''; toast('Foto não anexada', (motivo || 'tente de novo') + ' — tire outra ou escolha da galeria.'); });
+            (url) => { ck.fotos[slot.dataset.i] = url; snap2(); ckSalvarRascunho(); renderCheckin(); },
+            (motivo) => {
+              slot.classList.remove('lendo'); inp.value = '';
+              toast('Foto não anexada', (motivo || 'tente de novo') + ' — tire outra ou escolha da galeria.');
+            });
         });
+      });
+      // Galeria (várias de uma vez): distribui pelos espaços ainda vazios, na ordem.
+      const galeria = $('#ckGaleria');
+      if (galeria) galeria.addEventListener('change', () => {
+        const arquivos = Array.from(galeria.files || []);
+        if (!arquivos.length) return;
+        const vagas = FOTO_SLOTS.map((_, i) => i).filter(i => !ck.fotos[i]);
+        if (!vagas.length) { galeria.value = ''; toast('Tour completo', 'Os 8 espaços já têm foto — toque num deles para trocar.'); return; }
+        const usar = arquivos.slice(0, vagas.length);
+        if (arquivos.length > vagas.length) toast('Mais fotos que espaços', 'Vou anexar as ' + vagas.length + ' primeiras — o tour tem 8 espaços.');
+        const btn = $('#ckGaleriaBtn'); if (btn) btn.classList.add('lendo');
+        let pendentes = usar.length, erros = 0;
+        const fim = () => {
+          if (--pendentes > 0) return;
+          galeria.value = ''; snap2(); ckSalvarRascunho(); renderCheckin();
+          if (erros) toast('Algumas fotos não entraram', erros + ' de ' + usar.length + ' falharam — tente de novo ou tire outra.');
+        };
+        usar.forEach((f, n) => fileToThumb(f, (url) => { ck.fotos[vagas[n]] = url; fim(); }, () => { erros++; fim(); }));
       });
       const _map = $('#carMap');
       if (_map && window.WERK3D && WERK3D.supported) {          // carro 3D interativo (com fallback 2D abaixo)
@@ -808,12 +977,12 @@
         ck.luzes = $('#ck-luzes') ? $('#ck-luzes').value.split(',').map(s => s.trim()).filter(Boolean) : ck.luzes;
         ck.itens = $$('#ckItens input').map(c => c.checked);
       }
-      $('#ckBack2').addEventListener('click', () => { snap2(); ck.step = 1; renderCheckin(); });
+      $('#ckBack2').addEventListener('click', () => { snap2(); ckSalvarRascunho(); ck.step = 1; renderCheckin(); });
       $('#ckNext2').addEventListener('click', () => {
         snap2();
         if (!ck.odometro) { $('#ck-odo').focus(); return; }
         if (Object.keys(ck.fotos).length < 4) { toast('Fotos insuficientes', 'O checklist exige no mínimo 4 fotos do tour 360°.'); return; }
-        ck.step = 3; renderCheckin();
+        ck.step = 3; ckSalvarRascunho(); renderCheckin();
       });
     }
 
@@ -865,7 +1034,9 @@
           placa: ck.placa, km: +ck.odometro, cliente: ck.cliente, telefone: ck.telefone,
         });
         ck.clienteRec = await WERK.upsertCliente({ nome: ck.cliente, telefone: ck.telefone });
-        ck.osNum = os.numero; ck.step = 4; renderCheckin();
+        ck.osNum = os.numero; ck.step = 4;
+        ckApagarRascunho();                     // OS aberta: o rascunho cumpriu o papel
+        renderCheckin();
       });
     }
 
@@ -2431,6 +2602,10 @@
     if (e.key && e.key.startsWith('evx.') && !$('#wkModal').classList.contains('open')) { renderBrand(); route(); }
   });
   window.addEventListener('evx:sync', () => { // realtime da nuvem
+    // NUNCA redesenhar por cima de um check-in em andamento: o wizard tem estado
+    // vivo (fotos anexadas, campos digitados, o <input type=file> aberto). No iOS,
+    // voltar da câmera dispara re-hidratação — e isso apagava a foto recém-tirada.
+    if (location.hash.startsWith('#/checkin')) return;
     if (!$('#wkModal').classList.contains('open')) { renderBrand(); route(); }
   });
   window.addEventListener('evx:recovery', () => { renderBrand(); route(); }); // link de "esqueci a senha"
