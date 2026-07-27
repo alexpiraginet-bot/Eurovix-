@@ -17,32 +17,47 @@ const DEFAULT_BASE = 'https://wdapi2.com.br/consulta'; // ApiPlacas (apiplacas.c
 // Placa BR: antiga AAA9999 e Mercosul AAA9A99 → 3 letras + díg + (díg|letra) + 2 díg.
 const RE_PLACA = /^[A-Z]{3}[0-9][0-9A-Z][0-9]{2}$/;
 
+// Uma consulta ao provedor. Devolve { d, msg } — d é o JSON quando veio útil.
+async function consultar(base, placa, token) {
+  const r = await fetch(base + '/' + placa + '/' + token, { headers: { accept: 'application/json' } });
+  const txt = await r.text();
+  let d = null; try { d = JSON.parse(txt); } catch (_) { /* resposta não-JSON */ }
+  if (!d || typeof d !== 'object') return { d: null, msg: 'Falha na consulta de placa (' + r.status + ').' };
+  const temDados = pick(d, 'MARCA', 'marca', 'MODELO', 'modelo') || (d.extra && pick(d.extra, 'marca', 'modelo'));
+  if (!temDados) {
+    const m = pick(d, 'mensagemRetorno', 'message', 'mensagem', 'erro', 'error');
+    return { d: null, msg: m ? String(m).slice(0, 160) : 'Placa não encontrada.' };
+  }
+  return { d, msg: null };
+}
+
 async function handler(req, res) {
-  const token = process.env.APIPLACAS_TOKEN;
+  // A conta do ApiPlacas tem DOIS tokens: o normal e o PREMIUM. Só a consulta
+  // premium preenche o bloco "extra" com os dados cadastrais — é dela que vem o
+  // CHASSI COMPLETO (no plano normal ele volta mascarado, ex.: "*****00841").
+  // Como a compra de peça depende do VIN, tentamos o premium primeiro quando
+  // configurado e caímos no normal se ele falhar (sem crédito, token errado…).
+  const premium = process.env.APIPLACAS_TOKEN_PREMIUM;
+  const normal = process.env.APIPLACAS_TOKEN;
   const base = (process.env.APIPLACAS_URL || DEFAULT_BASE).replace(/\/+$/, '');
 
   const bruta = (req.query && req.query.placa) || placaDaUrl(req.url) || '';
   const placa = String(bruta).toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!RE_PLACA.test(placa)) { res.status(200).json({ ok: false, erro: 'Placa inválida (use AAA0A00 ou AAA9999).' }); return; }
-  if (!token) { res.status(200).json({ ok: false, erro: 'Consulta de placa não configurada (defina APIPLACAS_TOKEN na Vercel).' }); return; }
+  if (!premium && !normal) { res.status(200).json({ ok: false, erro: 'Consulta de placa não configurada (defina APIPLACAS_TOKEN na Vercel).' }); return; }
 
   try {
-    const r = await fetch(base + '/' + placa + '/' + token, { headers: { accept: 'application/json' } });
-    const txt = await r.text();
-    let d = null; try { d = JSON.parse(txt); } catch (_) { /* resposta não-JSON */ }
-    if (!d || typeof d !== 'object') {
-      res.status(200).json({ ok: false, erro: 'Falha na consulta de placa (' + r.status + ').' });
-      return;
+    let d = null, msg = null, fonte = null;
+    if (premium) {
+      const p = await consultar(base, placa, premium);
+      if (p.d) { d = p.d; fonte = 'premium'; } else { msg = p.msg; }
     }
-    // ApiPlacas sinaliza erro (placa não encontrada / sem créditos / token) em
-    // "mensagemRetorno" (ou message/erro conforme o caso).
-    const temDados = pick(d, 'MARCA', 'marca', 'MODELO', 'modelo') || (d.extra && pick(d.extra, 'marca', 'modelo'));
-    if (!temDados) {
-      const msg = pick(d, 'mensagemRetorno', 'message', 'mensagem', 'erro', 'error');
-      res.status(200).json({ ok: false, erro: msg ? String(msg).slice(0, 160) : 'Placa não encontrada.' });
-      return;
+    if (!d && normal) {
+      const n = await consultar(base, placa, normal);
+      if (n.d) { d = n.d; fonte = 'normal'; } else { msg = msg || n.msg; }
     }
-    res.status(200).json(normalizar(d, placa));
+    if (!d) { res.status(200).json({ ok: false, erro: msg || 'Placa não encontrada.' }); return; }
+    res.status(200).json(normalizar(d, placa, fonte));
   } catch (e) {
     res.status(200).json({ ok: false, erro: 'Erro ao consultar a placa — tente de novo.' });
   }
@@ -73,14 +88,25 @@ function fipeInfo(d) {
 // veículo e do "histórico" público (situação, origem, FIPE/valor, município/UF),
 // tolerante a variações de nome de campo (MAIÚSCULAS x minúsculas), ao objeto
 // "extra" (às vezes vazio) e ao bloco FIPE (fipe.dados[]).
-function normalizar(d, placa) {
+function normalizar(d, placa, fonte) {
   const ex = (d.extra && typeof d.extra === 'object') ? d.extra : {};
   const fipe = (d.fipe && Array.isArray(d.fipe.dados) && d.fipe.dados[0]) ? d.fipe.dados[0] : {};
   const marca = pick(d, 'MARCA', 'marca') || pick(ex, 'marca', 'MARCA');
   const modelo = pick(d, 'MODELO', 'modelo') || pick(ex, 'modelo', 'MODELO');
   const submodelo = pick(d, 'SUBMODELO', 'submodelo') || pick(ex, 'submodelo');
   const versao = pick(d, 'VERSAO', 'versao', 'VERSÃO') || pick(ex, 'versao');
-  const chassi = pick(d, 'chassi', 'CHASSI', 'chassis') || pick(ex, 'chassi', 'CHASSI');
+  // CHASSI: o provedor pode mandar o campo do topo MASCARADO ("*****00841") e o
+  // completo dentro de "extra" (consulta premium). Escolhemos o candidato que
+  // realmente forma um VIN de 17 — nunca o mascarado quando existe um íntegro.
+  const chassi = (function () {
+    const cands = [
+      pick(d, 'chassi', 'CHASSI', 'chassis'),
+      pick(ex, 'chassi', 'CHASSI', 'chassis'),
+      pick(ex, 'chassi_completo', 'chassiCompleto'),
+    ].filter(Boolean);
+    const completo = cands.find(c => String(c).toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '').length === 17);
+    return completo || cands[0] || null;
+  })();
   const anoMod = pick(d, 'anoModelo', 'ano_modelo') || pick(ex, 'ano_modelo', 'anoModelo') || pick(fipe, 'ano_modelo');
   const anoFab = pick(d, 'ano', 'anoFabricacao', 'ano_fabricacao') || pick(ex, 'ano', 'ano_fabricacao');
   const cor = pick(d, 'cor', 'COR') || pick(ex, 'cor', 'COR');
@@ -94,12 +120,20 @@ function normalizar(d, placa) {
   // O ApiPlacas mascara o chassi (ex.: "*****00841") em parte dos planos: ao tirar
   // os "*" sobra um fragmento inválido. Só emitimos VIN quando vier completo (17
   // caracteres) — senão fica vazio e o check-in segue pedindo o VIN da etiqueta.
+  const chassiBruto = txt(chassi) ? String(chassi).trim().toUpperCase() : null;
   const vinLimpo = chassi ? String(chassi).toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '') : '';
+  const vinCompleto = vinLimpo.length === 17;
+  // A compra de peça depende do VIN: quando o chassi vem mascarado, dizemos isso
+  // em alto e bom som para a UI orientar o mecânico a ler a etiqueta do veículo.
+  const vinParcial = !!chassiBruto && !vinCompleto;
   return {
     ok: true,
     placa,
-    vin: vinLimpo.length === 17 ? vinLimpo : '',
-    chassi: txt(chassi) ? String(chassi).trim().toUpperCase() : null,  // bruto (pode vir mascarado "*****00841") — mostrado no check-in para o mecânico completar o VIN
+    vin: vinCompleto ? vinLimpo : '',
+    vinParcial,                               // true = veio mascarado (ex.: "*****00841")
+    vinFragmento: vinParcial ? vinLimpo : '', // os dígitos que o provedor revelou
+    fonteConsulta: fonte || null,             // 'premium' (traz chassi completo) | 'normal'
+    chassi: chassiBruto,                      // bruto (pode vir mascarado) — mostrado no check-in
     modelo: modeloFull || (txt(modelo)),      // "RENAULT LOGAN ZEN10MT" — vai p/ o campo do veículo
     marca: txt(marca),
     modeloBase: txt(modelo),                  // só o MODELO ("LOGAN ZEN10MT")
