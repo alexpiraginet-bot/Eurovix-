@@ -74,4 +74,33 @@
       </article>
     `).join(''));
   }
+
+  /* ============================================================
+     LAND PAGE POR CLIENTE — ?of=<slug>
+     ------------------------------------------------------------
+     Cada oficina cadastrada no Central Admin tem a sua land page:
+       /index.html?of=<slug>
+     Aqui o slug é propagado para TODOS os links de agendamento, de
+     modo que o agendamento feito nesta página caia exatamente na
+     oficina daquele cliente (agendar_publico recebe o slug).
+     Roda no fim, depois dos cards renderizados. Melhor esforço:
+     sem ?of=, nada muda — o site segue como sempre foi.
+     ============================================================ */
+  (function landPageCliente() {
+    var slug = (new URLSearchParams(location.search).get('of') || '')
+      .trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if (!slug) return;
+    var propaga = function () {
+      document.querySelectorAll('a[href*="agendamento.html"]').forEach(function (a) {
+        try {
+          var u = new URL(a.getAttribute('href'), location.href);
+          if (!u.searchParams.get('of')) { u.searchParams.set('of', slug); a.setAttribute('href', u.pathname + u.search + u.hash); }
+        } catch (_) {}
+      });
+    };
+    propaga();
+    // cards de serviço são renderizados por JS: repassa após o paint
+    setTimeout(propaga, 0);
+    window.addEventListener('load', propaga);
+  })();
 })();

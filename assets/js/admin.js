@@ -25,6 +25,11 @@
   function esc(s) { return (s == null ? '' : String(s)).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function fmtDate(iso) { if (!iso) return '—'; var d = String(iso).slice(0, 10).split('-'); return d.length === 3 ? d[2] + '/' + d[1] + '/' + d[0] : iso; }
   function waDigits(s) { var d = (s || '').replace(/\D/g, ''); if (!d) return WA; return d.length <= 11 ? '55' + d : d; }
+  // slug da land page: "EUROVIX Performance" → "eurovix-performance"
+  function slugify(s) {
+    return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  }
 
   /* ---------- indicador de modo ---------- */
   $('modeLabel').textContent = CLOUD ? 'nuvem · Supabase Auth' : 'local · demo';
@@ -250,6 +255,7 @@
           '<td><span class="act">' +
           (o.whatsapp ? '<button data-wa="' + esc(waDigits(o.whatsapp)) + '" title="WhatsApp">💬</button>' : '') +
           '<button data-convite="' + esc(o.id) + '" data-wpp="' + esc(waDigits(o.whatsapp || '')) + '" data-nome="' + esc(o.nome || '') + '" title="Gerar link de acesso do dono da oficina">🔗 acesso</button>' +
+          '<button data-land="' + esc(o.id) + '" data-slug="' + esc(o.subdominio || '') + '" data-nome="' + esc(o.nome || '') + '" title="Land page exclusiva deste cliente (o agendamento cai na oficina dele)">🌐 land page</button>' +
           '<button data-recebe="' + esc(o.id) + '" data-nome="' + esc(o.nome || '') + '" title="' + (o.recebe_agendamentos ? 'Esta oficina recebe os agendamentos do site' : 'Fazer esta oficina receber os agendamentos do site') + '">' + (o.recebe_agendamentos ? '📅 recebe ✓' : '📅 receber') + '</button>' +
           '<button data-reset="' + esc(o.id) + '" data-email="' + esc(o.email || '') + '" data-wpp="' + esc(waDigits(o.whatsapp || '')) + '" data-nome="' + esc(o.nome || '') + '" title="Gerar link de NOVA SENHA da oficina">🔑 senha</button>' +
           '<button data-edit="' + esc(o.id) + '">editar</button>' +
@@ -274,6 +280,25 @@
             var msg = 'Olá! O acesso ao WERK OS da ' + (b.getAttribute('data-nome') || 'sua oficina') + ' está pronto. Crie sua senha e entre por este link: ' + link;
             try { window.open('https://wa.me/' + wpp + '?text=' + encodeURIComponent(msg), '_blank', 'noopener'); } catch (_) {}
           }
+        });
+      });
+      Array.prototype.forEach.call(tb.querySelectorAll('[data-land]'), function (b) {
+        b.addEventListener('click', async function () {
+          var id = b.getAttribute('data-land'), nome = b.getAttribute('data-nome') || 'a oficina';
+          var slug = (b.getAttribute('data-slug') || '').trim();
+          if (!slug) {   // sem slug ainda: gera a partir do nome e salva
+            slug = slugify(nome) || ('of-' + String(id).slice(0, 6));
+            b.disabled = true; var t0 = b.textContent; b.textContent = 'criando…';
+            var up = await saveOficina({ id: id, nome: nome, subdominio: slug });
+            b.disabled = false; b.textContent = t0;
+            if (!up.ok) { toast('Land page: ' + up.erro); return; }
+            b.setAttribute('data-slug', slug);
+          }
+          var land = origin + '/index.html?of=' + encodeURIComponent(slug);
+          var agenda = origin + '/agendamento.html?of=' + encodeURIComponent(slug);
+          try { if (navigator.clipboard) await navigator.clipboard.writeText(land); } catch (_) {}
+          window.prompt('Land page de ' + nome + ' (copiada). Agendamentos feitos por ela caem NESTA oficina.\n\nAgendar direto: ' + agenda + '\n\nLink da land page:', land);
+          renderTable();
         });
       });
       Array.prototype.forEach.call(tb.querySelectorAll('[data-recebe]'), function (b) {
