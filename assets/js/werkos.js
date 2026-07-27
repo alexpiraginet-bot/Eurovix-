@@ -444,6 +444,10 @@
      VIEW · CHECK-IN (Etapas 0/1 — wizard)
      ============================================================ */
   const ck = { step: 1, fotos: {}, danos: [], sig: null };
+  // Dados vindos da Agenda ("▶ check-in" de um agendamento) esperando a abertura
+  // do wizard. O reset abaixo é TOTAL — então o pré-preenchimento tem que ser
+  // aplicado DEPOIS dele, senão seria apagado junto.
+  let ckPrefill = null;
   views.checkin = () => {
     // Novo check-in = tudo em branco: nunca herda dados (veículo NEM cliente) do
     // check-in anterior. Antes só o veículo era limpo — o nome/telefone do cliente
@@ -454,7 +458,11 @@
     ck.cliente = ''; ck.telefone = ''; ck.sintoma = ''; ck.tecnico = '';
     ck.odometro = ''; ck.combustivel = 50; ck.luzes = []; ck.itens = [];
     ck.osNum = null; ck.clienteRec = null; ck.iaOrcamento = null;
+    ck.agendamento = null;
+    if (ckPrefill) { Object.assign(ck, ckPrefill); ckPrefill = null; } // agendamento → wizard
     renderCheckin();
+    // Veio com placa do agendamento? já puxa os dados do veículo (check-in facilitado).
+    if (ck.placa && ck.agendamento) { const b = $('#ckPlaca'); if (b) b.click(); }
   };
 
   const FOTO_SLOTS = ['Frente', 'Traseira', 'Lateral esq.', 'Lateral dir.', 'Teto', 'Interior', 'Painel/odômetro', 'Porta-malas'];
@@ -786,6 +794,7 @@
             itens: ck.itens, luzes: ck.luzes || [], danos: ck.danos,
             fotos: Object.keys(ck.fotos).length, fotosData: ck.fotos, assinatura: pad.data(),
             veiculo: ck.veic || null,   // consulta oficial da placa (marca, cor, combustível, ano, FIPE, situação, origem…)
+            agendamento: ck.agendamento || null,  // origem: agendamento do site (protocolo/data/hora) — rastreabilidade
           },
           ator: 'Recepção',
         });
@@ -1769,13 +1778,18 @@
       const a = ags.find(x => x.id === b.dataset.agCk);
       if (!a) return;
       const limpo = (s) => String(s || '').replace(/[<>"]/g, '').trim(); // dado do site não pode quebrar os inputs do wizard
-      ck.vin = '';                                    // VIN é lido na recepção — nunca herdado de outro check-in
-      ck.cliente = limpo(a.nome);
-      ck.telefone = limpo(a.telefone);
-      ck.placa = limpo(a.placa).toUpperCase();
-      ck.sintoma = limpo(`Agendamento ${a.protocolo || 'do site'}: ${a.servico_nome || a.servico || 'serviço'}${a.veiculo ? ' — ' + a.veiculo : ''}${a.obs ? '. ' + a.obs : ''}`);
+      // Entregue via ckPrefill: views.checkin limpa tudo e SÓ DEPOIS aplica isto.
+      ckPrefill = {
+        vin: '',                                      // VIN é lido na recepção — nunca herdado
+        cliente: limpo(a.nome),
+        telefone: limpo(a.telefone),
+        placa: limpo(a.placa).toUpperCase(),
+        veiculoNome: limpo(a.veiculo),                // modelo declarado no agendamento (a consulta da placa refina)
+        sintoma: limpo(`Agendamento ${a.protocolo || 'do site'}: ${a.servico_nome || a.servico || 'serviço'}${a.veiculo ? ' — ' + a.veiculo : ''}${a.obs ? '. ' + a.obs : ''}`),
+        agendamento: { id: a.id, protocolo: a.protocolo || '', data: a.data || '', hora: a.hora || '' },
+      };
       Promise.resolve(WERK.setAgendamentoStatus(a.id, 'convertido')).catch(() => {}); // melhor esforço
-      toast('Check-in iniciado', `Dados de ${limpo(a.nome).split(' ')[0] || 'cliente'} pré-preenchidos — confirme o VIN.`);
+      toast('Check-in iniciado', `Dados de ${limpo(a.nome).split(' ')[0] || 'cliente'} pré-preenchidos${limpo(a.placa) ? ' — consultando a placa…' : ' — confirme a placa e o VIN.'}`);
       location.hash = '#/checkin';
     }));
   };
