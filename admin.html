@@ -34,6 +34,12 @@
   .gate button{width:100%;margin-top:8px;background:var(--lex-grad);color:#fff;border:none;border-radius:11px;
     font-family:var(--lex-font);font-weight:700;font-size:14px;padding:14px;cursor:pointer}
   .gate button:disabled{opacity:.6;cursor:progress}
+  /* "Manter conectado" / "Ativar Face ID" — opções do login */
+  .gate .optline{display:flex;align-items:center;gap:9px;text-align:left;margin:2px 0 10px;
+    font-size:12.5px;color:var(--lex-t2);cursor:pointer;font-weight:400}
+  .gate .optline input{width:16px;height:16px;flex:none;padding:0;accent-color:var(--lex-blue);cursor:pointer}
+  .gate .optline[hidden]{display:none}
+  .gate button.ghostbtn{background:transparent;border:1px solid var(--lex-line-2);color:var(--lex-t1)}
   .gate .err{color:var(--lex-warn);font-size:12.5px;margin-top:12px;min-height:16px}
   .gate .hint{font-size:11px;color:var(--lex-t3);margin-top:18px;line-height:1.5;display:none}
 
@@ -155,7 +161,10 @@
     <form id="loginForm">
       <div class="fld"><label for="f-email">E-mail</label><input id="f-email" type="email" autocomplete="username" placeholder="voce@dominio.com"></div>
       <div class="fld"><label for="f-senha">Senha</label><input id="f-senha" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+      <label class="optline"><input type="checkbox" id="f-manter" checked> Manter conectado neste aparelho</label>
+      <label class="optline" id="f-bioLinha" hidden><input type="checkbox" id="f-bioAtivar"> <span id="f-bioLabel">Ativar Face ID neste aparelho</span></label>
       <button type="submit" id="loginBtn">Entrar</button>
+      <button type="button" id="bioBtn" class="ghostbtn" hidden></button>
       <div class="err" id="loginErr"></div>
       <a href="#" id="forgotLink" style="display:inline-block;margin-top:14px;font-size:12.5px;color:var(--lex-t2)">Esqueci minha senha</a>
       <div class="err" id="resetMsg" style="color:var(--lex-ok);margin-top:6px"></div>
@@ -255,6 +264,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="assets/js/env.js"></script>
+<script src="assets/js/biometria.js"></script>
 <script src="assets/vendor/supabase.js"></script>
 <script src="assets/js/admin.js"></script>
 <script src="https://alex-hub-three.vercel.app/support-widget.js" data-app="eurovix" defer></script>

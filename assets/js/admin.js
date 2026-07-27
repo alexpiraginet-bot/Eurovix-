@@ -372,6 +372,14 @@
     // dispara PASSWORD_RECOVERY logo após o createClient consumir o hash da URL.
     if (CLOUD) sb.auth.onAuthStateChange(function (evt) { if (evt === 'PASSWORD_RECOVERY') showReset(); });
 
+    // Quem desmarcou "manter conectado" sai ao fechar o navegador: se o último
+    // sinal de vida é velho, a sessão persistida cai antes de ser lida.
+    if (window.EVXSessao && EVXSessao.expirouAoFechar()) {
+      if (CLOUD) { try { await sb.auth.signOut(); } catch (_) {} }
+      try { sessionStorage.removeItem('evx.admin.ok'); } catch (_) {}
+      EVXSessao.limpar();
+    }
+
     var u = await currentUser();
     if (recoveryMode) { showReset(); }
     else if (u && (await isAdmin())) showPanel(u); else showGate();
@@ -398,13 +406,48 @@
       else { $('resetForm').style.display = 'none'; $('loginForm').style.display = 'block'; var fl = $('forgotLink'); if (fl) fl.style.display = 'inline-block'; $('modeLabel').textContent = CLOUD ? 'nuvem · Supabase Auth' : 'local · demo'; }
     });
 
-    $('loginForm').addEventListener('submit', async function (e) {
-      e.preventDefault(); $('loginErr').textContent = '';
+    // `cred` presente = veio do cofre do Face ID (senha já confirmada antes).
+    async function entrar(cred) {
+      $('loginErr').textContent = '';
+      var email = cred ? cred.email : $('f-email').value.trim();
+      var senha = cred ? cred.senha : $('f-senha').value;
       var btn = $('loginBtn'); btn.disabled = true; var orig = btn.textContent; btn.textContent = 'Entrando…';
-      var r = await doLogin($('f-email').value.trim(), $('f-senha').value);
+      if (window.EVXSessao) EVXSessao.definir(cred ? true : $('f-manter').checked);
+      var r = await doLogin(email, senha);
       btn.disabled = false; btn.textContent = orig;
-      if (!r.ok) { $('loginErr').textContent = r.erro; $('f-senha').select(); return; }
+      if (!r.ok) {
+        // Senha trocada depois de ativar o Face ID → o cofre virou lixo: apaga.
+        if (cred && window.EVXBio) {
+          EVXBio.esquecer('admin'); $('bioBtn').hidden = true;
+          r.erro = 'A senha salva no ' + EVXBio.nome() + ' não vale mais — entre com a senha atual e ative de novo.';
+        }
+        $('loginErr').textContent = r.erro; if (!cred) $('f-senha').select();
+        return;
+      }
+      // Só tranca no cofre depois de a senha ser aceita de fato.
+      if (!cred && window.EVXBio && $('f-bioAtivar').checked) await EVXBio.ativar('admin', email, { email: email, senha: senha });
       showPanel(await currentUser());
+    }
+    $('loginForm').addEventListener('submit', function (e) { e.preventDefault(); entrar(null); });
+
+    /* Face ID / Touch ID / digital (assets/js/biometria.js) */
+    if (window.EVXBio) EVXBio.disponivel().then(function (tem) {
+      if (!tem) return;
+      var nome = EVXBio.nome();
+      if (EVXBio.ativo('admin')) {
+        var b = $('bioBtn');
+        b.hidden = false; b.textContent = '🔒 Entrar com ' + nome;
+        b.addEventListener('click', async function () {
+          var t = b.textContent; b.disabled = true; b.textContent = 'Aguardando ' + nome + '…';
+          var r = await EVXBio.entrar('admin');
+          b.disabled = false; b.textContent = t;
+          if (!r.ok) { $('loginErr').textContent = r.erro; return; }
+          entrar(r.segredo);
+        });
+        return;
+      }
+      $('f-bioLabel').textContent = 'Ativar ' + nome + ' neste aparelho';
+      $('f-bioLinha').hidden = false;
     });
     $('logout').addEventListener('click', doLogout);
     $('ofNova').addEventListener('click', function () { openModal(null); });

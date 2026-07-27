@@ -540,6 +540,10 @@ html[data-theme="light"] .kcard:hover{border-color:var(--red-border)}
 .wk-lock-card .wfield input{width:100%}
 .wk-lock-alt{display:inline-block;margin-top:16px;font-size:12px;color:var(--txt-3);text-decoration:none}
 .wk-lock-alt:hover{color:var(--red)}
+/* "Manter conectado" e "Ativar Face ID" — linhas de opção do login */
+.wk-manter{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12.5px;color:var(--txt-2);cursor:pointer;text-align:left}
+.wk-manter input{width:16px;height:16px;flex:none;accent-color:var(--blue-light);cursor:pointer}
+.wk-bio{margin-top:10px;width:100%}
 /* Chip de conta logada na sidebar (quem/qual oficina) */
 .wk-account{display:flex;align-items:center;gap:9px;margin:0 0 12px;padding:9px 11px;border:1px solid var(--line);
   border-radius:11px;background:var(--navy)}

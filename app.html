@@ -46,10 +46,14 @@
         <input id="l-senha" type="password" placeholder="••••••••" autocomplete="current-password">
       </div>
       <div class="login-row">
-        <label class="remember"><input type="checkbox" id="l-lembrar" checked> Lembrar-me</label>
+        <label class="remember"><input type="checkbox" id="l-lembrar" checked> Manter conectado</label>
         <a class="forgot" href="#" id="forgotLink">Esqueci minha senha</a>
       </div>
+      <div class="login-row" id="l-bio-linha" hidden>
+        <label class="remember"><input type="checkbox" id="l-bioAtivar"> <span id="l-bioLabel">Ativar Face ID neste aparelho</span></label>
+      </div>
       <button class="btn btn-primary" type="submit">Entrar</button>
+      <button class="btn btn-secondary login-bio" type="button" id="l-bioEntrar" hidden></button>
       <div class="login-demo">
         Demonstração — <button type="button" id="demoBtn">entrar com a conta demo</button><br>
         <span style="font-size:11px">((27) 99900-0000 · senha: bmw2026)</span>
@@ -165,6 +169,7 @@
 <script src="assets/js/werk-3d.js"></script>
 <script src="assets/js/data.js"></script>
 <script src="assets/js/werk-data.js"></script>
+<script src="assets/js/biometria.js"></script>
 <script src="assets/vendor/supabase.js"></script>
 <script src="assets/js/werk-cloud.js"></script>
 <script src="assets/vendor/qrcode.min.js"></script>

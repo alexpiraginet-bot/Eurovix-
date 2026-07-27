@@ -221,15 +221,59 @@
     loginView.classList.remove('hide');
   });
 
-  async function doLogin(tel, senha) {
+  // `viaBio` = veio do cofre do Face ID (já é uma credencial confirmada antes).
+  async function doLogin(tel, senha, viaBio) {
     const err = $('#loginErr');
     const c = await WERK.loginCliente(tel, senha);
-    if (!c) { err.classList.add('show'); return; }
+    if (!c) {
+      err.classList.add('show');
+      // Senha trocada depois de ativar o Face ID → o cofre guardou algo que não
+      // vale mais: apaga e pede a senha atual em vez de repetir o erro para sempre.
+      if (viaBio && window.EVXBio) {
+        EVXBio.esquecer('cliente');
+        err.textContent = 'A senha salva no ' + EVXBio.nome() + ' não vale mais — entre com a senha atual e ative de novo.';
+        const b = $('#l-bioEntrar'); if (b) b.hidden = true;
+      }
+      return false;
+    }
     err.classList.remove('show');
+    const manter = $('#l-lembrar').checked;
+    if (window.EVXSessao) EVXSessao.definir(manter);
     const session = { nome: c.nome, telefone: c.telefone, desde: c.desde };
-    if ($('#l-lembrar').checked || WERK.cloud) EVX.setSession(session);
+    // Na nuvem a sessão precisa existir para o RLS: sem "manter conectado" ela
+    // vale só enquanto o navegador estiver aberto (EVXSessao derruba na volta).
+    if (manter || WERK.cloud) EVX.setSession(session);
+    // Só tranca no cofre do aparelho depois de a senha ser aceita de fato.
+    if (!viaBio && window.EVXBio) {
+      const q = $('#l-bioAtivar');
+      if (q && q.checked) await EVXBio.ativar('cliente', c.telefone, { tel: c.telefone, senha });
+    }
     enter(session);
+    return true;
   }
+
+  /* Face ID / Touch ID / digital no login do cliente (assets/js/biometria.js).
+     Já configurado → botão "Entrar com Face ID". Ainda não → oferece ativar
+     junto com o login por senha. */
+  if (window.EVXBio) EVXBio.disponivel().then(tem => {
+    if (!tem) return;
+    const nome = EVXBio.nome();
+    if (EVXBio.ativo('cliente')) {
+      const b = $('#l-bioEntrar');
+      b.hidden = false; b.textContent = '🔒 Entrar com ' + nome;
+      b.addEventListener('click', async () => {
+        const t = b.textContent; b.disabled = true; b.textContent = 'Aguardando ' + nome + '…';
+        const r = await EVXBio.entrar('cliente');
+        b.disabled = false; b.textContent = t;
+        if (!r.ok) { loginInfo(r.erro); return; }
+        $('#l-tel').value = r.segredo.tel;
+        doLogin(r.segredo.tel, r.segredo.senha, true);
+      });
+      return;
+    }
+    $('#l-bioLabel').textContent = 'Ativar ' + nome + ' neste aparelho';
+    $('#l-bio-linha').hidden = false;
+  });
 
   function enter(session) {
     state.user = session;

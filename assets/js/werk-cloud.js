@@ -932,9 +932,11 @@
     } catch (e) { falha('ativarCliente', e); return null; }
   };
 
-  const loginStaff = async (email, senha) => {
+  // `manter` = "manter conectado neste aparelho" (padrão: sim).
+  const loginStaff = async (email, senha, manter) => {
     if (!email || !senha) return null;
     try {
+      if (window.EVXSessao) EVXSessao.definir(manter !== false);
       const { data, error } = await sb.auth.signInWithPassword({ email: String(email).trim(), password: senha });
       if (error) {
         if (isNetErr(error)) falha('loginStaff', error);
@@ -1127,6 +1129,12 @@
   };
 
   const init = async () => {
+    // Quem desmarcou "manter conectado" sai quando fecha o navegador: se o
+    // último sinal de vida é velho, a sessão persistida cai antes de ser lida.
+    if (window.EVXSessao && EVXSessao.expirouAoFechar()) {
+      try { await sb.auth.signOut(); } catch (e) { /* noop */ }
+      EVXSessao.limpar();
+    }
     try { // sessão persistida ANTES da 1ª hidratação (senão o RLS devolve vazio)
       const { data } = await sb.auth.getSession();
       user = (data && data.session && data.session.user) || null;

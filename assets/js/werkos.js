@@ -266,6 +266,38 @@
   }
   window.addEventListener('hashchange', route);
 
+  /* Entrada por Face ID / Touch ID / digital (assets/js/biometria.js).
+     Já configurado neste aparelho → botão "Entrar com Face ID".
+     Ainda não → oferece ativar junto com o login por senha (o cofre só é
+     criado depois de a senha ser aceita, nunca antes). */
+  function montarBio(escopo, o) {
+    if (!window.EVXBio) return;
+    EVXBio.disponivel().then(temBio => {
+      if (!temBio) return;
+      const nome = EVXBio.nome();
+      const btn = $(o.botao), ancora = $(o.ancora);
+      if (EVXBio.ativo(escopo)) {
+        if (!btn) return;
+        btn.hidden = false;
+        btn.textContent = '🔒 Entrar com ' + nome;
+        btn.addEventListener('click', async () => {
+          const t = btn.textContent; btn.disabled = true; btn.textContent = 'Aguardando ' + nome + '…';
+          const r = await EVXBio.entrar(escopo);
+          btn.disabled = false; btn.textContent = t;
+          if (!r.ok) { if (o.erro) o.erro(r.erro); return; }
+          o.entrar(r.segredo);
+        });
+        return;
+      }
+      if (!ancora || !o.querAtivar) return;
+      const lin = document.createElement('label');
+      lin.className = o.classe || 'wk-manter';
+      lin.innerHTML = `<input type="checkbox" id="${escopo}BioAtivar"> Ativar ${nome} neste aparelho`;
+      ancora.parentNode.insertBefore(lin, ancora.nextSibling);
+      $('#' + escopo + 'BioAtivar').addEventListener('change', e => o.querAtivar(e.target.checked));
+    });
+  }
+
   function renderStaffLock() {
     $$('.wk-nav button').forEach(b => b.classList.remove('on'));
     const u = WERK.cloud ? WERK.authUser() : null;
@@ -293,21 +325,42 @@
           <p class="wk-lock-sub">Entre com seu usuário de equipe para abrir o painel da sua oficina.</p>
           <div class="wfield"><label>E-mail</label><input id="st-email" type="email" placeholder="voce@suaoficina.com.br" autocomplete="username"></div>
           <div class="wfield" style="margin-top:12px"><label>Senha</label><input id="st-senha" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+          <label class="wk-manter"><input type="checkbox" id="stManter" checked> Manter conectado neste aparelho</label>
           <div class="hintline err" id="stErr" style="display:none;margin-top:10px">E-mail ou senha inválidos — ou este usuário ainda não foi incluído na equipe da oficina.</div>
           <div class="hintline" id="stMsg" style="display:none;margin-top:10px;color:var(--ok)"></div>
           <button class="btn btn-primary" style="margin-top:16px;width:100%" id="stEntrar">Entrar no painel</button>
+          <button class="btn btn-secondary wk-bio" id="stBio" hidden></button>
           <a class="wk-lock-alt" href="#" id="stForgot">Esqueci minha senha</a>
           <a class="wk-lock-alt" href="app.html">O app do cliente é por aqui →</a>
           <a class="wk-lock-alt" href="demo.html">🧪 Ver uma demonstração (sem conta) →</a>
         </div>
       </div>`;
-    const entrar = async () => {
+    const entrar = async (cred) => {
+      const email = cred ? cred.email : $('#st-email').value.trim();
+      const senha = cred ? cred.senha : $('#st-senha').value;
+      const manter = cred ? true : $('#stManter').checked;
       const btn = $('#stEntrar'); btn.disabled = true; const t = btn.textContent; btn.textContent = 'Entrando…';
-      const u2 = await WERK.loginStaff($('#st-email').value.trim(), $('#st-senha').value);
-      if (u2) { renderBrand(); route(); } else { $('#stErr').style.display = 'block'; btn.disabled = false; btn.textContent = t; }
+      const u2 = await WERK.loginStaff(email, senha, manter);
+      if (!u2) {
+        $('#stErr').style.display = 'block'; btn.disabled = false; btn.textContent = t;
+        // A senha mudou desde que o Face ID foi ativado → o cofre virou lixo.
+        if (cred) { EVXBio.esquecer('staff'); $('#stErr').textContent = 'A senha salva no ' + EVXBio.nome() + ' não vale mais — entre com a senha atual e ative de novo.'; }
+        return false;
+      }
+      // Guarda no cofre do aparelho só depois de a senha ser aceita de fato.
+      if (!cred && bioPedido) await EVXBio.ativar('staff', email, { email, senha });
+      renderBrand(); route();
+      return true;
     };
-    $('#stEntrar').addEventListener('click', entrar);
-    $('#st-senha').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+    let bioPedido = false;
+    $('#stEntrar').addEventListener('click', () => entrar(null));
+    $('#st-senha').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(null); });
+    montarBio('staff', {
+      botao: '#stBio', ancora: '.wk-manter', classe: 'wk-manter',
+      entrar: (segredo) => entrar(segredo),
+      querAtivar: (v) => { bioPedido = v; },
+      erro: (m) => { const e2 = $('#stErr'); e2.textContent = m; e2.style.display = 'block'; },
+    });
     // "Esqueci minha senha" → envia o link de recuperação (Supabase). O link volta
     // a esta página e o app pede a nova senha (renderNovaSenha via evento).
     $('#stForgot').addEventListener('click', async (e) => {
