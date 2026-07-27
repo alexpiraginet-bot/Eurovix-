@@ -75,9 +75,21 @@ begin
     return jsonb_build_object('ok', false, 'erro', 'Informe o nome');
   end if;
 
-  -- resolve a oficina: por subdomínio (se informado) ou a primeira ativa (piloto)
+  -- Resolve a oficina: por subdomínio (se informado) ou, no piloto, a primeira
+  -- ativa QUE TENHA EQUIPE. O "tem equipe" é essencial: um cadastro de oficina
+  -- sem nenhum staff é invisível para todo mundo (a RLS filtra por oficina do
+  -- usuário), então agendamentos caídos ali sumiriam da agenda. Só se nenhuma
+  -- tiver equipe (instalação nova) caímos na primeira ativa.
   if p_oficina is not null and btrim(p_oficina) <> '' then
     select id into v_ofi from public.oficinas where lower(subdominio) = lower(btrim(p_oficina)) limit 1;
+  end if;
+  if v_ofi is null then
+    select o.id into v_ofi
+      from public.oficinas o
+     where o.status = 'ativa'
+       and exists (select 1 from public.staff s where s.oficina_id = o.id)
+     order by o.criado_em asc
+     limit 1;
   end if;
   if v_ofi is null then
     select id into v_ofi from public.oficinas where status = 'ativa' order by criado_em asc limit 1;
