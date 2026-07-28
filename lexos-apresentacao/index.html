@@ -41,7 +41,7 @@ button{font-family:inherit}
 .deck{position:relative;width:100vw;height:100vh;height:100dvh;overflow:hidden}
 .slide{
   position:absolute;inset:0;display:flex;flex-direction:column;
-  padding:var(--pad) var(--pad) calc(var(--pad) - 6px);
+  padding:var(--pad) var(--pad) calc(var(--pad) + 24px);   /* folga p/ os controles fixos */
   opacity:0;transform:translateX(26px);pointer-events:none;
   transition:opacity .34s ease,transform .34s ease;
   background:
@@ -65,8 +65,9 @@ h1{font-size:clamp(30px,4.9vw,62px);font-weight:800}
 h2{font-size:clamp(21px,3.05vw,40px);font-weight:800;margin-bottom:clamp(6px,1.1vh,12px)}
 .lead{font-size:clamp(13px,1.45vw,17px);color:var(--t2);max-width:64ch;line-height:1.6}
 .lead b{color:var(--t1)}
-.body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0;padding:clamp(8px,1.4vh,18px) 0}
-.cols{display:grid;gap:clamp(16px,2.5vw,38px);align-items:center;min-height:0}
+.body{flex:1;display:flex;flex-direction:column;min-height:0;padding:clamp(8px,1.4vh,18px) 0;
+  justify-content:center;justify-content:safe center}
+.cols{display:grid;gap:clamp(16px,2.5vw,38px);align-items:center;align-items:safe center;min-height:0}
 .c-tela{grid-template-columns:1.66fr .95fr}
 .c-tela-m{grid-template-columns:.52fr 1fr}
 .c2{grid-template-columns:1fr 1fr}
@@ -220,11 +221,15 @@ table.mx td .st{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;tex
 
 /* ---------- celular ---------- */
 @media (max-width:860px){
+  /* Celular: nada de centralizar — o slide é uma coluna que rola de cima para baixo.
+     Sem isto, um slide mais alto que a tela empurra a imagem por cima do título. */
+  .body{flex:0 0 auto;justify-content:flex-start}
+  .slide{justify-content:flex-start}
   .cols,.c-tela,.c-tela-m,.c2{grid-template-columns:1fr}
   .g3,.g4{grid-template-columns:1fr 1fr}
   .jornada{grid-template-columns:repeat(2,1fr)}
   .arq{grid-template-columns:1fr}
-  .slide{padding:54px 18px 62px}
+  .slide{padding:52px 18px 104px}
   .shot img{max-height:34vh}
   .shot.fone img{max-height:44vh}
   .capa .fita img{height:22vh}
@@ -247,7 +252,15 @@ table.mx td .st{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;tex
   .hud,.menu-btn,.barra,.zona,.sumario,.cap-atual,.fechar{display:none!important}
   .shot img{max-height:74mm}
   .shot.fone img{max-height:92mm}
-  .capa .fita img{height:52mm}
+  /* A capa é o slide mais cheio: na página impressa (167 mm) ela precisa de
+     medidas próprias, senão o bloco de telas é cortado no pé. */
+  .capa h1{font-size:34pt}
+  .capa .sub{font-size:11pt;margin-top:3mm}
+  .capa .marca{margin-bottom:5mm}
+  .capa .marca svg{width:12mm}
+  .capa .wm{font-size:20pt}
+  .capa .fita{margin-top:5mm}
+  .capa .fita img{height:38mm}
 }
 </style>
 </head>
