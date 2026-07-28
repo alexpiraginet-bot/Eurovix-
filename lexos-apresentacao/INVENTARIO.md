@@ -1,7 +1,7 @@
 # Inventário das telas usadas na apresentação
 
 23 capturas reais, tiradas do sistema em modo demonstração sob a oficina fictícia
-*Oficina Modelo*. Situação: **F** funcional na demonstração · **P** estrutura preparada ·
+*Oficina Modelo Porsche & Audi*. Situação: **F** funcional na demonstração · **P** estrutura preparada ·
 **D** depende de integração externa.
 
 | Tela | Módulo | Rota | Perfil | O que resolve | Situação | Slide |

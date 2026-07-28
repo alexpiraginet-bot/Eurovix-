@@ -192,7 +192,7 @@
     };
     state.obs = $('#f-obs').value.trim();
     $('#summary').innerHTML = `
-      <div class="row"><span class="k">Veículo</span><span class="v">BMW ${state.veiculo.modelo} · ${state.veiculo.ano}${state.veiculo.placa ? ' · ' + state.veiculo.placa : ''}</span></div>
+      <div class="row"><span class="k">Veículo</span><span class="v">${state.veiculo.modelo} · ${state.veiculo.ano}${state.veiculo.placa ? ' · ' + state.veiculo.placa : ''}</span></div>
       <div class="row"><span class="k">Serviço</span><span class="v">${svc.nome} — ${svc.tag}</span></div>
       ${state.obs ? `<div class="row"><span class="k">Observação</span><span class="v">${state.obs.slice(0, 140)}</span></div>` : ''}
       <div class="row"><span class="k">Data</span><span class="v">${state.data.dowLabel} · ${state.data.label} às ${state.hora}</span></div>
@@ -230,7 +230,7 @@
       status: 'confirmado',
       servicoId: svc.id,
       servicoNome: svc.nome,
-      veiculo: `BMW ${state.veiculo.modelo} ${state.veiculo.ano}`,
+      veiculo: `${state.veiculo.modelo} ${state.veiculo.ano}`,
       placa: state.veiculo.placa,
       km: state.veiculo.km,
       obs: state.obs,

@@ -21,7 +21,7 @@ const EVX = (() => {
       icon: 'wrench',
       nome: 'Manutenção',
       tag: 'Preventiva e corretiva',
-      desc: 'Revisões completas seguindo o plano BMW CBS (Condition Based Service), com registro digital de cada item.',
+      desc: 'Revisões completas seguindo o plano de manutenção do fabricante, com registro digital de cada item.',
       itens: ['Óleo e filtros originais', 'Correias, velas e bobinas', 'Fluidos de freio e arrefecimento', 'Inspeção eletrônica de 60 itens'],
       duracao: '4h — 1 dia',
     },
@@ -30,7 +30,7 @@ const EVX = (() => {
       icon: 'scan',
       nome: 'Diagnóstico',
       tag: 'Eletrônico avançado',
-      desc: 'Equipamento dedicado BMW (ISTA) para leitura profunda de módulos, codificação e falhas intermitentes.',
+      desc: 'Equipamento de diagnóstico dedicado Porsche e Audi para leitura profunda de módulos, codificação e falhas intermitentes.',
       itens: ['Leitura de todos os módulos', 'Teste de atuadores', 'Codificação e atualização de software', 'Laudo técnico digital'],
       duracao: '1h — 3h',
     },
@@ -74,7 +74,7 @@ const EVX = (() => {
 
   /* ---------- Pilares (hero do site) ---------- */
   const PILLARS = [
-    { icon: 'badge',  nome: 'Especialistas BMW', desc: 'Equipe certificada' },
+    { icon: 'badge',  nome: 'Especialistas Porsche e Audi', desc: 'Equipe certificada' },
     { icon: 'tool',   nome: 'Equipamentos',      desc: 'Tecnologia avançada' },
     { icon: 'part',   nome: 'Peças Originais',   desc: 'Qualidade garantida' },
     { icon: 'chart',  nome: 'Performance',       desc: 'Máximo desempenho' },
@@ -91,21 +91,21 @@ const EVX = (() => {
 
   const VEHICLES = [
     {
-      id: 'm135i',
-      modelo: 'BMW M135i',
+      id: 'macan',
+      modelo: 'Porsche Macan S',
       ano: 2020,
       placa: 'RQV-2D47',
-      cor: 'Preto Safira',
+      cor: 'Cinza Vulcano',
       km: 48500,
       proxRevisao: { km: 50000, titulo: 'Revisão dos 50.000 km', restante: 1500 },
       saude: { oleo: 78, freios: 64, pneus: 82, bateria: 91 },
     },
     {
-      id: 'x1',
-      modelo: 'BMW X1 sDrive20i',
+      id: 'q5',
+      modelo: 'Audi Q5 Sportback 55 TFSIe',
       ano: 2022,
       placa: 'RWK-7B12',
-      cor: 'Branco Alpino',
+      cor: 'Branco Ibis',
       km: 21300,
       proxRevisao: { km: 30000, titulo: 'Revisão dos 30.000 km', restante: 8700 },
       saude: { oleo: 88, freios: 90, pneus: 76, bateria: 95 },
@@ -126,13 +126,13 @@ const EVX = (() => {
   const SEED_ORDERS = [
     {
       id: 1257,
-      veiculo: 'BMW M135i · RQV-2D47',
+      veiculo: 'Porsche Macan S · RQV-2D47',
       servico: 'Revisão Preventiva',
       abertura: '2026-07-08T09:12:00',
       status: 'andamento',
       etapa: 1,                     // índice em OS_STAGES — evolui ao vivo no app
       orcamento: { total: 2890, itens: [
-        { nome: 'Óleo 5W-30 Original BMW (6L)', valor: 890 },
+        { nome: 'Óleo 0W-40 original (7L)', valor: 1120 },
         { nome: 'Filtros: óleo, ar e cabine',    valor: 640 },
         { nome: 'Fluido de freio DOT4 + sangria',valor: 480 },
         { nome: 'Velas de ignição (4x)',         valor: 520 },
@@ -142,7 +142,7 @@ const EVX = (() => {
     },
     {
       id: 1240,
-      veiculo: 'BMW M135i · RQV-2D47',
+      veiculo: 'Porsche Macan S · RQV-2D47',
       servico: 'Pastilhas + discos dianteiros',
       abertura: '2026-06-14T08:40:00',
       entrega: '2026-06-15T17:30:00',
@@ -159,7 +159,7 @@ const EVX = (() => {
     },
     {
       id: 1233,
-      veiculo: 'BMW X1 sDrive20i · RWK-7B12',
+      veiculo: 'Audi Q5 Sportback · RWK-7B12',
       servico: 'Diagnóstico eletrônico',
       abertura: '2026-05-27T10:05:00',
       entrega: '2026-05-27T15:20:00',

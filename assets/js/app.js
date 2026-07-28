@@ -434,8 +434,8 @@
         </div>
       </div>
 
-      ${window.WERK3D && WERK3D.embedReal ? `
-      <div class="sec-label">Seu BMW em 3D <a data-goto="os">minhas OS</a></div>
+      ${window.WERK3D && WERK3D.embedReal && WERK3D.temModelo3D && WERK3D.temModelo3D(v && v.modelo) ? `
+      <div class="sec-label">Seu veículo em 3D <a data-goto="os">minhas OS</a></div>
       <div class="d3-card">
         <div id="twinReal" class="d3-real" style="height:230px;min-height:0"></div>
         <div class="d3-meta">
@@ -504,7 +504,7 @@
     // Modelo 3D real: monta JÁ ao abrir a tela (autostart no embed) — o cliente
     // não precisa tocar. Nunca pode derrubar a tela já montada (try/catch).
     try {
-      if (v && window.WERK3D && WERK3D.embedReal) {
+      if (v && window.WERK3D && WERK3D.embedReal && WERK3D.temModelo3D && WERK3D.temModelo3D(v.modelo)) {
         const box = document.getElementById('twinReal');
         if (box) WERK3D.embedReal(box, v.modelo);
       }
@@ -831,7 +831,7 @@
       const recusadosN = lista.length - aprovadosN;
       const hash = (s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(16); })(JSON.stringify(Object.entries(decisoes)));
       WERK.aprovarOrcamento(o.numero, decisoes, { assinatura: true, ip: '187.36.170.42 (app)', hash: `${hash}…${o.numero}`, ts: new Date().toISOString() });
-      toast('Aceite registrado ✓', recusadosN ? `${aprovadosN} itens aprovados. Os adiados viraram pendências com lembrete.` : 'Todos os itens aprovados — seu BMW já entra no box.', 'ok');
+      toast('Aceite registrado ✓', recusadosN ? `${aprovadosN} itens aprovados. Os adiados viraram pendências com lembrete.` : 'Todos os itens aprovados — seu veículo já entra no box.', 'ok');
       renderAll();
     });
   }
@@ -880,10 +880,11 @@
       <a class="btn btn-secondary" style="width:100%;margin-top:10px" href="agendamento.html">+ Novo agendamento</a>`;
   }
 
-  /* Modal do modelo 3D real da BMW — abre por veículo na garagem.
+  /* Modal do modelo 3D real do veículo — abre por veículo na garagem.
      Lazy: monta o embed só ao abrir e remove ao fechar (1 iframe por vez). */
   function open3dModal(v) {
     if (!(window.WERK3D && WERK3D.embedReal) || !v) return;
+    if (WERK3D.temModelo3D && !WERK3D.temModelo3D(v.modelo)) return;   // sem modelo do carro dele: não inventa outro
     const shell = document.getElementById('shell') || document.body;
     const ov = document.createElement('div');
     ov.className = 'd3-modal';
@@ -955,8 +956,8 @@
           </button>`).join('') || '<div style="padding:14px 16px;font-size:12px;color:var(--txt-3)">Nenhum veículo vinculado — ele entra aqui no próximo check-in.</div>'}
       </div>
 
-      ${window.WERK3D && WERK3D.embedReal && garagem().length ? `
-      <div class="sec-label">Meu BMW em 3D</div>
+      ${window.WERK3D && WERK3D.embedReal && garagem().some(v => !WERK3D.temModelo3D || WERK3D.temModelo3D(v.modelo)) ? `
+      <div class="sec-label">Meu veículo em 3D</div>
       <div class="plist">
         ${garagem().map((v, i) => `
           <button class="prow" data-veic3d="${i}">

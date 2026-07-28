@@ -84,35 +84,47 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
 
   // Decodificação demo por padrão do VIN [API: catálogo eletrônico real]
   const VIN_MODELS = [
-    { re: /^WBA7[A-Z0-9]/, modelo: 'BMW 320i M Sport (G20)', motor: 'B48B20 2.0T', cambio: 'ZF 8HP', familia: 'g20', ano: 2021 },
-    { re: /^WBA5[A-Z0-9]/, modelo: 'BMW M135i xDrive (F40)', motor: 'B48A20T1 2.0T 306cv', cambio: 'Aisin 8AT', familia: 'f40', ano: 2020 },
-    { re: /^WBAJ[A-Z0-9]/, modelo: 'BMW X1 sDrive20i (F48)', motor: 'B48A20 2.0T', cambio: 'Aisin 8AT', familia: 'f48', ano: 2022 },
-    { re: /^WBS/,          modelo: 'BMW M3 Competition (G80)', motor: 'S58B30 3.0T 510cv', cambio: 'ZF 8HP76', familia: 'g80', ano: 2022 },
-    { re: /^WBY/,          modelo: 'BMW i4 eDrive40 (G26)',  motor: 'Elétrico 340cv', cambio: 'Redução única', familia: 'g26', ano: 2023 },
+    { re: /^WP0Z[A-Z0-9]/, modelo: 'Porsche 911 Carrera S (992)', motor: '3.0 biturbo 450cv', cambio: 'PDK 8', familia: '992', ano: 2022 },
+    { re: /^WP1A[A-Z0-9]/, modelo: 'Porsche Macan S (95B)', motor: '2.9 V6 biturbo 380cv', cambio: 'PDK 7', familia: '95b', ano: 2021 },
+    { re: /^WP1B[A-Z0-9]/, modelo: 'Porsche Cayenne E-Hybrid (9YA)', motor: '3.0 V6 + elétrico 462cv', cambio: 'Tiptronic S 8', familia: '9ya', ano: 2023 },
+    { re: /^WAU[A-Z0-9]/,  modelo: 'Audi A4 45 TFSI quattro (B9)', motor: '2.0 TFSI 265cv', cambio: 'S tronic 7', familia: 'b9', ano: 2021 },
+    { re: /^WA1[A-Z0-9]/,  modelo: 'Audi Q5 Sportback 55 TFSIe (FY)', motor: '2.0 TFSI + elétrico 367cv', cambio: 'S tronic 7', familia: 'fy', ano: 2023 },
+    { re: /^TRU[A-Z0-9]/,  modelo: 'Audi RS3 Sportback (8Y)', motor: '2.5 TFSI 5 cil. 400cv', cambio: 'S tronic 7', familia: '8y', ano: 2023 },
   ];
   function decodeVIN(vin) {
     vin = (vin || '').toUpperCase();
     const hit = VIN_MODELS.find(m => m.re.test(vin));
-    const planta = { A: 'Munique/DE', B: 'Dingolfing/DE', C: 'Leipzig/DE', F: 'Araquari/BR', P: 'Rosslyn/ZA' }[vin[10]] || 'Munique/DE';
+    const planta = { A: 'Ingolstadt/DE', B: 'Neckarsulm/DE', C: 'Zuffenhausen/DE', L: 'Leipzig/DE', G: 'Gyor/HU', S: 'Bratislava/SK' }[vin[10]] || 'Zuffenhausen/DE';
     return {
       vin,
-      modelo: hit ? hit.modelo : 'BMW (decodificação completa via ETK na integração)',
+      modelo: hit ? hit.modelo : 'Veículo (decodificação completa pelo catálogo do fabricante na integração)',
       motor: hit ? hit.motor : '—',
       cambio: hit ? hit.cambio : '—',
-      familia: hit ? hit.familia : 'g20',
+      familia: hit ? hit.familia : 'b9',
       anoModelo: hit ? hit.ano : 2021,
       planta,
-      sa: hit ? ['S2VF Rodas M', 'S494 Bancos aquecidos', 'S6AK ConnectedDrive'] : [],
+      sa: hit ? ['Pacote esportivo', 'Bancos aquecidos', 'Assistente de faixa'] : [],
     };
   }
 
   /* ============================================================
-     3 · RECALLS por VIN [API: BMW recall lookup]
+     3 · RECALLS por VIN [API: consulta de recall do fabricante]
      ============================================================ */
   const RECALLS = [
-    { re: /^WBA5/, codigo: '0032-EGR', titulo: 'Recall módulo EGR — inspeção do cooler', status: 'aberto' },
+    { re: /^WP1A/, codigo: 'AH07', titulo: 'Recall bomba de combustível — inspeção e substituição', status: 'aberto' },
   ];
   const checkRecalls = (vin) => RECALLS.filter(r => r.re.test((vin || '').toUpperCase()));
+
+  // Catálogo eletrônico aberto por MARCA (identificada pelo WMI, os 3 primeiros
+  // caracteres do chassi). RealOEM é só BMW — apontar um Porsche para lá manda o
+  // mecânico para um catálogo onde o chassi dele não existe. Sem catálogo conhecido,
+  // devolve null e a interface só copia o VIN.
+  const CATALOGOS = [
+    { re: /^(WBA|WBS|WBX|WBY|4US|5UX)/, nome: 'RealOEM', url: 'https://www.realoem.com/bmw/enUS/select' },
+    { re: /^(WP0|WP1)/,                 nome: 'catálogo Porsche', url: 'https://www.porsche.com/international/accessoriesandservice/classic/genuineparts/' },
+    { re: /^(WAU|WA1|TRU|WUA)/,         nome: 'catálogo VAG', url: 'https://www.audi-genuine-parts.com/' },
+  ];
+  const catalogoDoVin = (vin) => CATALOGOS.find(c => c.re.test(String(vin || '').toUpperCase())) || null;
 
   /* ============================================================
      4 · MOTOR DE PEÇAS POR CHASSI
@@ -121,16 +133,17 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
      [API: PartsLink24 + TecDoc + cotação B2B]
      ============================================================ */
   const ETK = {
-    oleo:       { g20: '11 42 8 583 898', f40: '11 42 8 583 898', f48: '11 42 8 570 590', g80: '11 42 8 093 204', desc: 'Filtro de óleo + anel' },
-    freio_d:    { g20: '34 10 6 888 777', f40: '34 10 6 898 730', f48: '34 10 6 865 460', g80: '34 11 8 093 711', desc: 'Pastilhas dianteiras' },
-    disco_d:    { g20: '34 10 6 797 606', f40: '34 11 6 898 728', f48: '34 11 6 866 293', g80: '34 11 8 072 018', desc: 'Discos dianteiros (par)' },
-    vela:       { g20: '12 12 0 040 551', f40: '12 12 0 040 551', f48: '12 12 8 657 002', g80: '12 12 5 A21 B02', desc: 'Velas de ignição (jogo)' },
-    amortecedor:{ g20: '31 31 6 879 322', f40: '31 30 6 892 940', f48: '31 31 6 862 460', g80: '31 30 8 095 572', desc: 'Amortecedores dianteiros (par)' },
-    bieleta:    { g20: '31 30 6 862 864', f40: '31 30 6 862 864', f48: '31 30 6 862 865', g80: '31 30 8 067 439', desc: 'Bieletas da barra (par)' },
-    bomba_agua: { g20: '11 51 8 482 251', f40: '11 51 8 482 251', f48: '11 51 8 635 089', g80: '11 51 8 087 340', desc: 'Bomba d’água + termostato' },
-    fluido_freio:{ g20: '83 13 2 405 977', f40: '83 13 2 405 977', f48: '83 13 2 405 977', g80: '83 13 2 405 977', desc: 'Fluido DOT4 LV (1L)' },
-    correia:    { g20: '11 28 8 580 360', f40: '11 28 8 580 360', f48: '11 28 8 651 439', g80: '—', desc: 'Correia + tensor' },
+    oleo:       { '992': '996 107 225 52', '95b': '95B 115 562 A', '9ya': '95B 115 562 A', b9: '06L 115 562 B', fy: '06L 115 562 B', '8y': '06L 115 562 B', desc: 'Filtro de óleo + anel' },
+    freio_d:    { '992': '992 698 151 A', '95b': '95B 698 151 F', '9ya': '9Y0 698 151 C', b9: '8W0 698 151 Q', fy: '80A 698 151 M', '8y': '8Y0 698 151 D', desc: 'Pastilhas dianteiras' },
+    disco_d:    { '992': '992 615 301 B', '95b': '95B 615 301 K', '9ya': '9Y0 615 301 D', b9: '8W0 615 301 AK', fy: '80A 615 301 F', '8y': '8Y0 615 301 C', desc: 'Discos dianteiros (par)' },
+    vela:       { '992': '999 170 217 90', '95b': '06K 905 601 R', '9ya': '06K 905 601 R', b9: '06K 905 601 R', fy: '06K 905 601 R', '8y': '06L 905 601 A', desc: 'Velas de ignição (jogo)' },
+    amortecedor:{ '992': '992 343 031 A', '95b': '95B 413 031 AL', '9ya': '9Y0 413 031 M', b9: '8W0 413 031 CJ', fy: '80A 413 031 BM', '8y': '8Y0 413 031 J', desc: 'Amortecedores dianteiros (par)' },
+    bieleta:    { '992': '992 411 065 A', '95b': '95B 411 317 C', '9ya': '9Y0 411 317 B', b9: '8W0 411 317 C', fy: '80A 411 317 B', '8y': '8Y0 411 317 A', desc: 'Bieletas da barra (par)' },
+    bomba_agua: { '992': '9A7 106 011 00', '95b': '06L 121 111 H', '9ya': '06M 121 111 J', b9: '06L 121 111 H', fy: '06L 121 111 H', '8y': '07K 121 026 A', desc: 'Bomba d’água + termostato' },
+    fluido_freio:{ '992': '000 043 203 76', '95b': '000 043 203 76', '9ya': '000 043 203 76', b9: 'G 004 700 M2', fy: 'G 004 700 M2', '8y': 'G 004 700 M2', desc: 'Fluido DOT4 LV (1L)' },
+    correia:    { '992': '999 192 590 90', '95b': '06L 903 137 M', '9ya': '06M 903 137 D', b9: '06L 903 137 M', fy: '06L 903 137 M', '8y': '07K 903 137 C', desc: 'Correia + tensor' },
   };
+
 
   // Preço de referência da peça ORIGINAL por categoria (R$) [API: PartsLink24]
   const PRECO_BASE = {
@@ -140,7 +153,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
 
   // TecDoc cross-ref: fabricantes por nível e fator de preço [API: TecDoc]
   const CROSSREF = {
-    original:    { rotulo: 'Original BMW', fator: 1.00, fabricantes: { default: 'BMW Genuine' } },
+    original:    { rotulo: 'Original de fábrica', fator: 1.00, fabricantes: { default: 'Genuína' } },
     oem:         { rotulo: 'OEM',          fator: 0.72, fabricantes: {
       oleo: 'Mahle', freio_d: 'Textar', disco_d: 'Zimmermann', vela: 'NGK/Bosch',
       amortecedor: 'Sachs', bieleta: 'Lemförder', bomba_agua: 'Pierburg',
@@ -155,14 +168,14 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
 
   // Fornecedores para cotação [API: conectores B2B]
   const SUPPLIERS = [
-    { id: 'dealer',  nome: 'Dealer BMW local',   prazo: 2,  fator: 1.00, niveis: ['original'] },
+    { id: 'dealer',  nome: 'Concessionária local', prazo: 2,  fator: 1.00, niveis: ['original'] },
     { id: 'importbr',nome: 'Importador BR',      prazo: 5,  fator: 0.86, niveis: ['original', 'oem'] },
-    { id: 'schmied', nome: 'Schmiedmann (DK)',   prazo: 10, fator: 0.74, niveis: ['original', 'oem', 'aftermarket'] },
+    { id: 'euroimp', nome: 'Euro Parts (DE)',     prazo: 10, fator: 0.74, niveis: ['original', 'oem', 'aftermarket'] },
     { id: 'fcp',     nome: 'FCP Euro (US)',      prazo: 12, fator: 0.70, niveis: ['oem', 'aftermarket'] },
     { id: 'autodoc', nome: 'AUTODOC (DE)',       prazo: 15, fator: 0.62, niveis: ['oem', 'aftermarket'] },
   ];
 
-  // Tempos padrão de MO — AW (1h = 12 AW, padrão BMW flat rate) [API: tabela oficial]
+  // Tempos padrão de MO — AW (1h = 12 AW, tabela flat rate do fabricante) [API: tabela oficial]
   const AW_TABLE = {
     oleo: 6, freio_d: 10, disco_d: 14, vela: 8, amortecedor: 28,
     bieleta: 8, bomba_agua: 30, fluido_freio: 6, correia: 16, outro: 12,
@@ -172,7 +185,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
 
   function motorDePecas(categoria, familia, config) {
     const cat = ETK[categoria] ? categoria : 'outro';
-    const part = ETK[cat] ? (ETK[cat][familia] || ETK[cat].g20) : '—';
+    const part = ETK[cat] ? (ETK[cat][familia] || ETK[cat][Object.keys(ETK[cat])[0]]) : '—';
     const desc = ETK[cat] ? ETK[cat].desc : 'Peça avulsa';
     const base = PRECO_BASE[cat] || PRECO_BASE.outro;
     const margem = config.margens;
@@ -186,7 +199,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
       const melhor = cotacoes[0];
       niveis[nv] = {
         rotulo: cr.rotulo,
-        fabricante: cr.fabricantes[cat] || cr.fabricantes.default || 'BMW Genuine',
+        fabricante: cr.fabricantes[cat] || cr.fabricantes.default || 'Genuína',
         partNumber: nv === 'original' ? part : partCross(part, nv),
         custo: melhor.custo,
         preco: Math.round(melhor.custo * (1 + (margem[nv] || 25) / 100)),
@@ -548,19 +561,19 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     const cfg = getConfig();
 
     const vins = {
-      m135: fixVIN('WBA5U71090' + '7L90210'),
-      g20:  fixVIN('WBA7A91000' + '7B12933'),
-      x1:   fixVIN('WBAJA51050' + '5C60481'),
+      macan: fixVIN('WP1AB2A50' + 'ML140277'),
+      a4:   fixVIN('WAUZZZF40' + 'MA061933'),
+      q5:   fixVIN('WA1CBAFY7' + 'P2060481'),
     };
-    upsertVehicle({ vin: vins.m135, ...decodeVIN(vins.m135), placa: 'RQV-2D47', cor: 'Preto Safira',  km: 48500, cliente: 'Ricardo Almeida', telefone: '(27) 99900-0000', cofre: ['Manual do proprietário.pdf', 'Nota da chave codificada.pdf', 'Laudo cautelar 2024.pdf'] });
-    upsertVehicle({ vin: vins.g20,  ...decodeVIN(vins.g20),  placa: 'SBX-9F31', cor: 'Branco Alpino', km: 61200, cliente: 'Marcelo Costa',  telefone: '(27) 98811-2233', cofre: ['Manual do proprietário.pdf'] });
-    upsertVehicle({ vin: vins.x1,   ...decodeVIN(vins.x1),   placa: 'RWK-7B12', cor: 'Branco Alpino', km: 21300, cliente: 'Ricardo Almeida', telefone: '(27) 99900-0000', cofre: [] });
+    upsertVehicle({ vin: vins.macan, ...decodeVIN(vins.macan), placa: 'RQV-2D47', cor: 'Cinza Vulcano',  km: 48500, cliente: 'Ricardo Almeida', telefone: '(27) 99900-0000', cofre: ['Manual do proprietário.pdf', 'Nota da chave codificada.pdf', 'Laudo cautelar 2024.pdf'] });
+    upsertVehicle({ vin: vins.a4,  ...decodeVIN(vins.a4),  placa: 'SBX-9F31', cor: 'Branco Ibis', km: 61200, cliente: 'Marcelo Costa',  telefone: '(27) 98811-2233', cofre: ['Manual do proprietário.pdf'] });
+    upsertVehicle({ vin: vins.q5,   ...decodeVIN(vins.q5),   placa: 'RWK-7B12', cor: 'Branco Ibis', km: 21300, cliente: 'Ricardo Almeida', telefone: '(27) 99900-0000', cofre: [] });
 
     itemSeq = 0;
 
     /* OS 1258 — do Ricardo (usuário demo do app): aguardando aprovação */
     const os1 = novaOS({
-      vin: vins.m135, veiculo: 'BMW M135i xDrive (F40)', placa: 'RQV-2D47',
+      vin: vins.macan, veiculo: 'Porsche Macan S (95B)', placa: 'RQV-2D47',
       cliente: 'Ricardo Almeida', telefone: '(27) 99900-0000',
       sintoma: 'Revisão dos 50.000 km + barulho seco na dianteira ao passar em lombadas.',
       tecnico: 'Diego Ramos',
@@ -592,7 +605,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
 
     /* OS 1259 — Marcelo: em execução (tracking ao vivo no kanban) */
     const os2 = novaOS({
-      vin: vins.g20, veiculo: 'BMW 320i M Sport (G20)', placa: 'SBX-9F31',
+      vin: vins.a4, veiculo: 'Audi A4 45 TFSI quattro (B9)', placa: 'SBX-9F31',
       cliente: 'Marcelo Costa', telefone: '(27) 98811-2233',
       sintoma: 'Luz de arrefecimento acendeu na serra. Perda de fluido visível.',
       tecnico: 'Régis Souza',
@@ -620,7 +633,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
 
     /* OS 1240 — histórico concluído do Ricardo (freios) */
     const os3 = novaOS({
-      vin: vins.m135, veiculo: 'BMW M135i xDrive (F40)', placa: 'RQV-2D47',
+      vin: vins.macan, veiculo: 'Porsche Macan S (95B)', placa: 'RQV-2D47',
       cliente: 'Ricardo Almeida', telefone: '(27) 99900-0000',
       sintoma: 'Troca de pastilhas e discos dianteiros.',
       tecnico: 'Diego Ramos',
@@ -656,9 +669,9 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     const dia = (off) => { const t = new Date(); t.setDate(t.getDate() + off); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
     const lista = read(KEYS.agendamentos, []);
     [
-      { nome: 'Ana Beatriz Rocha', telefone: '(27) 99123-4567', veiculo: 'BMW 320i M Sport (G20)', placa: 'SBC-4A18', servico: 'diagnostico', servico_nome: 'Diagnóstico', data: dia(0), hora: '15:30', obs: 'Luz do motor acesa desde ontem — perde potência na serra.', status: 'novo' },
-      { nome: 'Ricardo Almeida', telefone: '(27) 99900-0000', veiculo: 'BMW M135i xDrive (F40)', placa: 'RQV-2D47', servico: 'manutencao', servico_nome: 'Manutenção', data: dia(1), hora: '09:00', obs: 'Revisão dos 50.000 km.', status: 'confirmado' },
-      { nome: 'Juliana Freire', telefone: '(27) 98876-1122', veiculo: 'BMW X3 xDrive30i (G01)', placa: 'RUX-8C33', servico: 'suspensao', servico_nome: 'Suspensão', data: dia(3), hora: '10:00', obs: 'Batida seca no quebra-molas, só do lado direito.', status: 'novo' },
+      { nome: 'Ana Beatriz Rocha', telefone: '(27) 99123-4567', veiculo: 'Audi A4 45 TFSI quattro (B9)', placa: 'SBC-4A18', servico: 'diagnostico', servico_nome: 'Diagnóstico', data: dia(0), hora: '15:30', obs: 'Luz do motor acesa desde ontem — perde potência na serra.', status: 'novo' },
+      { nome: 'Ricardo Almeida', telefone: '(27) 99900-0000', veiculo: 'Porsche Macan S (95B)', placa: 'RQV-2D47', servico: 'manutencao', servico_nome: 'Manutenção', data: dia(1), hora: '09:00', obs: 'Revisão dos 50.000 km.', status: 'confirmado' },
+      { nome: 'Juliana Freire', telefone: '(27) 98876-1122', veiculo: 'Audi Q5 Sportback 55 TFSIe (FY)', placa: 'RUX-8C33', servico: 'suspensao', servico_nome: 'Suspensão', data: dia(3), hora: '10:00', obs: 'Batida seca no quebra-molas, só do lado direito.', status: 'novo' },
     ].forEach((a, i) => lista.push({
       id: 'ag-seed-' + (i + 1), protocolo: 'AG-DEMO' + (i + 1), os_numero: null,
       criado_em: new Date(Date.now() - (3 - i) * 3600e3).toISOString(), ...a,
@@ -933,7 +946,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
      MUNDIAL (SAE J2012/ISO 15031-6 — ~2 mil códigos genéricos
      P (motor/transmissão) e U (rede/comunicação) que qualquer
      scanner emite: Autel, Launch, ISTA, ELM327…); os códigos
-     genéricos C/B e os proprietários (hex BMW etc.) são
+     genéricos C/B e os proprietários (hex de fabricante etc.) são
      aprendidos dos laudos reais lidos pela IA.
      Fica no navegador (localStorage) — é um cache de custo, não
      dado do cliente; por isso o adaptador de nuvem o delega ao
@@ -1105,11 +1118,11 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
   function _istaDemo(ctx) {
     return {
       ok: true, modo: 'demo', eh_ista: true, legivel: true, recaptura_necessaria: false, motivo_recaptura: null,
-      veiculo: { modelo: (ctx && ctx.modelo) || 'BMW', chassi: null, km: null },
+      veiculo: { modelo: (ctx && ctx.modelo) || 'Veículo', chassi: null, km: null },
       resumo_executivo: 'Exemplo (modo demonstração — a IA real roda em produção com a chave da Vercel). Padrão clássico: subtensão de alimentação parece ser a causa comum de vários códigos em módulos diferentes; há um código de airbag que exige confirmação do técnico.',
       causa_raiz_provavel: 'Subtensão de alimentação (bateria/IBS ou aterramento) — hipótese a confirmar antes de mexer nos módulos afetados.',
       requer_confirmacao_profissional: true,
-      avisos_seguranca: ['Código de airbag/SRS presente — não liberar o veículo; confirmar com o técnico BMW e medir antes de qualquer ação.'],
+      avisos_seguranca: ['Código de airbag/SRS presente — não liberar o veículo; confirmar com o técnico responsável e medir antes de qualquer ação.'],
       codigos: [
         { codigo: '00A6B2', formato: 'hex_bmw', modulo: 'DME', descricao: 'Subtensão de alimentação detectada', sistema: 'eletrica', severidade: 'alta', tipo: 'raiz', critico_seguranca: false, caractere_ambiguo: false, exige_medicao: true, medicao: 'Teste de bateria/IBS, tensão de repouso e saída do alternador.', termo_peca: 'bateria / sensor IBS', causa_provavel: 'Bateria fraca ou aterramento ruim indica subtensão geral.', acao: 'Medir e tratar a alimentação antes dos demais códigos.' },
         { codigo: '480A02', formato: 'hex_bmw', modulo: 'DSC', descricao: 'Sem comunicação com módulo (barramento)', sistema: 'freios/estabilidade', severidade: 'alta', tipo: 'consequente', critico_seguranca: true, caractere_ambiguo: false, exige_medicao: true, medicao: 'Reverificar após corrigir a alimentação; checar conector/barramento.', termo_peca: 'módulo DSC / conector', causa_provavel: 'Provável consequência da subtensão — pode limpar sozinho.', acao: 'Reavaliar depois de tratar a causa-raiz.' },
@@ -1208,7 +1221,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     aprovarOrcamento, registrarPagamento, chatCliente, avaliarNps,
     _aplicarPagamento: aplicarPagamento, // interno: só o registrarPagamento (local e do adaptador) deve usar
     KEYS, STATUS, statusIdx, CATEGORIAS, ETK, SUPPLIERS, AW_TABLE,
-    validateVIN, decodeVIN, fixVIN, checkRecalls,
+    validateVIN, decodeVIN, fixVIN, checkRecalls, catalogoDoVin,
     analisarFotos, analisarIsta, consultarPlaca, sugerirOrcamento,
     carregarSeedObd, dicGet, dicAprender, dicStats, decodeLocal, lerLocal, dicDump, dicLimpar,
     motorDePecas, itemPreco, totalOS, custoOS,

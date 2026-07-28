@@ -155,7 +155,7 @@
         <h2>Itens propostos — 3 níveis disponíveis por item</h2>
         ${orcTable(os, false)}
         <h2>Níveis de peça</h2>
-        <p class="muted">Original BMW (genuína) · OEM — mesmo fabricante que fornece à BMW (Lemförder, Sachs, Mahle, ZF…) · Aftermarket premium (Brembo, Bilstein…). Preço e prazo por item acima consideram a melhor cotação entre ${WERK.SUPPLIERS.length} fornecedores. Mão de obra: tabela de tempos padrão (AW) × ${WERK.brl(cfg.valorHora)}/h.</p>
+        <p class="muted">Original de fábrica (genuína) · OEM — mesmo fabricante que fornece à montadora (Lemförder, Sachs, Mahle, ZF…) · Aftermarket premium (Brembo, Bilstein…). Preço e prazo por item acima consideram a melhor cotação entre ${WERK.SUPPLIERS.length} fornecedores. Mão de obra: tabela de tempos padrão (AW) × ${WERK.brl(cfg.valorHora)}/h.</p>
         ${os.aceite ? `<p style="margin-top:12px"><span class="stamp">Aprovado</span> &nbsp; <span class="muted">Aceite digital em ${WERK.fdt(os.aceite.ts)} · IP ${os.aceite.ip} · hash <span class="hash">${os.aceite.hash}</span></span></p>` : ''}
         ` + footer('Aprovação item a item pelo app — nada é executado sem seu OK');
     },
