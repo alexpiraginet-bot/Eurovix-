@@ -59,7 +59,7 @@
     // ?preview=1 (com EVX_ENV zerado no app.html) entra direto na conta demo local,
     // para mostrar o app do cliente ao vivo mesmo em produção (dados fictícios).
     if (PREVIEW && !WERK.cloud) {
-      doLogin(EVX.DEMO_USER.telefone, 'bmw2026').then(() =>
+      doLogin(EVX.DEMO_USER.telefone, 'demo2026').then(() =>
         toast('Modo demonstração', 'Dados fictícios — explore o app, o 3D e a garagem à vontade.', 'ok'));
       return;
     }
@@ -109,8 +109,8 @@
 
   $('#demoBtn').addEventListener('click', () => {
     $('#l-tel').value = EVX.DEMO_USER.telefone;
-    $('#l-senha').value = 'bmw2026';
-    doLogin(EVX.DEMO_USER.telefone, 'bmw2026');
+    $('#l-senha').value = 'demo2026';
+    doLogin(EVX.DEMO_USER.telefone, 'demo2026');
   });
   $('#loginForm').addEventListener('submit', (e) => {
     e.preventDefault();
