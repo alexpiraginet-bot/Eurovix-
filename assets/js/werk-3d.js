@@ -316,7 +316,12 @@
     [/e36/, '76401039fa80419ab036bea09acb898d'],
     [/csl|\be9\b|3\.0/, '86ee7c1a83334576933ab431542269d5'],
   ];
-  const BMW_DEFAULT = '69dbf0293c6f4959a90d5bd0d68e097f'; // M340i — sedan BMW moderno genérico
+  // Sem modelo padrão de propósito: o catálogo 3D real só tem BMW hoje. Mostrar um
+  // carro de outra marca como se fosse o do cliente seria mentira na tela — então,
+  // quando o modelo não estiver no catálogo, a função devolve null e a interface
+  // simplesmente não oferece o 3D real (a marcação de avarias no carro 3D próprio,
+  // que é offline e genérica, continua funcionando para qualquer veículo).
+  const BMW_DEFAULT = null;
 
   function slug(s) { return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim(); }
 
@@ -325,12 +330,14 @@
     for (const [re, uid] of BMW_UID) if (re.test(s)) return uid;
     return BMW_DEFAULT;
   }
+  const temModelo3D = (modelStr) => !!bmwUid(modelStr);
 
   // Embeda o modelo 3D real no container (iframe Sketchfab + atribuição CC obrigatória).
   function embedReal(container, modelStr, opts) {
     if (!container) throw new Error('WERK3D: container ausente');
     injectStyle(); opts = opts || {};
     const uid = opts.uid || bmwUid(modelStr);
+    if (!uid) throw new Error('WERK3D: sem modelo 3D real para este veículo');
     container.classList.add('wk3d-real'); container.innerHTML = '';
     // autostart=1 → inicia sozinho (sem clique). ui_controls=0 + flags → sem a
     // barra/botões da Sketchfab por cima do carro (só o modelo, limpo e visível).
@@ -340,7 +347,7 @@
       + '&ui_infos=0&ui_controls=0&ui_watermark=0&ui_hint=0&ui_ar=0&ui_vr=0'
       + '&ui_fullscreen=0&ui_help=0&ui_settings=0&ui_annotations=0&ui_inspector=0';
     const ifr = document.createElement('iframe');
-    ifr.title = 'Modelo 3D BMW'; ifr.src = src; ifr.loading = 'lazy';
+    ifr.title = 'Modelo 3D do veículo'; ifr.src = src; ifr.loading = 'lazy';
     ifr.setAttribute('frameborder', '0'); ifr.setAttribute('allowfullscreen', '');
     ifr.setAttribute('allow', 'autoplay; fullscreen; xr-spatial-tracking');
     container.appendChild(ifr);
@@ -352,7 +359,7 @@
   }
 
   global.WERK3D = {
-    mount, embedReal, bmwUid,
+    mount, embedReal, bmwUid, temModelo3D,
     supported: (function () {
       try { const el = document.createElement('div'); el.style.transform = 'translateZ(1px)'; return 'transformStyle' in el.style || 'webkitTransformStyle' in el.style; }
       catch (_) { return false; }

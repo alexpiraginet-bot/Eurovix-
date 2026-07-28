@@ -121,7 +121,7 @@
   // ---- Scanner: extrai a MEMÓRIA DE FALHAS de um PDF no navegador (pdf.js) ----
   // Manda só o texto relevante à IA em vez das páginas do PDF como imagem → ~10× menos
   // tokens de entrada (o PDF inteiro seria tokenizado; o texto filtrado, não).
-  // Reconhece os dois padrões: hex proprietário prefixado com "0x" (BMW ISTA) E
+  // Reconhece os dois padrões: hex proprietário prefixado com "0x" (scanner de fabricante) E
   // código SAE/OBD-II (P/C/B/U + 4 díg. — Autel, Launch, ELM327, genéricos).
   const RE_COD = /[0-9A-Fa-f]{5,6}|[PBCU][0-3][0-9A-F]{3}/;              // núcleo do código
   const RE_COD_LINHA = new RegExp('^► (' + RE_COD.source + ') · (.*)$', 'i');
@@ -138,7 +138,7 @@
         raw += items.map(it => it.str).join('') + '\n';
       }
       if (raw.replace(/\s/g, '').length < 400) return ''; // PDF escaneado (imagem) → sem texto útil
-      // Marca uma linha por falha: hex com "0x" (BMW) e SAE/OBD-II avulso (genérico).
+      // Marca uma linha por falha: hex com "0x" (proprietário) e SAE/OBD-II avulso (genérico).
       const linhas = raw
         .replace(/[ \t]{2,}/g, ' ')
         .replace(/0x([0-9A-Fa-f]{5,6})/g, '\n► $1 · ')
@@ -449,7 +449,7 @@
     $$('#boardSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
     renderBoardBody();
   }
-  const modeloCurto = (o) => (o.veiculo || '').replace('BMW ', '').split(' (')[0];
+  const modeloCurto = (o) => (o.veiculo || '').replace(/^(Porsche|Audi|BMW|Mercedes-Benz|Volkswagen)\s+/i, '').split(' (')[0];
   function boardData() {
     const all = WERK.getAllOS().filter(o => o.status !== 'entregue');
     const q = boardQ.trim().toLowerCase();
@@ -902,7 +902,7 @@
             <div class="dlist">
               ${ck.danos.map((d, i) => `<div class="drow"><span class="dn">${i + 1}</span> ${d.nota} <button data-del="${i}">✕</button></div>`).join('') || '<div style="font-size:11.5px;color:var(--txt-3)">Nenhum dano marcado.</div>'}
             </div>
-            <button type="button" class="ck-ai-btn" id="ckReal3d" style="margin-top:12px">${I('car', 15)} Ver o modelo real (BMW) em 3D</button>
+            ${(window.WERK3D && WERK3D.temModelo3D && WERK3D.temModelo3D(ck.veiculoNome || (ck.decoded && ck.decoded.modelo))) ? `<button type="button" class="ck-ai-btn" id="ckReal3d" style="margin-top:12px">${I('car', 15)} Ver o modelo real em 3D</button>` : ''}
             <div id="ckReal3dBox" style="display:none;height:300px;margin-top:10px"></div>
           </div>
         </div>
@@ -999,13 +999,13 @@
         const del = e.target.dataset && e.target.dataset.del;
         if (del != null && e.target.tagName === 'BUTTON') { ck.danos.splice(+del, 1); snap2(); renderCheckin(); }
       });
-      const _r3 = $('#ckReal3d');                              // showcase do modelo 3D real (BMW · Sketchfab)
+      const _r3 = $('#ckReal3d');                              // showcase do modelo 3D real (Sketchfab)
       if (_r3) _r3.addEventListener('click', () => {
         const box = $('#ckReal3dBox'); if (!box) return;
-        if (box.style.display !== 'none') { box.style.display = 'none'; _r3.innerHTML = I('car', 15) + ' Ver o modelo real (BMW) em 3D'; return; }
+        if (box.style.display !== 'none') { box.style.display = 'none'; _r3.innerHTML = I('car', 15) + ' Ver o modelo real em 3D'; return; }
         box.style.display = 'block';
         if (!box.dataset.loaded && window.WERK3D && WERK3D.embedReal) {
-          try { WERK3D.embedReal(box, ck.veiculoNome || (ck.decoded && ck.decoded.modelo) || ck.placa || 'BMW'); box.dataset.loaded = '1'; }
+          try { WERK3D.embedReal(box, ck.veiculoNome || (ck.decoded && ck.decoded.modelo) || ck.placa || 'Veículo'); box.dataset.loaded = '1'; }
           catch (_) { box.innerHTML = '<div style="padding:14px;color:var(--txt-3);font-size:12px">Modelo 3D indisponível offline.</div>'; }
         }
         _r3.innerHTML = '▲ Ocultar modelo 3D real';
@@ -1166,7 +1166,8 @@
       <a class="quote-btn" href="documento.html?tipo=os&os=${os.numero}" target="_blank">📄 OS completa</a>
       ${os.pagamento ? `<a class="quote-btn" href="documento.html?tipo=fatura&os=${os.numero}" target="_blank">📄 Fatura</a>` : ''}
       ${os.itens.some(i => i.garantia) ? `<a class="quote-btn" href="documento.html?tipo=garantia&os=${os.numero}" target="_blank">📄 Garantia</a>` : ''}
-      ${os.vin ? `<button class="quote-btn" data-realoem="${os.vin}" title="Abre o catálogo BMW no VIN deste carro e copia o VIN">🔧 Peças (RealOEM)</button>` : ''}`;
+      ${os.vin ? (function () { const c = WERK.catalogoDoVin(os.vin);
+        return `<button class="quote-btn" data-realoem="${os.vin}" title="${c ? 'Abre o ' + c.nome + ' no VIN deste carro e copia o VIN' : 'Copia o chassi para colar no catálogo da montadora'}">🔧 Peças${c ? ' (' + c.nome + ')' : ' · copiar VIN'}</button>`; })() : ''}`;
 
     main.innerHTML = head(`OS #${os.numero}`, '', `<button class="btn btn-secondary" onclick="location.hash='#/kanban'">← Kanban</button>`) + `
       <div class="os-head-row">
@@ -1287,7 +1288,7 @@
         ${c.exige_medicao && c.medicao ? `<div style="font-size:10.5px;color:var(--accent,#5aa0ff);margin-top:3px">🔧 Medir antes: ${esc(c.medicao)}</div>` : ''}
         <div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           ${(ehBmw && (vin || c.termo_peca))
-            ? `<a href="#" class="ista-peca" data-realoem="${esc(vin || '')}" data-termo="${esc(c.termo_peca || '')}" style="font-size:10.5px;color:#ff9d3d;text-decoration:none;font-weight:600">🔧 buscar peça no RealOEM${c.termo_peca ? ' · ' + esc(c.termo_peca) : ''}</a>`
+            ? `<a href="#" class="ista-peca" data-realoem="${esc(vin || '')}" data-termo="${esc(c.termo_peca || '')}" style="font-size:10.5px;color:#ff9d3d;text-decoration:none;font-weight:600">🔧 buscar peça no catálogo${c.termo_peca ? ' · ' + esc(c.termo_peca) : ''}</a>`
             : (c.termo_peca ? `<a href="https://www.google.com/search?q=${encodeURIComponent(c.termo_peca + ' ' + (os.veiculo || '') + ' peça')}" target="_blank" rel="noopener" style="font-size:10.5px;color:#ff9d3d;text-decoration:none;font-weight:600">🔧 buscar peça · ${esc(c.termo_peca)}</a>` : '')}
           ${botaoDvi}
         </div>
@@ -1381,7 +1382,7 @@
       const modtag = [c.modulo, c.sistema].filter(Boolean).join(' · ');
       const bx = cx - 48, by = cy - 40;
       bodySvg += `<line class="prancha-leader" x1="${carX}" y1="${carY + 22}" x2="${bx}" y2="${by}"/>`;
-      bodySvg += `<g class="prancha-part" data-realoem="${esc(realVin)}" data-termo="${esc(c.termo_peca || '')}" role="button" tabindex="0" aria-label="Abrir ${esc(termo)} no RealOEM" style="cursor:pointer">`;
+      bodySvg += `<g class="prancha-part" data-realoem="${esc(realVin)}" data-termo="${esc(c.termo_peca || '')}" role="button" tabindex="0" aria-label="Abrir ${esc(termo)} no catálogo do fabricante" style="cursor:pointer">`;
       bodySvg += `<g class="prancha-glyph" transform="translate(${cx},${cy})" style="--acc:${a}">${glyphSVG(glyphKind(c), a)}</g>`;
       bodySvg += `<text class="prancha-label" x="${cx}" y="${cy + 46}" text-anchor="middle">${esc(termoShort)}</text>`;
       if (modtag) bodySvg += `<text class="prancha-sub" x="${cx}" y="${cy + 59}" text-anchor="middle">${esc(modtag.length > 34 ? modtag.slice(0, 33) + '…' : modtag)}</text>`;
@@ -1389,15 +1390,15 @@
       bodySvg += `</g>`;
     });
     const car = `<g class="prancha-car" transform="translate(${carX},${carY})">${carSVG()}<text class="prancha-vin" x="0" y="34" text-anchor="middle">VIN ${vinMask}</text></g>`;
-    const tb = `<g class="prancha-tb" transform="translate(${W - 190},${H - 44})"><rect x="0" y="0" width="186" height="40" rx="4"/><text class="prancha-tbk" x="10" y="14">${esc(bnome().toUpperCase().slice(0, 22))} · PRANCHA DE PEÇAS</text><text class="prancha-tbv" x="10" y="27">Sistema: ${esc(domSys)}</text><text class="prancha-tbs" x="10" y="36">Ref. catálogo BMW ETK · RealOEM</text></g>`;
+    const tb = `<g class="prancha-tb" transform="translate(${W - 190},${H - 44})"><rect x="0" y="0" width="186" height="40" rx="4"/><text class="prancha-tbk" x="10" y="14">${esc(bnome().toUpperCase().slice(0, 22))} · PRANCHA DE PEÇAS</text><text class="prancha-tbv" x="10" y="27">Sistema: ${esc(domSys)}</text><text class="prancha-tbs" x="10" y="36">Ref. catálogo eletrônico do fabricante</text></g>`;
     const svg = `<svg class="prancha-svg" viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Prancha de peças do diagnóstico"><rect class="prancha-bg" x="1" y="1" width="${W - 2}" height="${H - 2}" rx="10"/>${car}${bodySvg}${tb}</svg>`;
     const legend = parts.map((c, i) => {
       const a = sevCor[c.severidade] || 'var(--txt-3)';
       const termo = c.termo_peca || c.descricao || c.codigo || 'peça';
       const sub = [c.modulo, c.sistema].filter(Boolean).join(' · ') + (c.tipo === 'raiz' ? ' · 🎯 causa-raiz' : '');
-      return `<button class="prancha-row" data-realoem="${esc(realVin)}" data-termo="${esc(c.termo_peca || '')}"><span class="prancha-rn" style="background:${a}">${i + 1}</span><span class="prancha-rt"><b>${esc(termo)}</b><small>${esc(sub)}</small></span><span class="prancha-ro">RealOEM ↗</span></button>`;
+      return `<button class="prancha-row" data-realoem="${esc(realVin)}" data-termo="${esc(c.termo_peca || '')}"><span class="prancha-rn" style="background:${a}">${i + 1}</span><span class="prancha-rt"><b>${esc(termo)}</b><small>${esc(sub)}</small></span><span class="prancha-ro">catálogo ↗</span></button>`;
     }).join('');
-    return `<div class="prancha"><div class="prancha-head"><span>🔧 Prancha de peças <em>— clique numa peça pra abrir o desenho no RealOEM</em></span>${realVin ? `<button class="prancha-cat" data-realoem="${esc(realVin)}" data-termo="">Catálogo completo ↗</button>` : ''}</div><div class="prancha-plate">${svg}</div><div class="prancha-legend">${legend}</div>${rest > 0 ? `<p class="prancha-more">+${rest} peça(s) listada(s) acima, não desenhada(s) na prancha.</p>` : ''}<p class="prancha-foot">Desenho esquemático gerado pelo LexOS para orientar a busca — o número e o preço oficiais da peça vêm do RealOEM (catálogo BMW ETK). O VIN é copiado ao abrir.</p></div>`;
+    return `<div class="prancha"><div class="prancha-head"><span>🔧 Prancha de peças <em>— clique numa peça pra abrir o desenho no catálogo</em></span>${realVin ? `<button class="prancha-cat" data-realoem="${esc(realVin)}" data-termo="">Catálogo completo ↗</button>` : ''}</div><div class="prancha-plate">${svg}</div><div class="prancha-legend">${legend}</div>${rest > 0 ? `<p class="prancha-more">+${rest} peça(s) listada(s) acima, não desenhada(s) na prancha.</p>` : ''}<p class="prancha-foot">Desenho esquemático gerado pelo LexOS para orientar a busca — o número e o preço oficiais da peça vêm do catálogo eletrônico do fabricante. O VIN é copiado ao abrir.</p></div>`;
   }
   function diagItemHTML(os, i) {
     const nv = i.niveis[i.nivelEscolhido || 'original'];
@@ -1734,15 +1735,21 @@
       } catch (_) { rearm(); }
     });
 
-    // RealOEM: abre o catálogo BMW e copia o VIN pra colar na busca por VIN (sem API — é só linkar).
+    // Catálogo do fabricante: abre e copia o VIN pra colar na busca por VIN (sem API — é só linkar).
+    // O catálogo certo depende da MARCA do chassi: RealOEM é só BMW.
     document.querySelectorAll('[data-realoem]').forEach(el => {
       const go = (e) => {
         e.preventDefault();
         const vin = el.getAttribute('data-realoem') || '';
         const termo = el.getAttribute('data-termo') || '';
+        const cat = WERK.catalogoDoVin(vin);
         if (vin && navigator.clipboard) { try { navigator.clipboard.writeText(vin); } catch (_) {} }
-        window.open('https://www.realoem.com/bmw/enUS/select', '_blank', 'noopener');
-        toast('RealOEM aberto', vin ? ('VIN copiado — cole na busca por VIN' + (termo ? '; depois procure: ' + termo : '') + '.') : 'Selecione o modelo no RealOEM.');
+        if (!cat) {
+          toast('VIN copiado', 'Não temos catálogo aberto para esta marca — cole o chassi no catálogo da montadora' + (termo ? '; depois procure: ' + termo : '') + '.');
+          return;
+        }
+        window.open(cat.url, '_blank', 'noopener');
+        toast(cat.nome + ' aberto', vin ? ('VIN copiado — cole na busca por VIN' + (termo ? '; depois procure: ' + termo : '') + '.') : 'Selecione o modelo no catálogo.');
       };
       el.addEventListener('click', go);
       const tag = el.tagName.toLowerCase();
@@ -2091,7 +2098,7 @@
         <div class="wfield"><label>Telefone/WhatsApp</label><input id="ag-tel" placeholder="(27) 9…"></div>
       </div>
       <div class="wk-grid2" style="margin-top:10px">
-        <div class="wfield"><label>Veículo</label><input id="ag-veic" placeholder="Ex.: BMW 320i M Sport (G20)"></div>
+        <div class="wfield"><label>Veículo</label><input id="ag-veic" placeholder="Ex.: Porsche Macan S (95B)"></div>
         <div class="wfield"><label>Placa</label><input id="ag-placa" maxlength="8" style="text-transform:uppercase" placeholder="ABC-1D23"></div>
       </div>
       <div class="wk-grid3" style="margin-top:10px">
@@ -2279,7 +2286,7 @@
         <h3>${I('chart')} Como funciona em produção</h3>
         <table class="wk-table">
           <tr><th>Camada</th><th>Fonte</th><th>O que entrega</th><th>Status na demo</th></tr>
-          <tr><td><b>1 · ETK</b></td><td>Catálogo eletrônico BMW (RealOEM)</td><td>VIN → variante exata → part number</td><td>mock fiel por família</td></tr>
+          <tr><td><b>1 · ETK</b></td><td>Catálogo eletrônico do fabricante</td><td>VIN → variante exata → part number</td><td>mock fiel por família</td></tr>
           <tr><td><b>2 · PartsLink24</b></td><td>Portal oficial B2B</td><td>Preço + disponibilidade original em tempo real</td><td>tabela de referência</td></tr>
           <tr><td><b>3 · TecDoc</b></td><td>API comercial</td><td>Cross-ref OE → OEM/aftermarket validado</td><td>cross-ref estático</td></tr>
           <tr><td><b>4 · Cotação</b></td><td>Fornecedores cadastrados</td><td>Comparativo preço × prazo × nível</td><td>5 fornecedores simulados</td></tr>
@@ -2471,7 +2478,7 @@
       <div class="wk-panel">
         <h3>📕 Dicionário de códigos <span style="font-size:10px;color:var(--txt-3)">— aprende a cada laudo lido pela IA para baratear as próximas leituras</span></h3>
         <p style="font-size:12px;color:var(--txt-2);margin-bottom:6px" id="cf-dic-stats">Carregando…</p>
-        <p style="font-size:11px;color:var(--txt-3);margin-bottom:10px">Vem semeado com o banco OBD-II mundial (SAE J2012 — códigos genéricos P/motor e U/rede que qualquer scanner emite). Códigos genéricos C/B e os proprietários (hex BMW etc.) entram sozinhos conforme a IA lê os laudos reais da oficina. Códigos já conhecidos são decodificados localmente, sem custo de IA.</p>
+        <p style="font-size:11px;color:var(--txt-3);margin-bottom:10px">Vem semeado com o banco OBD-II mundial (SAE J2012 — códigos genéricos P/motor e U/rede que qualquer scanner emite). Códigos genéricos C/B e os proprietários (hex de fabricante etc.) entram sozinhos conforme a IA lê os laudos reais da oficina. Códigos já conhecidos são decodificados localmente, sem custo de IA.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn btn-secondary" id="cf-dic-ver" style="font-size:12px">Ver códigos aprendidos</button>
           <button type="button" class="btn btn-secondary" id="cf-dic-limpar" style="font-size:12px">Limpar aprendidos</button>
@@ -2546,9 +2553,9 @@
     $('#cf-seed15').addEventListener('click', () => {
       if (WERK.cloud) { toast('Indisponível na nuvem', 'A carga de teste é exclusiva do modo demonstração — produção só recebe dados reais.'); return; }
       const modelos = [
-        ['WBA7A91000', 'BMW 320i M Sport (G20)'], ['WBA5U71000', 'BMW M135i xDrive (F40)'],
-        ['WBAJA51000', 'BMW X1 sDrive20i (F48)'], ['WBS8M91000', 'BMW M3 Competition (G80)'],
-        ['WBY7Z21000', 'BMW i4 eDrive40 (G26)'],
+        ['WAUZZZF400', 'Audi A4 45 TFSI quattro (B9)'], ['WP1AB2A500', 'Porsche Macan S (95B)'],
+        ['WA1CBAFY70', 'Audi Q5 Sportback 55 TFSIe (FY)'], ['WP0ZZZ9920', 'Porsche 911 Carrera S (992)'],
+        ['TRUZZZ8Y00', 'Audi RS3 Sportback (8Y)'],
       ];
       const nomes = ['Carlos Souza', 'Fernanda Lima', 'João Pedro', 'Mariana Alves', 'Rafael Torres', 'Beatriz Melo', 'Gustavo Rocha', 'Larissa Prado', 'Eduardo Nunes', 'Camila Duarte'];
       const fones = nomes.map((_, i) => `(27) 9910${i}-000${i}`); // fictícios, determinísticos por nome
