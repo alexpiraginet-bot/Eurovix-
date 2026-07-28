@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LexOS — O sistema operacional completo da oficina</title>
+<meta name="description" content="Apresentação navegável do LexOS: operação da oficina, aplicativo do cliente e gestão numa plataforma só. Telas reais do sistema.">
+<meta name="theme-color" content="#06070A">
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/marca.svg" type="image/svg+xml">
+<style>
+/* ============================================================
+   LexOS — apresentação navegável
+   Um slide 16:9 por vez. Teclado, clique, gesto e URL por slide.
+   Impressão: um slide por página, sem controles.
+   ============================================================ */
+:root{
+  --void:#06070A; --deep:#090C14; --surf:#0E1524; --surf-2:#141E33;
+  --line:rgba(255,255,255,.085); --line-2:rgba(255,255,255,.16);
+  --t1:#EFF3F9; --t2:#98A7BE; --t3:#5E6C84;
+  --blue:#3B86F2; --violet:#8B3FE8; --ice:#8FC2FF;
+  --grad:linear-gradient(120deg,#3B86F2 0%,#5A5FEA 52%,#8B3FE8 100%);
+  --ok:#3ECF77; --warn:#E8B031; --wip:#7C8AA3;
+  --sans:'Poppins','Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+  --mono:ui-monospace,'SFMono-Regular','JetBrains Mono','Cascadia Code',Consolas,monospace;
+  --pad:clamp(26px,3.4vw,58px);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--void);color:var(--t1);font-family:var(--sans);
+  line-height:1.55;-webkit-font-smoothing:antialiased;overflow:hidden;
+  -webkit-text-size-adjust:100%;text-size-adjust:100%;
+}
+h1,h2,h3{margin:0;letter-spacing:-.025em;line-height:1.06;text-wrap:balance}
+p{margin:0}
+b,strong{font-weight:600;color:var(--t1)}
+button{font-family:inherit}
+
+/* ---------- palco ---------- */
+.deck{position:relative;width:100vw;height:100vh;height:100dvh;overflow:hidden}
+.slide{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  padding:var(--pad) var(--pad) calc(var(--pad) - 6px);
+  opacity:0;transform:translateX(26px);pointer-events:none;
+  transition:opacity .34s ease,transform .34s ease;
+  background:
+    radial-gradient(1200px 620px at 88% -12%,rgba(59,134,242,.13),transparent 62%),
+    radial-gradient(900px 520px at -8% 108%,rgba(139,63,232,.11),transparent 58%),
+    linear-gradient(165deg,var(--void) 0%,var(--deep) 100%);
+  overflow-y:auto;overflow-x:hidden;
+}
+.slide.on{opacity:1;transform:none;pointer-events:auto}
+.slide.prev{transform:translateX(-26px)}
+@media(prefers-reduced-motion:reduce){.slide{transition:none;transform:none}.slide.prev{transform:none}}
+
+/* ---------- chrome do slide ---------- */
+.eyebrow{
+  display:inline-flex;align-items:center;gap:11px;flex:none;
+  font-family:var(--mono);font-size:clamp(9px,1vw,11px);font-weight:600;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--blue);margin-bottom:clamp(9px,1.5vh,16px);
+}
+.eyebrow::before{content:"";width:26px;height:1px;background:var(--blue);flex:none}
+h1{font-size:clamp(30px,4.9vw,62px);font-weight:800}
+h2{font-size:clamp(21px,3.05vw,40px);font-weight:800;margin-bottom:clamp(6px,1.1vh,12px)}
+.lead{font-size:clamp(13px,1.45vw,17px);color:var(--t2);max-width:64ch;line-height:1.6}
+.lead b{color:var(--t1)}
+.body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0;padding:clamp(8px,1.4vh,18px) 0}
+.cols{display:grid;gap:clamp(16px,2.5vw,38px);align-items:center;min-height:0}
+.c-tela{grid-template-columns:1.66fr .95fr}
+.c-tela-m{grid-template-columns:.52fr 1fr}
+.c2{grid-template-columns:1fr 1fr}
+
+/* ---------- moldura de tela ---------- */
+.shot{
+  background:var(--surf);border:1px solid var(--line-2);border-radius:14px;
+  padding:clamp(6px,.7vw,11px);box-shadow:0 30px 70px -24px rgba(0,0,0,.85);
+  overflow:hidden;min-width:0;
+}
+.shot img{display:block;width:100%;height:auto;border-radius:8px;background:#0B1018;
+  max-height:min(61vh,660px);object-fit:contain;object-position:top}
+.shot.tall img{max-height:min(61vh,660px)}
+.shot.fone{background:transparent;border:none;padding:0;box-shadow:none;text-align:center}
+.shot.fone img{
+  width:auto;max-width:100%;max-height:min(58vh,560px);margin:0 auto;
+  border-radius:20px;border:1px solid var(--line-2);
+  box-shadow:0 30px 70px -22px rgba(0,0,0,.9);
+}
+.cap{font-family:var(--mono);font-size:clamp(9px,.9vw,10.5px);color:var(--t3);
+  letter-spacing:.1em;text-transform:uppercase;margin-top:9px;text-align:center}
+
+/* ---------- anotações ---------- */
+.notas{display:grid;gap:clamp(8px,1.3vh,14px);min-width:0}
+.nota{display:flex;gap:12px;align-items:flex-start}
+.nota .n{
+  flex:none;width:23px;height:23px;border-radius:7px;background:rgba(59,134,242,.14);
+  border:1px solid rgba(59,134,242,.42);color:var(--ice);
+  font-family:var(--mono);font-size:10.5px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;margin-top:1px;
+}
+.nota .tx{font-size:clamp(12px,1.22vw,14.5px);color:var(--t2);line-height:1.5}
+.nota .tx b{display:block;color:var(--t1);font-weight:600;margin-bottom:1px}
+
+/* ---------- selo de status ---------- */
+.selo{
+  display:inline-flex;align-items:center;gap:7px;flex:none;align-self:flex-start;
+  font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  padding:5px 11px;border-radius:20px;border:1px solid var(--line-2);color:var(--t2);
+  margin-top:clamp(8px,1.4vh,14px);
+}
+.selo::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.selo.func{color:var(--ok);border-color:rgba(62,207,119,.42);background:rgba(62,207,119,.09)}
+.selo.prep{color:var(--warn);border-color:rgba(232,176,49,.42);background:rgba(232,176,49,.09)}
+.selo.dep{color:var(--ice);border-color:rgba(59,134,242,.42);background:rgba(59,134,242,.09)}
+.selo.plan{color:var(--wip);border-color:var(--line-2)}
+
+/* ---------- blocos genéricos ---------- */
+.grid{display:grid;gap:clamp(10px,1.4vw,18px)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--surf);border:1px solid var(--line);border-radius:14px;
+  padding:clamp(13px,1.5vw,20px);min-width:0}
+.card h3{font-size:clamp(13px,1.35vw,16px);font-weight:700;margin-bottom:6px}
+.card p{font-size:clamp(11.5px,1.12vw,13.5px);color:var(--t2);line-height:1.5}
+.card .ic{font-size:19px;margin-bottom:7px;display:block}
+.card.hi{border-color:rgba(59,134,242,.4);background:linear-gradient(165deg,rgba(59,134,242,.09),var(--surf))}
+
+.lista{display:grid;gap:9px}
+.li{display:flex;gap:10px;align-items:flex-start;font-size:clamp(12px,1.2vw,14px);color:var(--t2)}
+.li::before{content:"";flex:none;width:5px;height:5px;border-radius:50%;background:var(--blue);margin-top:8px}
+.li.neg::before{background:var(--t3)}
+
+/* jornada */
+.jornada{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.jp{background:var(--surf);border:1px solid var(--line);border-radius:11px;padding:11px 12px;position:relative}
+.jp .k{font-family:var(--mono);font-size:9.5px;color:var(--blue);letter-spacing:.1em}
+.jp .v{font-size:clamp(11px,1.05vw,13px);font-weight:600;margin-top:3px;line-height:1.3}
+.jp .w{font-size:10.5px;color:var(--t3);margin-top:3px;line-height:1.35}
+
+/* matriz de status */
+table.mx{width:100%;border-collapse:collapse;font-size:clamp(11px,1.1vw,13.5px)}
+table.mx th,table.mx td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+table.mx thead th{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--t3);background:rgba(255,255,255,.02)}
+table.mx td:first-child{font-weight:600;color:var(--t1);white-space:nowrap}
+table.mx td .st{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 8px;border-radius:14px;border:1px solid var(--line-2);color:var(--t2);white-space:nowrap}
+.st.ok{color:var(--ok);border-color:rgba(62,207,119,.42);background:rgba(62,207,119,.09)}
+.st.pr{color:var(--warn);border-color:rgba(232,176,49,.42);background:rgba(232,176,49,.09)}
+.st.dp{color:var(--ice);border-color:rgba(59,134,242,.42);background:rgba(59,134,242,.09)}
+.rolam{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+
+/* arquitetura */
+.arq{display:grid;grid-template-columns:1fr 1fr 1fr;gap:clamp(10px,1.3vw,16px);align-items:stretch}
+.arq .camada{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:14px 15px;display:flex;flex-direction:column;gap:7px}
+.arq .camada h4{margin:0;font-size:clamp(11.5px,1.15vw,13.5px);font-weight:700}
+.arq .camada .cx{font-family:var(--mono);font-size:10.5px;color:var(--t2);
+  background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.arq .camada.mid{border-color:rgba(59,134,242,.4);background:linear-gradient(165deg,rgba(59,134,242,.1),var(--surf))}
+
+/* capa */
+.capa{align-items:center;justify-content:center;text-align:center}
+.capa .marca{display:flex;align-items:center;gap:13px;justify-content:center;margin-bottom:clamp(16px,2.6vh,28px)}
+.capa .marca svg{width:clamp(40px,4.4vw,58px);height:auto}
+.capa .wm{font-size:clamp(28px,3.5vw,44px);font-weight:800;letter-spacing:-.035em}
+.capa .wm .a{color:var(--t1)} .capa .wm .b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.capa .by{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--t3);text-transform:uppercase;margin-top:5px}
+.capa h1{max-width:20ch;margin:0 auto}
+.capa .sub{margin-top:clamp(12px,2vh,20px);font-size:clamp(13px,1.5vw,18px);color:var(--t2);max-width:52ch;margin-left:auto;margin-right:auto}
+.capa .fita{display:flex;gap:clamp(10px,1.4vw,20px);justify-content:center;margin-top:clamp(20px,3.4vh,38px);flex-wrap:wrap}
+.capa .fita img{height:clamp(120px,19vh,200px);width:auto;border-radius:11px;border:1px solid var(--line-2);
+  box-shadow:0 26px 56px -22px rgba(0,0,0,.9)}
+.capa .fita img.f{border-radius:16px}
+
+/* ---------- controles ---------- */
+.barra{position:fixed;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.06);z-index:30}
+.barra i{display:block;height:100%;background:var(--grad);width:0;transition:width .34s ease}
+.hud{position:fixed;right:14px;bottom:14px;z-index:32;display:flex;align-items:center;gap:7px}
+.hud button,.menu-btn{
+  background:rgba(14,21,36,.86);border:1px solid var(--line-2);color:var(--t2);
+  border-radius:10px;min-width:38px;height:38px;padding:0 11px;cursor:pointer;font-size:14px;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.hud button:hover,.menu-btn:hover{color:var(--t1);border-color:var(--blue)}
+.hud .cont{font-family:var(--mono);font-size:11px;color:var(--t3);padding:0 10px;
+  height:38px;display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:10px;
+  background:rgba(14,21,36,.86);white-space:nowrap}
+.hud .cont b{color:var(--t1);font-weight:600}
+.menu-btn{position:fixed;left:14px;bottom:14px;z-index:32;gap:8px;font-size:12px;font-weight:600}
+.cap-atual{position:fixed;left:14px;top:14px;z-index:31;font-family:var(--mono);font-size:10px;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--t3);
+  background:rgba(14,21,36,.7);border:1px solid var(--line);border-radius:8px;padding:6px 11px;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);max-width:calc(100vw - 28px);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zona{position:fixed;top:0;bottom:56px;width:12vw;z-index:20;cursor:pointer;background:transparent;border:none}
+.zona.e{left:0} .zona.d{right:0}
+
+/* sumário */
+.sumario{position:fixed;inset:0;z-index:60;background:rgba(6,7,10,.96);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  display:none;overflow-y:auto;padding:clamp(22px,4vw,54px)}
+.sumario.on{display:block}
+.sumario h2{margin-bottom:clamp(14px,2.4vh,26px)}
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:clamp(14px,2vw,26px)}
+.sum-cap{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--blue);margin-bottom:9px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+.sum-grid ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.sum-grid button{
+  display:flex;gap:10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;
+  color:var(--t2);font-size:13px;padding:6px 8px;border-radius:8px;line-height:1.35;
+}
+.sum-grid button:hover{background:rgba(255,255,255,.05);color:var(--t1)}
+.sum-grid button[aria-current="true"]{color:var(--ice);background:rgba(59,134,242,.1)}
+.sum-grid button .num{font-family:var(--mono);font-size:10.5px;color:var(--t3);flex:none;padding-top:2px}
+.fechar{position:fixed;right:16px;top:16px;z-index:61}
+
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:6px}
+
+/* ---------- celular ---------- */
+@media (max-width:860px){
+  .cols,.c-tela,.c-tela-m,.c2{grid-template-columns:1fr}
+  .g3,.g4{grid-template-columns:1fr 1fr}
+  .jornada{grid-template-columns:repeat(2,1fr)}
+  .arq{grid-template-columns:1fr}
+  .slide{padding:54px 18px 62px}
+  .shot img{max-height:34vh}
+  .shot.fone img{max-height:44vh}
+  .capa .fita img{height:22vh}
+  .zona{width:22vw}
+  .hud .cont{display:none}
+}
+@media (max-width:620px){ .g3,.g4{grid-template-columns:1fr} }
+
+/* ---------- impressão / PDF ---------- */
+@media print{
+  @page{size:297mm 167mm;margin:0}
+  html,body{overflow:visible;background:#fff}
+  body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .deck{height:auto;overflow:visible}
+  .slide{
+    position:relative;inset:auto;opacity:1!important;transform:none!important;pointer-events:auto;
+    width:297mm;height:167mm;page-break-after:always;break-after:page;overflow:hidden;padding:14mm;
+  }
+  .slide:last-child{page-break-after:auto;break-after:auto}
+  .hud,.menu-btn,.barra,.zona,.sumario,.cap-atual,.fechar{display:none!important}
+  .shot img{max-height:74mm}
+  .shot.fone img{max-height:92mm}
+  .capa .fita img{height:52mm}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="lg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#3B86F2"/><stop offset=".5" stop-color="#5A5FEA"/><stop offset="1" stop-color="#8B3FE8"/>
+  </linearGradient>
+  <symbol id="xm" viewBox="0 0 64 64">
+    <path d="M55 7 L41 7 L9 57 L23 57 Z" fill="url(#lg)"/>
+    <path d="M32 32 L40 44 L28 46 Z" fill="#0B1330" opacity=".22"/>
+    <path d="M9 7 L23 7 L55 57 L41 57 Z" fill="url(#lg)"/>
+  </symbol>
+</defs></svg>
+
+<main class="deck" id="deck" aria-label="Apresentação LexOS"></main>
+
+<div class="cap-atual" id="capAtual" aria-live="polite"></div>
+<button class="menu-btn" id="btnMenu" aria-label="Abrir sumário (M)"><span aria-hidden="true">☰</span> Sumário</button>
+<div class="hud">
+  <span class="cont" id="cont" aria-live="polite"></span>
+  <button id="btnPrev" aria-label="Slide anterior (seta esquerda)">←</button>
+  <button id="btnNext" aria-label="Próximo slide (seta direita)">→</button>
+  <button id="btnFull" aria-label="Tela cheia (F)">⛶</button>
+</div>
+<button class="zona e" id="zonaE" aria-label="Slide anterior" tabindex="-1"></button>
+<button class="zona d" id="zonaD" aria-label="Próximo slide" tabindex="-1"></button>
+<div class="barra"><i id="prog"></i></div>
+
+<section class="sumario" id="sumario" role="dialog" aria-modal="true" aria-label="Sumário">
+  <button class="hud fechar" style="position:fixed" id="btnFechar" aria-label="Fechar sumário (Esc)">
+    <button aria-hidden="true" tabindex="-1">✕</button>
+  </button>
+  <h2>Sumário</h2>
+  <div class="sum-grid" id="sumGrid"></div>
+</section>
+
+<script>
+/* ============================================================
+   Conteúdo — cada item vira um slide. `cap` agrupa em capítulos.
+   Toda afirmação de status usa um dos quatro selos:
+     func = funcional na demonstração
+     prep = estrutura preparada
+     dep  = depende de integração externa
+     plan = planejado no roadmap
+   ============================================================ */
+const T = 'assets/telas/';
+const marca = '<span class="marca"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#xm"/></svg>'
+  + '<span><span class="wm"><span class="a">Lex</span><span class="b">OS</span></span>'
+  + '<span class="by">por Lex Technology</span></span></span>';
+
+const tela = (arq, alt, cap) =>
+  `<figure class="shot"><img src="${T}${arq}.webp" alt="${alt}" loading="lazy" decoding="async">
+   <figcaption class="cap">${cap}</figcaption></figure>`;
+const fone = (arq, alt, cap) =>
+  `<figure class="shot fone"><img src="${T}${arq}.webp" alt="${alt}" loading="lazy" decoding="async">
+   <figcaption class="cap">${cap}</figcaption></figure>`;
+const notas = (arr) => `<div class="notas">${arr.map((n, i) =>
+  `<div class="nota"><span class="n">${i + 1}</span><span class="tx">${n}</span></div>`).join('')}</div>`;
+const selo = (t, txt) => `<span class="selo ${t}">${txt}</span>`;
+
+// Slide de tela: título + o que resolve + captura + destaques numerados + status.
+function slideTela(o) {
+  const img = o.fone ? fone(o.arq, o.alt, o.cap) : tela(o.arq, o.alt, o.cap);
+  return {
+    cap: o.capitulo, titulo: o.titulo,
+    html: `<span class="eyebrow">${o.modulo}</span>
+      <h2>${o.titulo}</h2>
+      <p class="lead">${o.lead}</p>
+      <div class="body"><div class="cols ${o.fone ? 'c-tela-m' : 'c-tela'}">
+        ${img}
+        <div>${notas(o.notas)}${selo(o.selo[0], o.selo[1])}</div>
+      </div></div>`,
+  };
+}
+
+const SLIDES = [
+
+/* ===== CAPÍTULO 1 — VISÃO ===== */
+{ cap:'Visão do produto', titulo:'Capa', classe:'capa', html:
+  `${marca}
+   <h1>O sistema operacional completo da oficina.</h1>
+   <p class="sub">Operação, aplicativo do cliente e gestão na mesma plataforma — sobre uma única ordem de serviço.</p>
+   <div class="fita">
+     <img src="${T}painel-quadro.webp" alt="Quadro da oficina no LexOS" fetchpriority="high">
+     <img class="f" src="${T}app-inicio.webp" alt="Aplicativo do cliente no LexOS" fetchpriority="high">
+   </div>` },
+
+{ cap:'Visão do produto', titulo:'A oficina opera em sistemas desconectados', html:
+  `<span class="eyebrow">O problema</span>
+   <h2>A oficina opera em sistemas desconectados</h2>
+   <p class="lead">Cada etapa vive num lugar diferente — e o que liga tudo é a memória de quem está no balcão.</p>
+   <div class="body"><div class="grid g3">
+     <div class="card"><span class="ic">💬</span><h3>Atendimento espalhado</h3>
+       <p>Agendamento por telefone, aprovação por áudio, foto no álbum do celular. Nada disso vira histórico consultável.</p></div>
+     <div class="card"><span class="ic">📄</span><h3>Documento que não existe</h3>
+       <p>Sem termo de entrada com foto e assinatura, a discussão sobre um risco preexistente vira palavra contra palavra.</p></div>
+     <div class="card"><span class="ic">🔍</span><h3>Cliente no escuro</h3>
+       <p>Quem deixou o carro não sabe em que etapa ele está, e liga para descobrir — o que consome a recepção.</p></div>
+     <div class="card"><span class="ic">🧾</span><h3>Orçamento tudo-ou-nada</h3>
+       <p>O cliente aprova ou recusa um bloco inteiro. O que ele adiaria em vez de recusar se perde.</p></div>
+     <div class="card"><span class="ic">📊</span><h3>Número só no fim do mês</h3>
+       <p>Margem por ordem de serviço, comissão por técnico e curva de peças ficam numa planilha à parte, ou em lugar nenhum.</p></div>
+     <div class="card"><span class="ic">🔁</span><h3>Retrabalho de digitação</h3>
+       <p>Os mesmos dados do veículo são digitados no orçamento, na OS, na nota e na garantia.</p></div>
+   </div></div>` },
+
+{ cap:'Visão do produto', titulo:'Três pilares, uma base de dados', html:
+  `<span class="eyebrow">A proposta</span>
+   <h2>Três pilares sobre a mesma ordem de serviço</h2>
+   <p class="lead">Não são três produtos integrados. É um sistema só, com três portas de entrada.</p>
+   <div class="body"><div class="grid g3">
+     <div class="card hi"><span class="ic">🔧</span><h3>Operação</h3>
+       <p>Quadro por etapa, check-in digital, diagnóstico com evidência, peças, execução e controle de qualidade.</p></div>
+     <div class="card hi"><span class="ic">📱</span><h3>Cliente</h3>
+       <p>Aplicativo próprio: acompanhamento em tempo real, aprovação item a item, garantias e histórico do veículo.</p></div>
+     <div class="card hi"><span class="ic">📈</span><h3>Gestão</h3>
+       <p>Faturamento, margem por OS, comissão por técnico e curva de peças — lidos da própria operação.</p></div>
+   </div>
+   <p class="lead" style="margin-top:clamp(14px,2.4vh,24px)">
+     Uma alteração feita no balcão aparece no aplicativo do cliente e no número da gestão <b>sem ninguém redigitar nada</b>.</p>
+   </div>` },
+
+{ cap:'Visão do produto', titulo:'Jornada ponta a ponta', html:
+  `<span class="eyebrow">Cobertura</span>
+   <h2>Da chegada à fidelização</h2>
+   <p class="lead">Doze etapas, um único registro. Cada passo alimenta o seguinte e deixa rastro.</p>
+   <div class="body"><div class="jornada">
+     ${[['01','Agendamento','pedido entra na fila'],['02','Pré-chegada','sintoma e histórico'],
+        ['03','Check-in','fotos, avarias, assinatura'],['04','Diagnóstico','DVI com evidência'],
+        ['05','Orçamento','peças + mão de obra'],['06','Aprovação','item a item pelo app'],
+        ['07','Execução','só o que foi aprovado'],['08','Qualidade','checklist antes de liberar'],
+        ['09','Pagamento','fatura e Pix'],['10','Entrega','documentos finais'],
+        ['11','Garantia','por item, com prazo'],['12','Pós-venda','pendências e avaliação']]
+       .map(([k,v,w]) => `<div class="jp"><div class="k">${k}</div><div class="v">${v}</div><div class="w">${w}</div></div>`).join('')}
+   </div></div>` },
+
+/* ===== CAPÍTULO 2 — OPERAÇÃO ===== */
+slideTela({ capitulo:'Operação da oficina', modulo:'Painel · Quadro da Oficina',
+  titulo:'O pátio inteiro numa tela',
+  lead:'Onde está cada carro, há quanto tempo, com quem — sem perguntar para ninguém.',
+  arq:'painel-quadro', alt:'Quadro da oficina com ordens de serviço distribuídas por etapa',
+  cap:'Painel · 1440×900',
+  notas:['<b>Etapas do fluxo</b> Cada coluna é um estado real da operação, do check-in à entrega.',
+         '<b>Cartão por veículo</b> Placa, modelo, cliente, técnico e severidade do diagnóstico.',
+         '<b>Três modos de ver</b> Lista, grade e kanban — o mesmo dado para telas diferentes.',
+         '<b>Indicadores no topo</b> Volume, ticket e gargalos lidos da própria fila.'],
+  selo:['func','Funcional na demonstração'] }),
+
+slideTela({ capitulo:'Operação da oficina', modulo:'Painel · Agenda',
+  titulo:'O agendamento chega organizado',
+  lead:'O pedido feito pelo cliente entra na agenda da oficina com protocolo, e vira check-in com um clique.',
+  arq:'painel-agenda', alt:'Agenda da oficina com agendamentos por dia e horário',
+  cap:'Painel · 1440×900',
+  notas:['<b>Calendário e cronograma</b> Visão por dia e por horário, com a carga da equipe.',
+         '<b>Protocolo por pedido</b> Cada agendamento tem um número para o cliente citar.',
+         '<b>Puxar para o check-in</b> Cliente, telefone e placa já vêm preenchidos.',
+         '<b>Destino configurável</b> Qual oficina recebe os pedidos é definido no painel central.'],
+  selo:['func','Funcional na demonstração'] }),
+
+slideTela({ capitulo:'Operação da oficina', modulo:'Painel · Check-in digital · etapa 1',
+  titulo:'A entrada começa pelo veículo, não pelo papel',
+  lead:'Placa consultada, chassi validado e dados do veículo preenchidos antes de o cliente sentar.',
+  arq:'painel-checkin-1', alt:'Primeira etapa do check-in com VIN, placa e dados do cliente',
+  cap:'Painel · 1440×900',
+  notas:['<b>Consulta pela placa</b> Marca, modelo, ano, cor, combustível e chassi vêm da consulta oficial.',
+         '<b>VIN conferido</b> O dígito verificador é validado na digitação (ISO 3779), evitando cadastro errado.',
+         '<b>Campos editáveis</b> O que a consulta trouxe pode ser corrigido pelo consultor.',
+         '<b>Cliente e sintoma</b> Telefone é a chave do acesso ao aplicativo, gerado no fim do check-in.'],
+  selo:['dep','Consulta de placa depende de provedor externo'] }),
+
+slideTela({ capitulo:'Operação da oficina', modulo:'Painel · Check-in digital · etapa 2',
+  titulo:'Tour 360°, checklist e avarias no mesmo lugar',
+  lead:'A condição de entrada do veículo vira registro com foto, marcação e assinatura.',
+  arq:'painel-checkin-2', alt:'Segunda etapa do check-in com tour fotográfico, checklist e mapa de avarias',
+  cap:'Painel · 1440×900',
+  notas:['<b>Oito posições de foto</b> Câmera direto pelo espaço, ou galeria com várias de uma vez.',
+         '<b>Rascunho que não se perde</b> O check-in é gravado no aparelho: fechar a câmera ou recarregar não apaga nada.',
+         '<b>Avarias no carro 3D</b> O consultor gira o modelo e marca onde está o dano, com observação.',
+         '<b>Leitura por IA das fotos</b> Odômetro, combustível, luzes de painel e avarias sugeridos a partir das imagens.',
+         '<b>Checklist de itens</b> Documento, chave reserva, triângulo, macaco, estepe e tapetes.'],
+  selo:['dep','Leitura por IA depende de chave de API em produção'] }),
+
+slideTela({ capitulo:'Operação da oficina', modulo:'Painel · Ordem de Serviço',
+  titulo:'A ordem de serviço é o centro de tudo',
+  lead:'Diagnóstico, orçamento, execução, documentos e linha do tempo — na mesma tela.',
+  arq:'painel-os', alt:'Detalhe da ordem de serviço com diagnóstico, itens e linha do tempo',
+  cap:'Painel · 1440×900',
+  notas:['<b>Diagnóstico classificado</b> Verde, amarelo e vermelho, com descrição, recomendação e evidência.',
+         '<b>Itens com alternativa</b> Cada item pode ter mais de um nível de solução e preço.',
+         '<b>Aprovação visível</b> O que o cliente aprovou, recusou ou adiou aparece aqui na hora.',
+         '<b>Documentos ao lado</b> Termo, DVI, orçamento, OS, fatura e garantia gerados desta mesma OS.',
+         '<b>Linha do tempo</b> Quem fez o quê e quando, em ordem, sem edição posterior.'],
+  selo:['func','Funcional na demonstração'] }),
+
+slideTela({ capitulo:'Operação da oficina', modulo:'Painel · Motor de Peças',
+  titulo:'Da peça ao fornecedor sem sair do sistema',
+  lead:'Catálogo por veículo, equivalentes, preço e prazo — o que vira linha do orçamento.',
+  arq:'painel-pecas', alt:'Motor de peças com catálogo, equivalentes e fornecedores',
+  cap:'Painel · 1440×900',
+  notas:['<b>Busca por veículo</b> O chassi define o catálogo, reduzindo peça errada.',
+         '<b>Original e equivalente</b> Alternativas lado a lado, com fabricante.',
+         '<b>Preço e prazo</b> Entram no orçamento com a margem configurada.',
+         '<b>Um clique para a OS</b> A peça escolhida vira item do orçamento.'],
+  selo:['prep','Estrutura pronta · catálogo real depende de integração'] }),
+
+slideTela({ capitulo:'Operação da oficina', modulo:'Painel · Veículos & Prontuário',
+  titulo:'O histórico é do veículo, não da conversa',
+  lead:'Tudo que já foi feito naquele chassi fica registrado — e acompanha o carro se ele for vendido.',
+  arq:'painel-veiculos', alt:'Lista de veículos com prontuário por chassi',
+  cap:'Painel · 1440×900',
+  notas:['<b>Prontuário por chassi</b> Ordens, peças, garantias e fotos de cada entrada.',
+         '<b>Quilometragem no tempo</b> Evolução real do uso do veículo.',
+         '<b>Transferível na venda</b> O documento do prontuário pode ser entregue ao comprador.',
+         '<b>Base do próximo serviço</b> A oficina chega no atendimento sabendo o que já foi trocado.'],
+  selo:['func','Funcional na demonstração'] }),
+
+slideTela({ capitulo:'Operação da oficina', modulo:'Painel · Clientes & Acesso',
+  titulo:'Cada cliente nasce com acesso ao aplicativo',
+  lead:'O convite é gerado no check-in. O próprio cliente cria a senha — a oficina não guarda senha de ninguém.',
+  arq:'painel-clientes', alt:'Lista de clientes com status de acesso ao aplicativo',
+  cap:'Painel · 1440×900',
+  notas:['<b>Link exclusivo</b> Sai no termo impresso e pode ir por WhatsApp.',
+         '<b>Status do acesso</b> Ativo ou convite pendente, por cliente.',
+         '<b>Garagem por telefone</b> Um login mostra todos os veículos daquele número.',
+         '<b>Reenvio a qualquer momento</b> Sem precisar de outro cadastro.'],
+  selo:['func','Funcional na demonstração'] }),
+
+slideTela({ capitulo:'Operação da oficina', modulo:'Painel · Equipe',
+  titulo:'Cada função vê o que precisa',
+  lead:'Mecânico, consultor, gestor e administrador têm menus e permissões diferentes.',
+  arq:'painel-mecanico', alt:'Painel na visão do mecânico, com menu reduzido ao operacional',
+  cap:'Painel · visão do mecânico',
+  notas:['<b>Mecânico</b> Check-in, quadro, veículos e peças. Sem gestão nem equipe.',
+         '<b>Consultor</b> Atendimento, orçamento e comunicação com o cliente.',
+         '<b>Gestor</b> Tudo do operacional mais os números e a equipe.',
+         '<b>Administrador</b> Configuração da oficina e acessos.'],
+  selo:['prep','Menu por papel na demonstração · regras no banco em produção'] }),
+
+slideTela({ capitulo:'Operação da oficina', modulo:'Painel · Gestão & DRE',
+  titulo:'O número sai da operação, não de uma planilha',
+  lead:'Faturamento, margem por ordem de serviço, comissão por técnico e curva de peças.',
+  arq:'painel-gestao', alt:'Tela de gestão com faturamento, margem e comissão',
+  cap:'Painel · 1440×900 · valores fictícios',
+  notas:['<b>Resultado por OS</b> Receita, peças, mão de obra e margem de cada serviço.',
+         '<b>Comissão por técnico</b> Calculada sobre o tempo técnico executado.',
+         '<b>Curva ABC</b> Onde está a concentração de peças e serviços.',
+         '<b>Exportação</b> Os quadros saem em arquivo para uso administrativo.'],
+  selo:['func','Funcional na demonstração · números fictícios'] }),
+
+slideTela({ capitulo:'Operação da oficina', modulo:'Painel · Configurações',
+  titulo:'A oficina configura a própria identidade',
+  lead:'Nome, logo, contato, margens, valor-hora e prazo de garantia — sem depender de suporte.',
+  arq:'painel-config', alt:'Configurações da oficina com identidade, margens e garantia',
+  cap:'Painel · 1440×900',
+  notas:['<b>Identidade própria</b> A logo e o nome da oficina aparecem no painel, no app e nos documentos.',
+         '<b>Margens e valor-hora</b> Alimentam o cálculo do orçamento.',
+         '<b>Garantia padrão</b> Prazo aplicado aos itens executados.',
+         '<b>Chave Pix</b> Usada na cobrança gerada pelo sistema.'],
+  selo:['func','Funcional na demonstração'] }),
+
+slideTela({ capitulo:'Operação da oficina', modulo:'Painel · celular',
+  titulo:'O balcão cabe no bolso',
+  lead:'O painel inteiro responde no celular — e o check-in, que acontece em pé ao lado do carro, foi desenhado para isso.',
+  arq:'painel-checkin-mobile', alt:'Check-in aberto no celular', cap:'Painel · iPhone 390×844', fone:true,
+  notas:['<b>Uma coluna</b> Sem rolagem lateral e sem zoom automático ao digitar.',
+         '<b>Câmera no espaço da foto</b> Tirar e anexar sem sair da etapa.',
+         '<b>Rascunho persistente</b> Se o sistema descartar a página, o check-in volta de onde parou.',
+         '<b>Instalável</b> Vai para a tela de início como aplicativo.'],
+  selo:['func','Funcional na demonstração'] }),
+
+/* ===== CAPÍTULO 3 — APP DO CLIENTE ===== */
+slideTela({ capitulo:'Aplicativo do cliente', modulo:'App · Entrada',
+  titulo:'O acesso nasce no check-in',
+  lead:'Login pelo telefone, senha criada pelo próprio cliente e biometria do aparelho.',
+  arq:'app-login', alt:'Tela de entrada do aplicativo do cliente', cap:'App · iPhone 390×844', fone:true,
+  notas:['<b>Telefone como identidade</b> O mesmo número informado no balcão.',
+         '<b>Senha criada pelo cliente</b> A oficina gera o convite, não a senha.',
+         '<b>Face ID / digital</b> Depois da primeira entrada, a credencial fica cifrada no aparelho.',
+         '<b>Manter conectado</b> Opcional e reversível, marcado por padrão.'],
+  selo:['func','Funcional na demonstração'] }),
+
+slideTela({ capitulo:'Aplicativo do cliente', modulo:'App · Início',
+  titulo:'O cliente abre e já sabe o que está acontecendo',
+  lead:'Veículo em atendimento, etapa atual, pendências e o que precisa da decisão dele.',
+  arq:'app-inicio', alt:'Tela inicial do aplicativo do cliente', cap:'App · iPhone 390×844', fone:true,
+  notas:['<b>Estado do veículo</b> Em que etapa está, agora.',
+         '<b>Ação prioritária</b> O que depende dele aparece primeiro.',
+         '<b>Quilometragem e próxima revisão</b> Lidos do histórico do veículo.',
+         '<b>Garagem</b> Se houver mais de um carro, todos aparecem.'],
+  selo:['func','Funcional na demonstração'] }),
+
+slideTela({ capitulo:'Aplicativo do cliente', modulo:'App · Ordens de serviço',
+  titulo:'Acompanhar como se acompanha uma encomenda',
+  lead:'Etapa por etapa, com o orçamento aberto item a item — aprovar um, adiar outro, recusar o terceiro.',
+  arq:'app-os', alt:'Acompanhamento da ordem de serviço no aplicativo', cap:'App · iPhone 390×844', fone:true,
+  notas:['<b>Linha do tempo</b> Check-in, diagnóstico, orçamento, aprovação, execução, qualidade, pronto.',
+         '<b>Aprovação item a item</b> Cada serviço tem preço, prazo e evidência; o total se recalcula.',
+         '<b>Alternativas por item</b> Mais de um nível de solução, quando existe.',
+         '<b>Comprovação do aceite</b> Data, hora e versão do orçamento ficam registradas na trilha.',
+         '<b>Conversa dentro da OS</b> Mensagem no contexto do serviço, não em outro aplicativo.'],
+  selo:['func','Funcional na demonstração'] }),
+
+slideTela({ capitulo:'Aplicativo do cliente', modulo:'App · Perfil e garagem',
+  titulo:'Documentos, garantias e histórico na mão do dono',
+  lead:'Cada veículo carrega o próprio prontuário — e ele é transferível quando o carro é vendido.',
+  arq:'app-perfil', alt:'Perfil do cliente com garagem e documentos', cap:'App · iPhone 390×844', fone:true,
+  notas:['<b>Garagem</b> Todos os veículos ligados ao telefone.',
+         '<b>Cofre de documentos</b> Termo, orçamento, OS, fatura e certificado de garantia.',
+         '<b>Garantia por item</b> Com prazo e contagem do que ainda está coberto.',
+         '<b>Prontuário transferível</b> Entregue ao comprador, o histórico completo vai junto.'],
+  selo:['func','Funcional na demonstração'] }),
+
+slideTela({ capitulo:'Aplicativo do cliente', modulo:'App · Serviços e agenda',
+  titulo:'O próximo serviço começa dentro do aplicativo',
+  lead:'Catálogo da oficina e agendamento sem sair do app — o pedido cai na agenda do painel.',
+  arq:'app-agenda', alt:'Agendamento pelo aplicativo do cliente', cap:'App · iPhone 390×844', fone:true,
+  notas:['<b>Serviços da oficina</b> O que ela oferece, com descrição.',
+         '<b>Escolha de data</b> Dentro do horário de funcionamento configurado.',
+         '<b>Protocolo</b> O mesmo número que a oficina vê na agenda.',
+         '<b>Recompra</b> Item adiado no orçamento vira pendência e volta como oportunidade.'],
+  selo:['func','Funcional na demonstração'] }),
+
+/* ===== CAPÍTULO 4 — DOCUMENTOS ===== */
+slideTela({ capitulo:'Documentos e controle', modulo:'Documentos · Termo de Entrada',
+  titulo:'O documento nasce do check-in, não do Word',
+  lead:'Condição de entrada, fotos, avarias marcadas e assinatura no mesmo papel que o cliente assina.',
+  arq:'doc-termo', alt:'Termo de entrada gerado pelo sistema', cap:'Documento · pronto para impressão',
+  notas:['<b>Gerado dos dados reais</b> Nada é redigitado a partir do check-in.',
+         '<b>Fotos e avarias</b> A condição registrada vai impressa.',
+         '<b>Acesso do cliente</b> O link do aplicativo sai no próprio termo, com QR.',
+         '<b>Imprime ou vira PDF</b> Direto do navegador, sem outro programa.'],
+  selo:['func','Funcional na demonstração'] }),
+
+slideTela({ capitulo:'Documentos e controle', modulo:'Documentos · Orçamento e OS',
+  titulo:'Sete documentos, uma única fonte',
+  lead:'Termo, DVI, orçamento, ordem de serviço, fatura, certificado de garantia e prontuário do veículo.',
+  arq:'doc-orcamento', alt:'Orçamento gerado pelo sistema', cap:'Documento · pronto para impressão',
+  notas:['<b>Mesma base</b> Todos leem a ordem de serviço — sem divergência entre papéis.',
+         '<b>Itens com alternativa</b> O documento mostra o que foi oferecido e o que foi escolhido.',
+         '<b>Identidade da oficina</b> Logo, nome e contato próprios em todos eles.',
+         '<b>Arquivo do cliente</b> Ficam disponíveis no aplicativo, não só no e-mail.'],
+  selo:['func','Funcional na demonstração'] }),
+
+{ cap:'Documentos e controle', titulo:'Trilha de eventos', html:
+  `<span class="eyebrow">Rastreabilidade</span>
+   <h2>Cada passo deixa rastro — e o rastro não se apaga</h2>
+   <p class="lead">A trilha de eventos é somente-adição: registros são inseridos, nunca editados ou removidos.
+     É a base da comprovação de quem aprovou o quê, e quando.</p>
+   <div class="body"><div class="cols c2">
+     <div class="grid" style="gap:10px">
+       <div class="card"><h3>O que fica registrado</h3>
+         <p>Abertura da OS, mudança de etapa, envio do orçamento, aprovação e recusa item a item,
+            execução, controle de qualidade, pagamento e entrega — com autor, data e hora.</p></div>
+       <div class="card"><h3>Como é protegido</h3>
+         <p>No banco, uma regra bloqueia alteração e exclusão na tabela de eventos. A exclusão deliberada de
+            uma oficina inteira passa por um procedimento próprio, com permissão de administrador.</p></div>
+     </div>
+     <div class="grid" style="gap:10px">
+       <div class="card"><h3>O que isso dá à oficina</h3>
+         <p>Diante de uma contestação, existe um registro de quando o cliente viu, o que ele aprovou e em qual
+            versão do orçamento — em vez de memória e captura de tela.</p></div>
+       <div class="card"><h3>O que isso não é</h3>
+         <p>Não é assinatura digital com certificado ICP-Brasil nem substitui laudo pericial.
+            É estrutura de rastreabilidade e comprovação do aceite.</p></div>
+     </div>
+   </div></div>
+   ${selo('func','Trilha imutável funcional · validada no banco')}` },
+
+/* ===== CAPÍTULO 5 — TECNOLOGIA ===== */
+{ cap:'Tecnologia e segurança', titulo:'Arquitetura', html:
+  `<span class="eyebrow">Arquitetura</span>
+   <h2>Duas interfaces, uma base de dados</h2>
+   <p class="lead">Não existe sincronização entre sistemas porque não existem dois sistemas.</p>
+   <div class="body"><div class="arq">
+     <div class="camada"><h4>Quem usa</h4>
+       <div class="cx">Painel da oficina</div>
+       <div class="cx">Aplicativo do cliente</div>
+       <div class="cx">Painel central de administração</div>
+       <div class="cx">Documentos para impressão</div></div>
+     <div class="camada mid"><h4>Camada do produto</h4>
+       <div class="cx">Modelo de dados único (ordem de serviço)</div>
+       <div class="cx">Adaptador local ⇄ nuvem</div>
+       <div class="cx">Atualização em tempo real entre telas</div>
+       <div class="cx">Funções de servidor para o que é segredo</div></div>
+     <div class="camada"><h4>Infraestrutura</h4>
+       <div class="cx">Banco relacional com isolamento por oficina</div>
+       <div class="cx">Autenticação e sessão</div>
+       <div class="cx">Canal de tempo real</div>
+       <div class="cx">Publicação estática + funções sob demanda</div></div>
+   </div>
+   <p class="lead" style="margin-top:clamp(12px,2.2vh,20px)">
+     O mesmo código roda <b>sem nuvem</b> (demonstração local, dados fictícios no navegador) e
+     <b>com nuvem</b> (multiempresa, isolado por oficina) — a troca é de configuração, não de versão.</p>
+   </div>` },
+
+{ cap:'Tecnologia e segurança', titulo:'Segurança por arquitetura', html:
+  `<span class="eyebrow">Segurança</span>
+   <h2>O isolamento é regra do banco, não do aplicativo</h2>
+   <p class="lead">Uma oficina não consegue ler o dado de outra mesmo que a interface peça — a regra está uma camada abaixo.</p>
+   <div class="body"><div class="grid g3">
+     <div class="card"><h3>Isolamento por oficina</h3><p>Cada linha pertence a uma oficina, e a política do banco filtra por quem está autenticado. Nenhuma consulta escapa disso.</p></div>
+     <div class="card"><h3>Papéis e permissões</h3><p>Equipe vinculada à oficina, com função. Sem vínculo, a conta não abre o painel, mesmo autenticada.</p></div>
+     <div class="card"><h3>Segredos no servidor</h3><p>Chaves de API e a chave de serviço vivem em variáveis de ambiente da função, nunca no navegador nem no repositório.</p></div>
+     <div class="card"><h3>Acesso do cliente</h3><p>Convite com token, senha criada pelo próprio cliente e recuperação por link — a oficina nunca guarda a senha dele.</p></div>
+     <div class="card"><h3>Biometria local</h3><p>A credencial fica cifrada no aparelho; onde o autenticador suporta, a chave da cifra vem da própria biometria.</p></div>
+     <div class="card"><h3>Trilha somente-adição</h3><p>Regra no banco impede alterar ou apagar evento registrado.</p></div>
+   </div></div>
+   ${selo('func','Isolamento e trilha validados em banco real')}` },
+
+/* ===== CAPÍTULO 6 — STATUS ===== */
+{ cap:'Status e evolução', titulo:'O que já funciona', html:
+  `<span class="eyebrow">Transparência</span>
+   <h2>O que já funciona, hoje</h2>
+   <p class="lead">Cada linha abaixo corresponde a tela e código existentes — as capturas desta apresentação vieram deles.</p>
+   <div class="body"><div class="rolam"><table class="mx">
+     <thead><tr><th>Módulo</th><th>O que entrega</th><th>Situação</th></tr></thead>
+     <tbody>
+       ${[['Check-in digital','Placa, chassi, fotos, avarias 3D, checklist, assinatura e termo','ok','Funcional'],
+          ['Ordem de serviço','Diagnóstico, orçamento por item, execução e linha do tempo','ok','Funcional'],
+          ['Aplicativo do cliente','Acesso por convite, acompanhamento, aprovação item a item, garantias','ok','Funcional'],
+          ['Documentos','Sete documentos gerados da mesma OS, prontos para imprimir','ok','Funcional'],
+          ['Gestão','Faturamento, margem por OS, comissão e curva ABC','ok','Funcional'],
+          ['Agenda','Pedido do cliente → fila da oficina → check-in','ok','Funcional'],
+          ['Multiempresa','Isolamento por oficina no banco, com papéis','ok','Validado em banco'],
+          ['Leitura das fotos por IA','Odômetro, combustível, luzes e avarias a partir das imagens','dp','Depende de chave de API'],
+          ['Consulta de placa','Dados do veículo e chassi completo','dp','Depende de provedor'],
+          ['Motor de peças','Catálogo, equivalentes, fornecedor e preço','pr','Estrutura pronta'],
+          ['Pagamento Pix','Código copia-e-cola e QR gerados pelo sistema','pr','Sem conciliação bancária'],
+         ].map(([m,o,st,t]) => `<tr><td>${m}</td><td>${o}</td><td><span class="st ${st}">${t}</span></td></tr>`).join('')}
+     </tbody>
+   </table></div></div>` },
+
+{ cap:'Status e evolução', titulo:'O que falta para produção', html:
+  `<span class="eyebrow">Honestidade técnica</span>
+   <h2>O que falta para operar em produção</h2>
+   <p class="lead">Nada aqui é apresentado como pronto. Esta é a lista de trabalho real entre a demonstração e o primeiro cliente pagante.</p>
+   <div class="body"><div class="cols c2">
+     <div>
+       <h3 style="font-size:14px;margin-bottom:10px;color:var(--ice)">Integrações externas</h3>
+       <div class="lista">
+         <div class="li">Catálogo de peças com dados de fornecedor reais</div>
+         <div class="li">Conciliação do pagamento (hoje o código Pix é gerado, mas a baixa é manual)</div>
+         <div class="li">Emissão fiscal de serviço</div>
+         <div class="li">Envio por WhatsApp com modelo aprovado</div>
+         <div class="li">Notificação por push no aplicativo</div>
+         <div class="li">Armazenamento de mídia fora do navegador</div>
+       </div>
+     </div>
+     <div>
+       <h3 style="font-size:14px;margin-bottom:10px;color:var(--ice)">Infraestrutura e conformidade</h3>
+       <div class="lista">
+         <div class="li">Rotina de backup e restauração testada</div>
+         <div class="li">Monitoramento e registro de erros em produção</div>
+         <div class="li">Bateria de testes automatizados ampliada</div>
+         <div class="li">Tratamento de dados pessoais conforme a LGPD, com política publicada</div>
+         <div class="li">Processo de implantação e treinamento da equipe</div>
+         <div class="li">Land page e agendamento público com marca por oficina</div>
+       </div>
+     </div>
+   </div></div>` },
+
+{ cap:'Status e evolução', titulo:'Roadmap', html:
+  `<span class="eyebrow">Evolução</span>
+   <h2>Como isso chega em operação</h2>
+   <p class="lead">Fases em ordem de dependência. Sem prazo, porque prazo sem escopo fechado é chute.</p>
+   <div class="body"><div class="grid g3">
+     <div class="card"><span class="ic">①</span><h3>Consolidação</h3><p>Fechar os fluxos da demonstração, ampliar testes e revisar textos e acessibilidade.</p></div>
+     <div class="card"><span class="ic">②</span><h3>Infraestrutura</h3><p>Banco em produção, armazenamento de mídia, backup, monitoramento e implantação.</p></div>
+     <div class="card"><span class="ic">③</span><h3>Integrações essenciais</h3><p>Pagamento, fiscal, mensageria e catálogo de peças.</p></div>
+     <div class="card"><span class="ic">④</span><h3>Piloto operacional</h3><p>Uma oficina real usando no dia a dia, com acompanhamento próximo e correção rápida.</p></div>
+     <div class="card"><span class="ic">⑤</span><h3>Escala multiempresa</h3><p>Onboarding autônomo, marca por oficina e cobrança por assinatura.</p></div>
+     <div class="card"><span class="ic">⑥</span><h3>Inteligência</h3><p>Sugestão de orçamento, previsão de manutenção e automação do pós-venda.</p></div>
+   </div></div>` },
+
+{ cap:'Status e evolução', titulo:'Encerramento', classe:'capa', html:
+  `${marca}
+   <h1>Toda a oficina. Um único sistema.</h1>
+   <p class="sub">Mais controle para quem opera. Mais transparência para quem confia o carro.
+     A mesma ordem de serviço do balcão ao pós-venda.</p>
+   <div class="grid g4" style="margin-top:clamp(20px,3.4vh,36px);max-width:960px;width:100%;text-align:left">
+     <div class="card"><h3>Operação</h3><p>Do check-in à entrega, sem papel solto.</p></div>
+     <div class="card"><h3>Cliente</h3><p>Aplicativo próprio, com aprovação item a item.</p></div>
+     <div class="card"><h3>Gestão</h3><p>Margem e comissão lidas da operação.</p></div>
+     <div class="card"><h3>Registro</h3><p>Documentos e trilha que não se apagam.</p></div>
+   </div>
+   <p class="lead" style="margin-top:clamp(18px,2.8vh,30px);text-align:center">Conheça o LexOS · Solicite uma demonstração</p>` },
+
+];
+
+/* ============================================================
+   Motor da apresentação
+   ============================================================ */
+const deck = document.getElementById('deck');
+const sumGrid = document.getElementById('sumGrid');
+const sumario = document.getElementById('sumario');
+const prog = document.getElementById('prog');
+const cont = document.getElementById('cont');
+const capAtual = document.getElementById('capAtual');
+let i = 0;
+
+SLIDES.forEach((s, n) => {
+  const el = document.createElement('section');
+  el.className = 'slide' + (s.classe ? ' ' + s.classe : '');
+  el.id = 's' + (n + 1);
+  el.setAttribute('role', 'group');
+  el.setAttribute('aria-roledescription', 'slide');
+  el.setAttribute('aria-label', `${n + 1} de ${SLIDES.length} — ${s.titulo}`);
+  el.innerHTML = s.html;
+  deck.appendChild(el);
+});
+
+// Sumário agrupado por capítulo
+const caps = [];
+SLIDES.forEach((s, n) => {
+  let c = caps.find(x => x.nome === s.cap);
+  if (!c) { c = { nome: s.cap, itens: [] }; caps.push(c); }
+  c.itens.push({ n, titulo: s.titulo });
+});
+sumGrid.innerHTML = caps.map(c =>
+  `<div><div class="sum-cap">${c.nome}</div><ol>${c.itens.map(it =>
+    `<li><button data-ir="${it.n}"><span class="num">${String(it.n + 1).padStart(2, '0')}</span>
+      <span>${it.titulo}</span></button></li>`).join('')}</ol></div>`).join('');
+
+const slides = [...deck.children];
+const sumBtns = [...sumGrid.querySelectorAll('button[data-ir]')];
+
+function mostrar(n, comHash) {
+  n = Math.max(0, Math.min(SLIDES.length - 1, n));
+  slides.forEach((el, k) => {
+    el.classList.toggle('on', k === n);
+    el.classList.toggle('prev', k < n);
+    el.setAttribute('aria-hidden', k === n ? 'false' : 'true');
+  });
+  sumBtns.forEach((b, k) => b.setAttribute('aria-current', k === n ? 'true' : 'false'));
+  i = n;
+  prog.style.width = ((n + 1) / SLIDES.length * 100) + '%';
+  cont.innerHTML = `<b>${n + 1}</b>&nbsp;/&nbsp;${SLIDES.length}`;
+  capAtual.textContent = SLIDES[n].cap;
+  document.title = `${SLIDES[n].titulo} — LexOS`;
+  if (comHash !== false) history.replaceState(null, '', '#s' + (n + 1));
+  deck.querySelector('.slide.on').scrollTop = 0;
+}
+const proximo = () => mostrar(i + 1);
+const anterior = () => mostrar(i - 1);
+
+function abrirSumario(v) {
+  sumario.classList.toggle('on', v);
+  if (v) sumBtns[i] && sumBtns[i].focus();
+  else document.getElementById('btnMenu').focus();
+}
+
+document.getElementById('btnNext').addEventListener('click', proximo);
+document.getElementById('btnPrev').addEventListener('click', anterior);
+document.getElementById('zonaD').addEventListener('click', proximo);
+document.getElementById('zonaE').addEventListener('click', anterior);
+document.getElementById('btnMenu').addEventListener('click', () => abrirSumario(true));
+document.getElementById('btnFechar').addEventListener('click', () => abrirSumario(false));
+document.getElementById('btnFull').addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+});
+sumGrid.addEventListener('click', e => {
+  const b = e.target.closest('button[data-ir]');
+  if (b) { mostrar(+b.dataset.ir); abrirSumario(false); }
+});
+
+addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key;
+  if (k === 'Escape') { abrirSumario(false); return; }
+  if (k === 'm' || k === 'M') { e.preventDefault(); abrirSumario(!sumario.classList.contains('on')); return; }
+  if (sumario.classList.contains('on')) return;
+  if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') { e.preventDefault(); proximo(); }
+  else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); anterior(); }
+  else if (k === 'Home') { e.preventDefault(); mostrar(0); }
+  else if (k === 'End') { e.preventDefault(); mostrar(SLIDES.length - 1); }
+  else if (k === 'f' || k === 'F') { e.preventDefault(); document.getElementById('btnFull').click(); }
+});
+
+// Gesto lateral no celular — sem atrapalhar a rolagem vertical do slide.
+let tx = 0, ty = 0;
+addEventListener('touchstart', e => { tx = e.changedTouches[0].clientX; ty = e.changedTouches[0].clientY; }, { passive: true });
+addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.6) (dx < 0 ? proximo : anterior)();
+}, { passive: true });
+
+addEventListener('hashchange', () => {
+  const n = +(location.hash.match(/^#s(\d+)$/) || [])[1];
+  if (n && n - 1 !== i) mostrar(n - 1, false);
+});
+
+mostrar(+(location.hash.match(/^#s(\d+)$/) || [])[1] - 1 || 0);
+</script>
+</body>
+</html>
