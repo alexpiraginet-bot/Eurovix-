@@ -279,7 +279,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
       c.telefone = dados.telefone;
     } else {
       c = {
-        nome: dados.nome || 'Cliente EUROVIX', telefone: dados.telefone,
+        nome: dados.nome || 'Cliente', telefone: dados.telefone,
         senha: null, convite: dados.convite || novoToken(lista),
         desde: dados.desde || new Date().getFullYear(),
         criadoEm: new Date().toISOString(), ativadoEm: null,
@@ -411,7 +411,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
       vin: dados.vin,
       veiculo: dados.veiculo,
       placa: dados.placa || '',
-      cliente: dados.cliente || 'Cliente EUROVIX',
+      cliente: dados.cliente || 'Cliente',
       telefone: dados.telefone || '',
       sintoma: dados.sintoma || '',
       tecnico: dados.tecnico || '',
@@ -518,12 +518,24 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     return crc.toString(16).toUpperCase().padStart(4, '0');
   }
   const emv = (id, v) => id + String(v.length).padStart(2, '0') + v;
+  // Campos 59 (nome do recebedor) e 60 (cidade) do EMV: precisam ser da OFICINA que
+  // está cobrando. Estavam fixos com a marca do cliente-piloto — num sistema
+  // white-label isso faz a cobrança de toda oficina sair com o nome de outra.
+  // ASCII maiúsculo, sem acento, dentro dos limites do padrão (25 e 15).
+  function emvTexto(s, max, padrao) {
+    const t = String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase().replace(/[^A-Z0-9 .-]/g, ' ').replace(/\s+/g, ' ').trim();
+    return (t || padrao).slice(0, max).trim();
+  }
   function pixPayload(valor, txid) {
     const cfg = getConfig();
-    const mai = emv('00', 'br.gov.bcb.pix') + emv('01', cfg.oficina.pixChave);
+    const of = cfg.oficina || {};
+    const mai = emv('00', 'br.gov.bcb.pix') + emv('01', of.pixChave);
+    const nome = emvTexto(of.nome, 25, 'OFICINA');
+    const cidade = emvTexto((of.cidade || '').split('/')[0], 15, 'BRASIL');
     let p = emv('00', '01') + emv('26', mai) + emv('52', '0000') + emv('53', '986') +
-      emv('54', valor.toFixed(2)) + emv('58', 'BR') + emv('59', 'EUROVIX OFICINA BMW') +
-      emv('60', 'VITORIA') + emv('62', emv('05', (txid || 'EVXOS').slice(0, 20)));
+      emv('54', valor.toFixed(2)) + emv('58', 'BR') + emv('59', nome) +
+      emv('60', cidade) + emv('62', emv('05', (txid || 'LEXOS').slice(0, 20)));
     p += '6304';
     return p + crc16(p);
   }
