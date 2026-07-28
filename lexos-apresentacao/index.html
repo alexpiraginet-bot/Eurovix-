@@ -164,11 +164,12 @@ table.mx td .st{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;tex
 .capa .marca svg{width:clamp(40px,4.4vw,58px);height:auto}
 .capa .wm{font-size:clamp(28px,3.5vw,44px);font-weight:800;letter-spacing:-.035em}
 .capa .wm .a{color:var(--t1)} .capa .wm .b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.capa .by{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--t3);text-transform:uppercase;margin-top:5px}
+.capa .by{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--t3);text-transform:uppercase;margin-top:6px}
+.capa .marca>span{display:block;text-align:left}
 .capa h1{max-width:20ch;margin:0 auto}
 .capa .sub{margin-top:clamp(12px,2vh,20px);font-size:clamp(13px,1.5vw,18px);color:var(--t2);max-width:52ch;margin-left:auto;margin-right:auto}
-.capa .fita{display:flex;gap:clamp(10px,1.4vw,20px);justify-content:center;margin-top:clamp(20px,3.4vh,38px);flex-wrap:wrap}
-.capa .fita img{height:clamp(120px,19vh,200px);width:auto;border-radius:11px;border:1px solid var(--line-2);
+.capa .fita{display:flex;gap:clamp(12px,1.8vw,26px);justify-content:center;align-items:flex-end;margin-top:clamp(16px,2.8vh,32px);flex-wrap:wrap}
+.capa .fita img{height:clamp(150px,26vh,290px);width:auto;border-radius:11px;border:1px solid var(--line-2);
   box-shadow:0 26px 56px -22px rgba(0,0,0,.9)}
 .capa .fita img.f{border-radius:16px}
 
@@ -331,6 +332,8 @@ const SLIDES = [
   `${marca}
    <h1>O sistema operacional completo da oficina.</h1>
    <p class="sub">Operação, aplicativo do cliente e gestão na mesma plataforma — sobre uma única ordem de serviço.</p>
+   <p class="sub" style="font-size:clamp(11px,1.15vw,13px);color:var(--t3);margin-top:8px">
+     As telas a seguir são do sistema rodando, vestido de uma oficina fictícia: <b>Nordwerk</b>, especialista Porsche e Audi.</p>
    <div class="fita">
      <img src="${T}painel-quadro.webp" alt="Quadro da oficina no LexOS" fetchpriority="high">
      <img class="f" src="${T}app-inicio.webp" alt="Aplicativo do cliente no LexOS" fetchpriority="high">
@@ -503,7 +506,7 @@ slideTela({ capitulo:'Operação da oficina', modulo:'Painel · Configurações'
   lead:'Nome, logo, contato, margens, valor-hora e prazo de garantia — sem depender de suporte.',
   arq:'painel-config', alt:'Configurações da oficina com identidade, margens e garantia',
   cap:'Painel · 1440×900',
-  notas:['<b>Identidade própria</b> A logo e o nome da oficina aparecem no painel, no app e nos documentos.',
+  notas:['<b>Identidade própria</b> Logo, nome e domínio da oficina aparecem no painel, no app e nos documentos — o LexOS assina só o rodapé.',
          '<b>Margens e valor-hora</b> Alimentam o cálculo do orçamento.',
          '<b>Garantia padrão</b> Prazo aplicado aos itens executados.',
          '<b>Chave Pix</b> Usada na cobrança gerada pelo sistema.'],

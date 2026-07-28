@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Nordwerk">
+  <defs>
+    <linearGradient id="nwi" x1="96" y1="96" x2="416" y2="416" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F0A331"/><stop offset=".55" stop-color="#D8741C"/><stop offset="1" stop-color="#A8481A"/>
+    </linearGradient>
+  </defs>
+  <!-- Ícone do app instalado na tela de início: o mesmo "N" do gate de câmbio. -->
+  <rect width="512" height="512" rx="112" fill="#0E1219"/>
+  <g transform="translate(150 112) scale(3.55)">
+    <rect x="0"  y="0"  width="12" height="60" rx="3.4" fill="url(#nwi)"/>
+    <rect x="44" y="0"  width="12" height="60" rx="3.4" fill="url(#nwi)"/>
+    <path d="M12 0 L23 0 L56 46 L56 60 L45 60 L12 14 Z" fill="url(#nwi)"/>
+  </g>
+</svg>

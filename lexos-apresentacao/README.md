@@ -49,7 +49,7 @@ fundos preservados, sem controles). Para regerar depois de editar:
 ## Regras de conteúdo
 
 **Marca.** A apresentação usa exclusivamente **LexOS**. A oficina que aparece nas telas é
-fictícia (*Oficina Modelo Porsche & Audi*), assim como clientes, placas, telefones e valores. O nome da
+fictícia (*Nordwerk*, especialista Porsche e Audi, com logo e domínio próprios), assim como clientes, placas, telefones e valores. O nome da
 oficina-piloto não aparece em lugar nenhum — nem em texto, nem em imagem, nem em metadado.
 O script de captura aborta se detectar a marca proibida em qualquer tela antes de fotografar.
 

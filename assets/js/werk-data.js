@@ -1180,20 +1180,27 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     if (!read(KEYS.seedv, false)) return;
     const c = read(KEYS.config, {}) || {};
     const nome = (c.oficina && c.oficina.nome || '').trim();
-    // Migra caches de demonstração antigos que ainda guardam a marca do cliente-piloto.
-    const ehEuroVixCache = DEMO && /eurovix/i.test(nome);
-    if (nome && !ehEuroVixCache) return;
-    // Demonstração/teste: oficina NEUTRA (nunca a marca de um cliente). A identidade
-    // EUROVIX fica só na land e no app do próprio cliente — aqui é "Oficina Demonstração".
+    // Migra caches antigos: marca do cliente-piloto e o placeholder sem identidade.
+    const cacheVelho = DEMO && (/eurovix/i.test(nome) || /^Oficina Demonstra/i.test(nome));
+    if (nome && !cacheVelho) return;
+    // A DEMONSTRAÇÃO tem identidade própria — uma oficina fictícia, com logo e
+    // domínio próprios. Não é a marca de nenhum cliente, e não é o LexOS: é
+    // justamente essa separação que prova o white-label. Quem abre o demo vê o
+    // sistema vestido de outra empresa, que é como ele será entregue.
     write(KEYS.config, { ...c, oficina: {
-      nome: 'Oficina Demonstração', cnpj: '00.000.000/0001-00',
-      endereco: 'Av. Exemplo, 1000 — Centro · Sua Cidade/UF',
-      cidade: 'Sua Cidade/UF', fone: '(00) 90000-0000', email: 'contato@suaoficina.com.br',
-      pixChave: 'sua-chave@pix', site: 'suaoficina.com.br',
+      nome: 'Nordwerk', cnpj: '00.000.000/0001-00',
+      endereco: 'Av. das Oficinas, 1200 — Distrito Industrial',
+      cidade: 'Sua Cidade/UF', fone: '(00) 90000-0000',
+      email: 'contato@nordwerk.uselexgo.com',
+      pixChave: 'contato@nordwerk.uselexgo.com',
+      site: 'nordwerk.uselexgo.com',
       horario: 'Seg–Sex 8h–18h · Sáb 8h–12h',
-      logo: '', logoDoc: '', icon: '',
+      logo: 'assets/img/demo/nordwerk-logo.svg',
+      logoDoc: 'assets/img/demo/nordwerk-logo-doc.svg',
+      icon: 'assets/img/demo/nordwerk-icon.svg',
     } });
   }
+
 
   if (!CLOUD) { // na nuvem o banco é a verdade: sem seeds/migração local
     seed();
