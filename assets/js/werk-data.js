@@ -710,7 +710,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
 
     // 3 · personas demo (fill-only: nunca sobrescreve senha já criada)
     [
-      { tel: '27999000000', convite: 'demo-ricardo', senha: enc('bmw2026'), desde: 2021 },
+      { tel: '27999000000', convite: 'demo-ricardo', senha: enc('demo2026'), desde: 2021 },
       { tel: '27988112233', convite: 'demo-marcelo', senha: null, desde: 2024 },
     ].forEach(d => {
       const c = lista.find(x => normTel(x.telefone) === d.tel);

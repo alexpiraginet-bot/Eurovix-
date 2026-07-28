@@ -47,7 +47,7 @@ python3 -m http.server 8080    # ou npx serve .
 
 **Acesso do cliente ao app:** o cadastro nasce no check-in — o painel gera um **link de convite exclusivo** (`app.html?convite=…`, também impresso com QR no Termo de Entrada); o cliente abre, **cria a própria senha**, e o login passa a ser **telefone + senha**. A **garagem segue o telefone do último check-in de cada placa**: se o carro for vendido, o próximo check-in (mesma placa, telefone do novo dono) migra o veículo para a garagem do comprador automaticamente — quem vendeu mantém as OS e garantias que pagou, e o **prontuário por VIN é exportável** (app → Perfil, ou painel → Veículos) para entregar ao novo dono.
 
-Conta demo do app: telefone `(27) 99900-0000` · senha `bmw2026` (ou o botão de conta demo). Convite pendente de fábrica: `app.html?convite=demo-marcelo`. Reset da demo: **Configurações → Resetar demo** no painel.
+Conta demo do app: telefone `(27) 99900-0000` · senha `demo2026` (ou o botão de conta demo). Convite pendente de fábrica: `app.html?convite=demo-marcelo`. Reset da demo: **Configurações → Resetar demo** no painel.
 
 ## 🔩 WERK OS — cobertura da especificação
 
