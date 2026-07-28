@@ -1,0 +1,25 @@
+# Gerado pelo alex-hub (src/scripts/setup-instant.ts) — não editar à mão.
+# A cada push, avisa o hub para sincronizar na hora (feed, cards, status).
+name: Avisar o Lex Technology
+
+on:
+  push:
+    branches: [main, master]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: repository_dispatch → alexpiraginet-bot/alex-hub
+        env:
+          HUB_TOKEN: ${{ secrets.HUB_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$HUB_TOKEN" ]; then
+            echo "Secret HUB_DISPATCH_TOKEN ausente — rode npm run instant:setup no hub."
+            exit 0
+          fi
+          curl -fsS -X POST \
+            -H "Authorization: token $HUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/alexpiraginet-bot/alex-hub/dispatches \
+            -d "{\"event_type\":\"repo-updated\",\"client_payload\":{\"repo\":\"$GITHUB_REPOSITORY\"}}"
