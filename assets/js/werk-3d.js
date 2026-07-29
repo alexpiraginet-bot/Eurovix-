@@ -291,52 +291,71 @@
   }
 
   /* ---------------------------------------------------------
-     Modelo 3D REAL (BMW) — showcase via embed da Sketchfab.
-     Coleção "BMW base models" de Ddiaz Design (CC BY-NC-SA):
-     ótimo para piloto/demos/apresentação COM atribuição. Para
-     uso comercial no produto pago, licenciar com o autor ou
-     trocar por modelos próprios — o mapa abaixo isola isso.
-     A MARCAÇÃO de avarias continua no carro 3D próprio (offline).
+     Modelo 3D REAL do carro — showcase via embed da Sketchfab.
+     A MARCAÇÃO de avarias continua no carro 3D próprio (offline),
+     que é genérico e vale para qualquer veículo.
+
+     Cada entrada carrega o SEU crédito. A legenda antes era fixa
+     num autor só; com modelos de autores diferentes isso passaria
+     a creditar a pessoa errada — o que quebra justamente a licença
+     que nos deixa usar o modelo.
+
+     `com: true` = a licença permite uso comercial (CC BY / CC BY-SA
+     / CC0). Os BMW abaixo são CC BY-NC-SA, ou seja NÃO comercial:
+     servem para demonstração com atribuição, mas precisam ser
+     licenciados com o autor ou trocados antes de o sistema ser
+     vendido com eles dentro.
      --------------------------------------------------------- */
-  const BMW_UID = [
-    [/z4/, '6a1fd02fa5fa46488a131777c569354e'],
-    [/\bm1\b/, '381d36aaa42e4a3a88502971f385334f'],
-    [/750|7 ?series|s[eé]rie 7/, '0c3ebd90567a409894682becd3d92efe'],
-    [/x5/, 'b453ba441ff04f9290955d09c3d46b9f'],
-    [/x3/, 'd35d04aac7f242d997af5d8d2d7fbeca'],
-    [/x1|x2|x4|x6|x7|suv|sav/, 'b453ba441ff04f9290955d09c3d46b9f'],
-    [/m4/, 'f8141ecd755547989c9209784b71ad43'],
-    [/cs touring|m3.*touring|touring.*m3/, 'ebda8c29a8ef4ec789391e918d52ef55'],
-    [/f80|m3\b/, '547ab5f3b534473fbef71404bae708c5'],
-    [/m340|340i/, '69dbf0293c6f4959a90d5bd0d68e097f'],
-    [/335|gran turismo|3 ?series gt|f34/, 'e4f91073e4374de5a3ff0858f25400d2'],
-    [/m235|m135|1 ?series|2 ?series|118|120|125|218|220|228|gran coup/, '1efbe2ff21414af89fb14c70655cc88b'],
-    [/e46|328|3 ?series|320|323|325|330|s[eé]rie 3/, '5fce3b693344450380b0112a4d21cfe5'],
-    [/e30/, '9099df483850404a8cf94529b3df148b'],
-    [/e36/, '76401039fa80419ab036bea09acb898d'],
-    [/csl|\be9\b|3\.0/, '86ee7c1a83334576933ab431542269d5'],
+  const CAT = [
+    // — Porsche / Audi (licença comercial) —
+    { re: /macan/,                    uid: 'b61426730e5f49c0a73c48f0004406c5', autor: 'Ddiaz Design',      url: 'https://sketchfab.com/ddiaz-design',  lic: 'CC BY',    com: true },
+    { re: /cayenne/,                  uid: '74fbea5a4dfc4197839fdd2bf654369a', autor: 'Ddiaz Design',      url: 'https://sketchfab.com/ddiaz-design',  lic: 'CC BY',    com: true },
+    { re: /\bq5\b/,                   uid: '9cf08cf1dac24654a34dbdad76cce52c', autor: 'tonielpro520',      url: 'https://sketchfab.com/tonielpro520',  lic: 'CC BY',    com: true },
+    { re: /911|carrera|\b99[12]\b/,   uid: 'd01b254483794de3819786d93e0e1ebf', autor: 'Lionsharp Studios', url: 'https://sketchfab.com/lionsharp',     lic: 'CC BY-SA', com: true },
+    // — BMW (herdado do piloto; licença NÃO comercial) —
+    { re: /z4/,        uid: '6a1fd02fa5fa46488a131777c569354e', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /\bm1\b/,    uid: '381d36aaa42e4a3a88502971f385334f', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /750|7 ?series|s[eé]rie 7/, uid: '0c3ebd90567a409894682becd3d92efe', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /x5/,        uid: 'b453ba441ff04f9290955d09c3d46b9f', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /x3/,        uid: 'd35d04aac7f242d997af5d8d2d7fbeca', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /x1|x2|x4|x6|x7/, uid: 'b453ba441ff04f9290955d09c3d46b9f', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /m4/,        uid: 'f8141ecd755547989c9209784b71ad43', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /cs touring|m3.*touring|touring.*m3/, uid: 'ebda8c29a8ef4ec789391e918d52ef55', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /f80|m3\b/,  uid: '547ab5f3b534473fbef71404bae708c5', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /m340|340i/, uid: '69dbf0293c6f4959a90d5bd0d68e097f', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /335|gran turismo|3 ?series gt|f34/, uid: 'e4f91073e4374de5a3ff0858f25400d2', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /m235|m135|1 ?series|2 ?series|118|120|125|218|220|228|gran coup/, uid: '1efbe2ff21414af89fb14c70655cc88b', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /e46|328|3 ?series|320|323|325|330|s[eé]rie 3/, uid: '5fce3b693344450380b0112a4d21cfe5', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /e30/,       uid: '9099df483850404a8cf94529b3df148b', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /e36/,       uid: '76401039fa80419ab036bea09acb898d', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
+    { re: /csl|\be9\b|3\.0/, uid: '86ee7c1a83334576933ab431542269d5', autor: 'Ddiaz Design', url: 'https://sketchfab.com/ddiaz-design', lic: 'CC BY-NC-SA' },
   ];
-  // Sem modelo padrão de propósito: o catálogo 3D real só tem BMW hoje. Mostrar um
-  // carro de outra marca como se fosse o do cliente seria mentira na tela — então,
-  // quando o modelo não estiver no catálogo, a função devolve null e a interface
-  // simplesmente não oferece o 3D real (a marcação de avarias no carro 3D próprio,
-  // que é offline e genérica, continua funcionando para qualquer veículo).
-  const BMW_DEFAULT = null;
+  // Sem modelo padrão, de propósito: mostrar o carro de outra marca (ou de outro
+  // porte) como se fosse o do cliente seria mentira na tela. Quando o veículo não
+  // está no catálogo, devolve null e a interface simplesmente não oferece o 3D
+  // real — o carro 3D de inspeção, que é genérico e offline, segue valendo para
+  // qualquer veículo. É por isso que A4 e RS3 não têm modelo: o que existe com
+  // licença utilizável é de outra geração ou é maquete de cenário.
+  const SEM_MODELO = null;
 
   function slug(s) { return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim(); }
 
-  function bmwUid(modelStr) {
+  function modeloDoCarro(modelStr) {
     const s = slug(modelStr);
-    for (const [re, uid] of BMW_UID) if (re.test(s)) return uid;
-    return BMW_DEFAULT;
+    return CAT.find(c => c.re.test(s)) || SEM_MODELO;
   }
-  const temModelo3D = (modelStr) => !!bmwUid(modelStr);
+  function bmwUid(modelStr) {            // nome herdado; hoje serve qualquer marca
+    const m = modeloDoCarro(modelStr);
+    return m ? m.uid : null;
+  }
+  const temModelo3D = (modelStr) => !!modeloDoCarro(modelStr);
 
   // Embeda o modelo 3D real no container (iframe Sketchfab + atribuição CC obrigatória).
   function embedReal(container, modelStr, opts) {
     if (!container) throw new Error('WERK3D: container ausente');
     injectStyle(); opts = opts || {};
-    const uid = opts.uid || bmwUid(modelStr);
+    const item = modeloDoCarro(modelStr);
+    const uid = opts.uid || (item && item.uid);
     if (!uid) throw new Error('WERK3D: sem modelo 3D real para este veículo');
     container.classList.add('wk3d-real'); container.innerHTML = '';
     // autostart=1 → inicia sozinho (sem clique). ui_controls=0 + flags → sem a
@@ -353,13 +372,17 @@
     container.appendChild(ifr);
     const cap = document.createElement('div');
     cap.className = 'wk3d-attrib';
-    cap.innerHTML = 'Modelo 3D por <a href="https://sketchfab.com/ddiaz-design" target="_blank" rel="noopener">Ddiaz Design</a> · Sketchfab · CC BY-NC-SA';
+    // Crédito DO MODELO exibido — a licença exige nomear quem fez aquele arquivo.
+    const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    cap.innerHTML = item
+      ? `Modelo 3D por <a href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.autor)}</a> · Sketchfab · ${esc(item.lic)}`
+      : 'Modelo 3D · Sketchfab';
     container.appendChild(cap);
     return uid;
   }
 
   global.WERK3D = {
-    mount, embedReal, bmwUid, temModelo3D,
+    mount, embedReal, bmwUid, temModelo3D, modeloDoCarro,
     supported: (function () {
       try { const el = document.createElement('div'); el.style.transform = 'translateZ(1px)'; return 'transformStyle' in el.style || 'webkitTransformStyle' in el.style; }
       catch (_) { return false; }
