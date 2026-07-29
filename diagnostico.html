@@ -251,6 +251,24 @@
     });
   }
 
+  /* O hub (demo.html) é a porta de entrada da apresentação. Se um botão dele não
+     leva à tela, é aqui que aparece — sem depender de alguém descrever o que
+     aconteceu no aparelho. */
+  function hub(g) {
+    return baixar('demo.html').then((r) => {
+      if (!r.ok) return item(g, 'Hub de acessos (demo.html)', 'err', (r.status || 'sem resposta') + ' — a página de acessos não abre');
+      const doc = new DOMParser().parseFromString(r.texto, 'text/html');
+      const links = [...doc.querySelectorAll('a[href]')]
+        .map(a => a.getAttribute('href'))
+        .filter(h => h && !/^https?:|^#|^mailto:/.test(h));
+      item(g, 'Hub de acessos (demo.html)', 'ok', links.length + ' link(s) internos');
+      return Promise.all([...new Set(links)].map(h =>
+        baixar(h.split('?')[0]).then(x => item(g, '↳ ' + h, x.ok ? 'ok' : 'err',
+          x.ok ? 'destino existe' : 'DESTINO NÃO EXISTE (' + (x.status || 'sem resposta') + ') — este botão não leva a lugar nenhum'))
+      ));
+    });
+  }
+
   function renderSaida() {
     saida.textContent = 'RELATÓRIO · ' + new Date().toISOString() + '\n' + location.href + '\n\n' + linhas.join('\n');
   }
@@ -261,10 +279,12 @@
     var g2 = grupo('Armazenamento');         armazenamento(g2);
     var g3 = grupo('Arquivos do sistema');
     var g4 = grupo('Cache e app instalado');
-    var g5 = grupo('Teste real do app');
+    var g5 = grupo('Hub de acessos');
+    var g6 = grupo('Teste real do app');
     renderSaida();
     arquivos(g3).then(function () { renderSaida(); return servico(g4); })
-      .then(function () { renderSaida(); return bootDemo(g5); })
+      .then(function () { renderSaida(); return hub(g5); })
+      .then(function () { renderSaida(); return bootDemo(g6); })
       .then(renderSaida);
   }
 
