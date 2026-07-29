@@ -14,7 +14,8 @@
 <meta name="theme-color" content="#0A0C10">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"></noscript>
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/site.css">
 <link rel="stylesheet" href="assets/css/mobile.css"><!-- por último: correções de celular (iOS) -->
@@ -578,6 +579,6 @@
 <script>
   if (window.EVXTwin) EVXTwin.mount('#twinSite', { saude: { oleo: 78, freios: 64, pneus: 82, bateria: 91 } });
 </script>
-<script src="https://alex-hub-three.vercel.app/support-widget.js" data-app="eurovix" defer></script>
+<script src="https://alex-hub-three.vercel.app/support-widget.js" data-app="eurovix" async></script>
 </body>
 </html>

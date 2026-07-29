@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diagnóstico · LexOS</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/img/brand/favicon.png">
+<!-- Esta página é PROPOSITALMENTE autossuficiente: nenhum CSS ou JS do sistema.
+     Se o app estiver quebrado, ela ainda abre e diz por quê. -->
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:#0A0C10;color:#EDF1F7;line-height:1.55;
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    padding:22px 16px calc(28px + env(safe-area-inset-bottom,0px));
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:640px;margin:0 auto}
+  h1{font-size:20px;font-weight:800;letter-spacing:-.01em}
+  .sub{color:#8B93A0;font-size:13px;margin:6px 0 20px}
+  .grupo{border:1px solid rgba(255,255,255,.1);border-radius:14px;margin-bottom:12px;overflow:hidden}
+  .grupo>h2{
+    font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:#8B93A0;padding:12px 15px;background:rgba(255,255,255,.03);
+    border-bottom:1px solid rgba(255,255,255,.07);
+  }
+  .linha{display:flex;gap:11px;padding:11px 15px;border-bottom:1px solid rgba(255,255,255,.05);align-items:flex-start}
+  .linha:last-child{border-bottom:none}
+  .ic{flex:none;width:19px;text-align:center;font-size:14px;line-height:1.5}
+  .txt{flex:1;min-width:0}
+  .txt b{display:block;font-weight:600;font-size:13.5px}
+  .txt span{display:block;color:#8B93A0;font-size:12px;word-break:break-word;margin-top:2px}
+  .ok{color:#3ECF77}.err{color:#FF6B5E}.warn{color:#E8B031}.wait{color:#6B7280}
+  .acoes{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0 8px}
+  button,a.btn{
+    flex:1;min-width:150px;padding:14px 16px;border-radius:11px;border:none;cursor:pointer;
+    font:600 14px/1 inherit;text-align:center;text-decoration:none;display:block;
+  }
+  .p{background:#2E7BEE;color:#fff}
+  .s{background:transparent;color:#EDF1F7;border:1px solid rgba(255,255,255,.22)}
+  .d{background:transparent;color:#FF6B5E;border:1px solid rgba(255,107,94,.4)}
+  #saida{
+    width:100%;min-height:150px;margin-top:12px;background:#05070C;color:#8B93A0;
+    border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px;
+    font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow:auto;
+  }
+  .nota{color:#6B7280;font-size:12px;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Diagnóstico do aparelho</h1>
+  <p class="sub">Abra esta página <b>no aparelho onde o app não funciona</b>. Ela testa tudo sozinha e monta um relatório — toque em “Copiar relatório” e me mande.</p>
+
+  <div id="painel"></div>
+
+  <div class="acoes">
+    <button class="p" id="copiar">📋 Copiar relatório</button>
+    <button class="s" id="repetir">↻ Testar de novo</button>
+  </div>
+  <div class="acoes">
+    <button class="d" id="limpar">🧹 Limpar tudo deste site e recarregar</button>
+  </div>
+  <p class="nota">“Limpar tudo” apaga o cache, o app instalado e os dados de demonstração <b>deste site</b> neste aparelho. Não mexe em nenhuma conta real. É a primeira coisa a tentar quando o app abre esquisito.</p>
+
+  <pre id="saida"></pre>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var painel = document.getElementById('painel');
+  var saida  = document.getElementById('saida');
+  var linhas = [];
+
+  function grupo(titulo) {
+    var g = document.createElement('div'); g.className = 'grupo';
+    var h = document.createElement('h2'); h.textContent = titulo; g.appendChild(h);
+    painel.appendChild(g); return g;
+  }
+  function item(g, nome, estado, detalhe) {
+    var d = document.createElement('div'); d.className = 'linha';
+    var ic = { ok: '✓', err: '✕', warn: '!', wait: '·' }[estado] || '·';
+    d.innerHTML = '<div class="ic ' + estado + '">' + ic + '</div><div class="txt"><b></b><span></span></div>';
+    d.querySelector('b').textContent = nome;
+    d.querySelector('span').textContent = detalhe || '';
+    g.appendChild(d);
+    linhas.push((estado === 'ok' ? '[ok]  ' : estado === 'err' ? '[ERRO]' : estado === 'warn' ? '[!]   ' : '[..]  ')
+      + nome + (detalhe ? ' — ' + detalhe : ''));
+    return d;
+  }
+
+  function ambiente(g) {
+    var ua = navigator.userAgent;
+    var ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var ver = (ua.match(/OS (\d+)[._](\d+)/) || [])[0] || '';
+    var safari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|Chrome/.test(ua);
+    var navApp = /CriOS/.test(ua) ? 'Chrome (iOS)' : /FxiOS/.test(ua) ? 'Firefox (iOS)'
+      : /EdgiOS/.test(ua) ? 'Edge (iOS)' : /FBAN|FBAV|Instagram|Line\//.test(ua) ? 'navegador embutido de app (Instagram/Facebook/etc.)'
+      : safari ? 'Safari' : /Chrome/.test(ua) ? 'Chrome' : 'outro';
+    item(g, 'Navegador', 'ok', navApp + (ios ? ' · iOS ' + ver.replace(/OS |_/g, function (m) { return m === 'OS ' ? '' : '.'; }) : ''));
+    if (/FBAN|FBAV|Instagram|Line\//.test(ua))
+      item(g, 'Aviso do navegador embutido', 'warn', 'Você abriu por dentro de outro app (Instagram, WhatsApp, Facebook…). Esses navegadores bloqueiam armazenamento e quebram a demonstração. Toque em “abrir no Safari/Chrome”.');
+    item(g, 'Modo de exibição', 'ok',
+      (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone
+        ? 'app instalado na tela de início (standalone)' : 'aba normal do navegador');
+    item(g, 'Tela', 'ok', window.innerWidth + '×' + window.innerHeight + ' · densidade ' + (window.devicePixelRatio || 1));
+    item(g, 'Endereço', 'ok', location.origin);
+    item(g, 'Conexão', navigator.onLine ? 'ok' : 'err', navigator.onLine ? 'online' : 'SEM INTERNET');
+    item(g, 'Agente', 'ok', ua);
+  }
+
+  function armazenamento(g) {
+    // localStorage é o coração da demonstração: sem ele, nada é semeado nem salvo.
+    try {
+      var k = '__diag__' + Date.now();
+      localStorage.setItem(k, '1');
+      var leu = localStorage.getItem(k) === '1';
+      localStorage.removeItem(k);
+      item(g, 'localStorage (grava e lê)', leu ? 'ok' : 'err',
+        leu ? 'funcionando' : 'gravou mas não leu de volta — navegação privada?');
+    } catch (e) {
+      item(g, 'localStorage (grava e lê)', 'err',
+        'BLOQUEADO: ' + e.name + '. É isto que impede a demonstração de funcionar. Causa quase sempre: navegação privada/anônima, ou navegador embutido de outro app.');
+    }
+    try { sessionStorage.setItem('__d__', '1'); sessionStorage.removeItem('__d__');
+      item(g, 'sessionStorage', 'ok', 'funcionando'); }
+    catch (e) { item(g, 'sessionStorage', 'err', 'BLOQUEADO: ' + e.name + ' — o modo demonstração usa isto para se lembrar de que está ligado'); }
+
+    item(g, 'IndexedDB', window.indexedDB ? 'ok' : 'warn',
+      window.indexedDB ? 'disponível (usado pelo rascunho do check-in)' : 'ausente — só afeta o rascunho de fotos');
+
+    // quanto já está ocupado por este site
+    var chaves = 0, bytes = 0;
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var ch = localStorage.key(i);
+        if (ch && ch.indexOf('evx.') === 0) { chaves++; bytes += (localStorage.getItem(ch) || '').length; }
+      }
+      item(g, 'Dados já salvos deste site', 'ok', chaves + ' chave(s) · ' + (bytes / 1024).toFixed(1) + ' KB');
+    } catch (e) { item(g, 'Dados já salvos deste site', 'warn', 'não deu para medir'); }
+
+    if (navigator.storage && navigator.storage.estimate) {
+      navigator.storage.estimate().then(function (s) {
+        item(g, 'Espaço disponível', 'ok', ((s.usage || 0) / 1048576).toFixed(1) + ' MB usados de ' + ((s.quota || 0) / 1048576).toFixed(0) + ' MB');
+        renderSaida();
+      }).catch(function () {});
+    }
+  }
+
+  function baixar(url) {
+    return fetch(url + (url.indexOf('?') < 0 ? '?' : '&') + 'diag=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.text().then(function (t) { return { ok: r.ok, status: r.status, texto: t }; }); })
+      .catch(function (e) { return { ok: false, status: 0, erro: e.message }; });
+  }
+
+  function arquivos(g) {
+    var lista = [
+      ['assets/js/demo.js', 'liga o modo demonstração'],
+      ['assets/js/env.js', 'credenciais públicas da nuvem'],
+      ['assets/js/werk-data.js', 'dados e seeds da demonstração'],
+      ['assets/js/app.js', 'app do cliente'],
+      ['assets/css/app.css', 'visual do app'],
+      ['assets/css/liquid.css', 'camada de vidro'],
+      ['app.html', 'página do app'],
+    ];
+    return Promise.all(lista.map(function (par) {
+      return baixar(par[0]).then(function (r) {
+        if (!r.ok) return item(g, par[0], 'err', (r.status || 'sem resposta') + ' — ' + par[1] + (r.erro ? ' · ' + r.erro : ''));
+        var extra = (r.texto.length / 1024).toFixed(0) + ' KB';
+        // confere se o JS realmente compila neste navegador (sintaxe nova quebra em iOS antigo)
+        if (/\.js$/.test(par[0])) {
+          try { new Function(r.texto); extra += ' · sintaxe aceita'; }
+          catch (e) {
+            return item(g, par[0], 'err', 'O NAVEGADOR NÃO ENTENDE ESTE ARQUIVO: ' + e.message
+              + ' — é isto que trava o app. Costuma ser iOS/navegador antigo demais.');
+          }
+        }
+        item(g, par[0], 'ok', extra);
+      });
+    }));
+  }
+
+  function servico(g) {
+    if (!('serviceWorker' in navigator)) { item(g, 'Service worker', 'warn', 'não suportado — o app funciona, só não fica offline'); return Promise.resolve(); }
+    return navigator.serviceWorker.getRegistrations().then(function (rs) {
+      item(g, 'Service workers registrados', rs.length ? 'ok' : 'ok', rs.length ? rs.length + ' — escopo: ' + rs.map(function (r) { return r.scope; }).join(', ') : 'nenhum');
+      if (!window.caches) return;
+      return caches.keys().then(function (ks) {
+        item(g, 'Caches guardados', ks.length ? 'warn' : 'ok',
+          ks.length ? ks.join(', ') + ' — se o app abrir com versão antiga, use “Limpar tudo”' : 'nenhum (sempre pega a versão nova)');
+      });
+    }).catch(function (e) { item(g, 'Service worker', 'warn', 'não deu para consultar: ' + e.message); });
+  }
+
+  function bootDemo(g) {
+    // Carrega o app do cliente em modo demonstração dentro de um quadro e observa.
+    return new Promise(function (resolve) {
+      var fr = document.createElement('iframe');
+      fr.style.cssText = 'position:absolute;left:-9999px;width:390px;height:800px;border:0';
+      var pronto = false;
+      var alvo = 'app.html?demo=1&diag=' + Date.now();
+      var t = setTimeout(function () {
+        if (pronto) return; pronto = true;
+        item(g, 'Abrir o app em modo demonstração', 'err',
+          'passou de 40 s sem sair da tela de abertura — o app não conclui o carregamento neste aparelho');
+        try { fr.remove(); } catch (_) {}
+        resolve();
+      }, 40000);
+      var t0 = Date.now();
+      fr.onload = function () {
+        var tentar = function () {
+          if (pronto) return;
+          var d, w;
+          try { d = fr.contentDocument; w = fr.contentWindow; } catch (e) {
+            pronto = true; clearTimeout(t);
+            item(g, 'Abrir o app em modo demonstração', 'warn', 'não deu para inspecionar (bloqueio entre quadros)');
+            try { fr.remove(); } catch (_) {} return resolve();
+          }
+          if (!d) return setTimeout(tentar, 500);
+          var tab = d.getElementById('tabbar'), log = d.getElementById('loginView'), sp = d.getElementById('splash');
+          var vis = function (el) { if (!el) return false; var s = w.getComputedStyle(el);
+            return !(el.classList.contains('hide') || s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0'); };
+          if (vis(tab) || vis(log)) {
+            pronto = true; clearTimeout(t);
+            var seg = ((Date.now() - t0) / 1000).toFixed(1);
+            var onde = vis(tab) ? 'entrou na conta de demonstração' : 'parou na tela de entrada';
+            item(g, 'Abrir o app em modo demonstração', vis(tab) ? 'ok' : 'warn', onde + ' em ' + seg + ' s');
+            try {
+              var W = w.WERK;
+              if (W) item(g, 'Dados da demonstração', 'ok',
+                W.getVehicles().length + ' veículos · ' + W.getAllOS().length + ' OS · ' + W.getClientes().length + ' clientes · oficina: ' + W.marca().displayNome);
+              else item(g, 'Dados da demonstração', 'err', 'o módulo de dados não carregou');
+            } catch (e) { item(g, 'Dados da demonstração', 'err', e.message); }
+            try { fr.remove(); } catch (_) {}
+            return resolve();
+          }
+          if (vis(sp) || !tab) return setTimeout(tentar, 500);
+          setTimeout(tentar, 500);
+        };
+        tentar();
+      };
+      fr.src = alvo;
+      document.body.appendChild(fr);
+      // erros de dentro do quadro aparecem aqui
+      window.addEventListener('error', function (e) {
+        if (!e || !e.filename || e.filename.indexOf(location.origin) !== 0) return;
+        item(g, 'Erro de JavaScript', 'err', e.message + ' (' + e.filename.replace(location.origin, '') + ':' + e.lineno + ')');
+      });
+    });
+  }
+
+  function renderSaida() {
+    saida.textContent = 'RELATÓRIO · ' + new Date().toISOString() + '\n' + location.href + '\n\n' + linhas.join('\n');
+  }
+
+  function rodar() {
+    painel.innerHTML = ''; linhas = []; saida.textContent = 'testando…';
+    var g1 = grupo('Aparelho e navegador');  ambiente(g1);
+    var g2 = grupo('Armazenamento');         armazenamento(g2);
+    var g3 = grupo('Arquivos do sistema');
+    var g4 = grupo('Cache e app instalado');
+    var g5 = grupo('Teste real do app');
+    renderSaida();
+    arquivos(g3).then(function () { renderSaida(); return servico(g4); })
+      .then(function () { renderSaida(); return bootDemo(g5); })
+      .then(renderSaida);
+  }
+
+  document.getElementById('repetir').addEventListener('click', rodar);
+
+  document.getElementById('copiar').addEventListener('click', function () {
+    var txt = saida.textContent;
+    var pronto = function () { var b = document.getElementById('copiar'); var o = b.textContent;
+      b.textContent = '✓ copiado — agora é só colar'; setTimeout(function () { b.textContent = o; }, 2600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(pronto).catch(function () { seleciona(); });
+    } else seleciona();
+    function seleciona() {
+      var r = document.createRange(); r.selectNodeContents(saida);
+      var s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      try { document.execCommand('copy'); pronto(); } catch (e) { alert('Selecione o texto abaixo e copie na mão.'); }
+    }
+  });
+
+  document.getElementById('limpar').addEventListener('click', async function () {
+    if (!confirm('Apagar cache, app instalado e dados de demonstração DESTE site neste aparelho?\n\nNenhuma conta real é afetada.')) return;
+    try { for (var i = localStorage.length - 1; i >= 0; i--) { var k = localStorage.key(i); if (k && k.indexOf('evx.') === 0) localStorage.removeItem(k); } } catch (e) {}
+    try { sessionStorage.clear(); } catch (e) {}
+    try { if (window.indexedDB && indexedDB.deleteDatabase) indexedDB.deleteDatabase('evx.werk'); } catch (e) {}
+    try { if (window.caches) { var ks = await caches.keys(); await Promise.all(ks.map(function (k) { return caches.delete(k); })); } } catch (e) {}
+    try { if ('serviceWorker' in navigator) { var rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(function (r) { return r.unregister(); })); } } catch (e) {}
+    alert('Limpo. A página vai recarregar.');
+    location.reload(true);
+  });
+
+  rodar();
+})();
+</script>
+</body>
+</html>
