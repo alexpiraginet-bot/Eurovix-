@@ -28,14 +28,19 @@
   function renderBrand() {
     let m = {}; try { m = (WERK.marca && WERK.marca()) || {}; } catch (_) {}
     const logo = m.logo || null;
-    const isAssetLogo = !!(logo && /^assets\//.test(logo));
     $$('.js-brand-logo').forEach(img => {
       const holder = img.parentElement;
       let wm = holder && holder.querySelector('.js-brand-wordmark');
       if (logo) { img.src = logo; img.alt = m.displayNome || ''; img.style.display = ''; if (wm) wm.remove(); }
       else { img.style.display = 'none'; if (holder) { if (!wm) { wm = document.createElement('span'); wm.className = 'js-brand-wordmark'; holder.appendChild(wm); } wm.textContent = m.displayNome || 'Sua oficina'; } }
     });
-    $$('.js-brand-icon').forEach(ic => { ic.style.display = isAssetLogo ? '' : 'none'; });
+    // O ícone quadrado é da OFICINA, não da LexOS. O src do HTML é só um espaço
+    // reservado: sem ícone próprio, some — o app do cliente não carrega a marca
+    // de quem fabricou o sistema.
+    $$('.js-brand-icon').forEach(ic => {
+      if (m.icon) { ic.src = m.icon; ic.alt = ''; ic.style.display = ''; }
+      else ic.style.display = 'none';
+    });
     try { document.title = m.nome ? m.nome + ' · app' : 'App do cliente · LexOS'; } catch (_) {}
   }
 
@@ -56,6 +61,10 @@
     splash.classList.add('hide');
     if (WERK.cloud && WERK.emRecuperacao && WERK.emRecuperacao()) { abrirNovaSenhaCliente(); return; }
     if (WERK.cloud) $('#loginForm .login-demo').style.display = 'none'; // produção: sem conta demo
+    // O convite vem antes de tudo: quem chega por um link de convite quer criar a
+    // senha, não cair numa conta pronta. Sem esta ordem, ?demo=1&convite=… entrava
+    // direto na conta demo e o cadastro nunca aparecia.
+    if (CONVITE) { handleConvite(CONVITE); return; }
     // ?preview=1 (com EVX_ENV zerado no app.html) entra direto na conta demo local,
     // para mostrar o app do cliente ao vivo mesmo em produção (dados fictícios).
     if (PREVIEW && !WERK.cloud) {
@@ -63,7 +72,6 @@
         toast('Modo demonstração', 'Dados fictícios — explore o app, o 3D e a garagem à vontade.', 'ok'));
       return;
     }
-    if (CONVITE) { handleConvite(CONVITE); return; }
     const session = EVX.getSession();
     const autentico = !WERK.cloud || !!WERK.authUser(); // nuvem exige sessão auth válida
     if (session && session.telefone && autentico) enter(session);
