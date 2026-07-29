@@ -1,5 +1,5 @@
 /* ============================================================
-   EUROVIX · Agendamento online — fluxo em 4 passos
+   LexOS · Agendamento online — fluxo em 4 passos
    Veículo → Serviço → Data & Hora → Confirmação
    Persiste em localStorage (EVX) e gera link de WhatsApp.
    ============================================================ */

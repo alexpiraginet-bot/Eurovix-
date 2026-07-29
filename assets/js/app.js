@@ -1,5 +1,5 @@
 /* ============================================================
-   EUROVIX · App do Cliente — SPA
+   LexOS · App do Cliente — SPA
    Integrado ao WERK OS: as ordens de serviço, orçamentos,
    chat, garantias e pendências vêm do MESMO store que o
    painel da oficina (werkos.html). Abra os dois lado a lado:

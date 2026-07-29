@@ -1,5 +1,5 @@
 /* ============================================================
-   EUROVIX · WERK CLOUD — adaptador Supabase da camada de dados
+   LexOS · WERK CLOUD — adaptador Supabase da camada de dados
    ------------------------------------------------------------
    Carregado DEPOIS de assets/js/env.js, assets/js/werk-data.js
    e do UMD assets/vendor/supabase.js. Com EVX_ENV preenchido,
@@ -564,7 +564,7 @@
       c.telefone = dados.telefone;
     } else {
       c = {
-        nome: dados.nome || 'Cliente EUROVIX', telefone: dados.telefone,
+        nome: dados.nome || 'Cliente', telefone: dados.telefone,
         senha: null, convite: dados.convite || novoToken(),
         desde: dados.desde || new Date().getFullYear(),
         criadoEm: new Date().toISOString(), ativadoEm: null,
@@ -717,7 +717,7 @@
         vin: dados.vin,
         veiculo: dados.veiculo,
         placa: dados.placa || '',
-        cliente: dados.cliente || 'Cliente EUROVIX',
+        cliente: dados.cliente || 'Cliente',
         telefone: dados.telefone || '',
         sintoma: dados.sintoma || '',
         tecnico: dados.tecnico || '',
