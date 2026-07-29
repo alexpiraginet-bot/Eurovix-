@@ -4,12 +4,42 @@
 
 ## 🌐 Publicação
 
-**Produção (Vercel, auto-deploy a cada push na `main`):**
-- **Site:** https://eurovix.vercel.app
-- **Painel Mestre (todos os acessos):** https://eurovix.vercel.app/painel.html
-- **App do cliente:** https://eurovix.vercel.app/app.html
-- **WERK OS (painel da oficina):** https://eurovix.vercel.app/werkos.html
-- **Agendamento:** https://eurovix.vercel.app/agendamento.html
+Um único projeto na Vercel (`lexos`) serve todas as superfícies, com auto-deploy a
+cada push na `main`. Os endereços abaixo apontam para o **mesmo** deploy — o que
+muda é qual domínio você entrega a quem.
+
+**Para mostrar o produto (demonstração, prospecção, apresentação):**
+- **Hub de acessos:** https://demonstracao.uselexgo.com/demo.html
+- **App do cliente:** https://demonstracao.uselexgo.com/app.html?demo=1
+- **Painel da oficina:** https://demonstracao.uselexgo.com/werkos.html?demo=1&papel=gestor
+
+Esse domínio é neutro de propósito: nada no endereço amarra o produto a uma
+oficina específica.
+
+**Operação do cliente-piloto** (mesmo deploy, domínio legado `eurovix.vercel.app`):
+`/painel.html` · `/app.html` · `/werkos.html` · `/agendamento.html`
+
+<details>
+<summary>Como ligar um domínio novo a este projeto</summary>
+
+O código não precisa de nada: todo caminho interno é relativo (link de convite,
+service worker, manifesto do PWA), então um apelido novo passa a funcionar
+sozinho. São dois passos, e o segundo é o que costuma ser esquecido.
+
+1. **Vercel** → projeto `lexos` → *Settings* → *Domains* → **Add** → o subdomínio.
+   O DNS de `uselexgo.com` já está na Vercel, então não há registro a criar.
+
+2. **Supabase** → *Authentication* → *URL Configuration* → **Redirect URLs** →
+   acrescentar `https://<novo-dominio>/**`.
+   Sem isto, o link de **"esqueci minha senha"** quebra: `werk-cloud.js` monta o
+   `redirectTo` a partir de `location.origin`, e o Supabase só aceita destinos que
+   estejam nessa lista. O resto do sistema funciona normalmente — só a recuperação
+   de senha falha, e falha em silêncio.
+
+Apelidos que **não** servem para compartilhar: os endereços `*-lexprojects.vercel.app`
+ficam atrás do login da Vercel (Deployment Protection) e só abrem para quem tem
+conta no time.
+</details>
 
 Espelho CDN da `main` (raw.githack) segue funcionando como contingência; GitHub Pages disponível via workflow manual `Deploy GitHub Pages` após habilitar em Settings → Pages.
 
