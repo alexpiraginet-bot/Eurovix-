@@ -722,7 +722,7 @@
           <div class="wk-grid2">
             <div class="wfield">
               <label>VIN (chassi) <span style="font-weight:400;color:var(--txt-3);text-transform:none;letter-spacing:0">— opcional por ora</span></label>
-              <input id="ck-vin" maxlength="17" placeholder="WBA5U710X07L90210 (opcional)" style="text-transform:uppercase" value="${ck.vin || ''}">
+              <input id="ck-vin" maxlength="17" placeholder="17 caracteres (opcional)" style="text-transform:uppercase" value="${ck.vin || ''}">
               <div class="hintline" id="vinHint">Se preencher, valido o dígito verificador (ISO 3779). Sem VIN, o check-in segue normalmente — dá pra completar depois.</div>
             </div>
             <div class="wfield">
@@ -888,7 +888,8 @@
             <button type="button" class="ck-ai-btn primary" id="ckAnalisar">${I('scan', 15)} Analisar fotos com IA — km, combustível, luzes e avarias</button>
           </div>
           <div class="wk-panel">
-            <h3>${I('alert')} Danos preexistentes <span style="font-size:10px;color:var(--txt-3)">— gire o carro 3D e toque num painel para marcar</span></h3>
+            <h3>${I('alert')} Danos preexistentes <span style="font-size:10px;color:var(--txt-3)">— gire o carro 3D e toque na lataria para marcar</span></h3>
+            <div id="carReal" style="display:none;height:320px;margin-bottom:10px"></div>
             <div class="car-map" id="carMap">
               <svg viewBox="0 0 400 190">
                 <rect width="400" height="190" fill="#0B0E13"/>
@@ -899,11 +900,10 @@
               </svg>
               ${ck.danos.map((d, i) => `<span class="dmark" style="left:${d.x}%;top:${d.y}%">${i + 1}</span>`).join('')}
             </div>
-            <div class="dlist">
+            <div class="dlist" id="ckDlist">
               ${ck.danos.map((d, i) => `<div class="drow"><span class="dn">${i + 1}</span> ${d.nota} <button data-del="${i}">✕</button></div>`).join('') || '<div style="font-size:11.5px;color:var(--txt-3)">Nenhum dano marcado.</div>'}
             </div>
-            ${(window.WERK3D && WERK3D.temModelo3D && WERK3D.temModelo3D(ck.veiculoNome || (ck.decoded && ck.decoded.modelo))) ? `<button type="button" class="ck-ai-btn" id="ckReal3d" style="margin-top:12px">${I('car', 15)} Ver o modelo real em 3D</button>` : ''}
-            <div id="ckReal3dBox" style="display:none;height:300px;margin-top:10px"></div>
+            ${(window.WERK3D && WERK3D.temModelo3D && WERK3D.temModelo3D(ck.veiculoNome || (ck.decoded && ck.decoded.modelo))) ? `<button type="button" class="ck-ai-btn" id="ckTrocar3d" style="margin-top:12px;display:none">${I('car', 15)} Marcar na silhueta</button>` : ''}
           </div>
         </div>
         ${ck.iaResumo ? `
@@ -971,7 +971,23 @@
         usar.forEach((f, n) => fileToThumb(f, (url) => { ck.fotos[vagas[n]] = url; fim(); }, () => { erros++; fim(); }));
       });
       const _map = $('#carMap');
-      if (_map && window.WERK3D && WERK3D.supported) {          // carro 3D interativo (com fallback 2D abaixo)
+      const _real = $('#carReal');
+
+      /* Redesenha SÓ a lista de avarias. Marcar um dano não pode disparar
+         renderCheckin(): isso remontaria o modelo real (centenas de milhares de
+         faces) a cada toque, e o carro recarregaria na frente do consultor. */
+      const pintarLista = () => {
+        const el = $('#ckDlist'); if (!el) return;
+        el.innerHTML = ck.danos.map((d, i) =>
+          `<div class="drow"><span class="dn">${i + 1}</span> ${esc(d.nota || '')} <button data-del="${i}">✕</button></div>`
+        ).join('') || '<div style="font-size:11.5px;color:var(--txt-3)">Nenhum dano marcado.</div>';
+      };
+
+      // Carro 3D PRÓPRIO (offline, preciso por painel) — é o que responde quando
+      // o veículo não tem modelo real ou a Sketchfab não carrega.
+      const montarProprio = () => {
+        if (!_map || !window.WERK3D || !WERK3D.supported) return;
+        _map.style.display = '';
         ck._v3 = WERK3D.mount(_map, {
           danos: ck.danos, view: ck.view3,
           onView: v => { ck.view3 = v; },
@@ -985,7 +1001,40 @@
             if (d && confirm('Remover a avaria "' + (d.nota || '') + '"?')) { ck.danos.splice(i, 1); snap2(); renderCheckin(); }
           },
         });
-      } else if (_map) {                                        // fallback: silhueta 2D (sem WebGL/CSS-3D)
+      };
+
+      // MODELO REAL como palco da marcação: o clique devolve o ponto 3D e a
+      // avaria fica ancorada na lataria — gira junto com o carro.
+      const veicNome = ck.veiculoNome || (ck.decoded && ck.decoded.modelo) || '';
+      const temReal = window.WERK3D && WERK3D.montarReal && WERK3D.temModelo3D && WERK3D.temModelo3D(veicNome);
+      if (temReal && _real) {
+        _map.style.display = 'none';
+        _real.style.display = 'block';
+        _real.innerHTML = '<div style="padding:16px;color:var(--txt-3);font-size:12px">Carregando o modelo 3D do veículo…</div>';
+        WERK3D.montarReal(_real, veicNome, {
+          danos: ck.danos, marcar: true,
+          onAdd: ({ p3, sk }) => {
+            const nota = prompt('Descreva o dano (ex.: risco no para-choque):');
+            if (!nota) return;
+            ck.danos.push({ nota, p3, sk, x: 50, y: 50 });   // x/y só p/ o Termo impresso
+            snap2(); pintarLista();
+            if (ck._vr && ck._vr.marcarPonto) ck._vr.marcarPonto(p3, '🔴 AVARIA', nota);
+          },
+          onFalha: (motivo) => {                              // sem internet / modelo fora do ar
+            _real.style.display = 'none';
+            toast('Modelo 3D real indisponível', (motivo || '') + ' — marcando no carro genérico.');
+            montarProprio();
+          },
+        }).then((v) => { if (v) { ck._vr = v; const t = $('#ckTrocar3d'); if (t) t.style.display = ''; } });
+        const _tr = $('#ckTrocar3d');
+        if (_tr) _tr.addEventListener('click', () => {        // saída manual para a silhueta
+          if (ck._vr && ck._vr.destruir) ck._vr.destruir();
+          ck._vr = null; _real.style.display = 'none'; _tr.style.display = 'none';
+          montarProprio();
+        });
+      } else if (_map && window.WERK3D && WERK3D.supported) {
+        montarProprio();
+      } else if (_map) {                                      // fallback: silhueta 2D (sem WebGL/CSS-3D)
         _map.addEventListener('click', e => {
           if (e.target.closest('.dmark')) return;
           const r = e.currentTarget.getBoundingClientRect();
@@ -999,17 +1048,8 @@
         const del = e.target.dataset && e.target.dataset.del;
         if (del != null && e.target.tagName === 'BUTTON') { ck.danos.splice(+del, 1); snap2(); renderCheckin(); }
       });
-      const _r3 = $('#ckReal3d');                              // showcase do modelo 3D real (Sketchfab)
-      if (_r3) _r3.addEventListener('click', () => {
-        const box = $('#ckReal3dBox'); if (!box) return;
-        if (box.style.display !== 'none') { box.style.display = 'none'; _r3.innerHTML = I('car', 15) + ' Ver o modelo real em 3D'; return; }
-        box.style.display = 'block';
-        if (!box.dataset.loaded && window.WERK3D && WERK3D.embedReal) {
-          try { WERK3D.embedReal(box, ck.veiculoNome || (ck.decoded && ck.decoded.modelo) || ck.placa || 'Veículo'); box.dataset.loaded = '1'; }
-          catch (_) { box.innerHTML = '<div style="padding:14px;color:var(--txt-3);font-size:12px">Modelo 3D indisponível offline.</div>'; }
-        }
-        _r3.innerHTML = '▲ Ocultar modelo 3D real';
-      });
+      // (o antigo botão de "showcase" do modelo real saiu: o modelo real agora É
+      //  o palco da marcação, montado acima, e não uma vitrine separada)
       $('#ckAnalisar').addEventListener('click', async () => {
         if (Object.keys(ck.fotos).length < 1) { toast('Sem fotos', 'Anexe ao menos uma foto do tour para a IA analisar.'); return; }
         snap2();

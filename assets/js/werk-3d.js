@@ -381,8 +381,125 @@
     return uid;
   }
 
+  /* ---------------------------------------------------------
+     MODELO REAL COMO PALCO DAS AVARIAS
+     O embed simples é um iframe de outro domínio: não dá para
+     saber onde a pessoa tocou. A API do visualizador resolve —
+     o evento de clique devolve `position3D`, e a anotação criada
+     a partir desse ponto fica ANCORADA na lataria: gira junto com
+     o carro, some quando passa para trás. É por isso que a
+     marcação aqui é referência de verdade, não um adesivo na tela.
+
+     Degrada sozinho: sem modelo no catálogo, sem internet, ou se
+     a API não responder no prazo, chama opts.onFalha e quem chamou
+     volta para o carro 3D próprio (offline) sem quebrar nada.
+
+       const v = await WERK3D.montarReal(box, 'Porsche Macan S (95B)', {
+         danos, marcar: true, onAdd({p3}), onFalha(motivo)
+       });
+       v.marcarPonto(p3, 'CRÍTICO', 'Risco no para-choque');
+     --------------------------------------------------------- */
+  const SK_API = 'https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js';
+  const SK_PRAZO = 15000;
+  let skScript = null;
+
+  function carregarApiSketchfab() {
+    if (skScript) return skScript;
+    skScript = new Promise((ok, erro) => {
+      if (global.Sketchfab) return ok(global.Sketchfab);
+      const s = document.createElement('script');
+      s.src = SK_API; s.async = true;
+      s.onload = () => (global.Sketchfab ? ok(global.Sketchfab) : erro(new Error('API carregou sem expor Sketchfab')));
+      s.onerror = () => { skScript = null; erro(new Error('não deu para baixar a API da Sketchfab')); };
+      document.head.appendChild(s);
+    });
+    return skScript;
+  }
+
+  // Severidade → rótulo curto que vai no título da anotação (a Sketchfab não
+  // deixa colorir o pino, então a cor vira palavra).
+  const SEV_ROTULO = { critico: '🔴 CRÍTICO', preventivo: '🟡 PREVENTIVO', ok: '🟢 OK' };
+
+  function montarReal(container, modelStr, opts) {
+    opts = opts || {};
+    const falhar = (motivo) => { try { opts.onFalha && opts.onFalha(motivo); } catch (_) {} return null; };
+    if (!container) return Promise.resolve(falhar('sem container'));
+    const item = modeloDoCarro(modelStr);
+    if (!item) return Promise.resolve(falhar('este veículo não tem modelo 3D no catálogo'));
+
+    injectStyle();
+    container.classList.add('wk3d-real');
+    container.innerHTML = '';
+    const ifr = document.createElement('iframe');
+    ifr.title = 'Modelo 3D do veículo';
+    ifr.setAttribute('allow', 'autoplay; fullscreen; xr-spatial-tracking');
+    ifr.setAttribute('allowfullscreen', ''); ifr.setAttribute('frameborder', '0');
+    container.appendChild(ifr);
+    const cap = document.createElement('div');
+    cap.className = 'wk3d-attrib';
+    const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    cap.innerHTML = `Modelo 3D por <a href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.autor)}</a> · Sketchfab · ${esc(item.lic)}`;
+    container.appendChild(cap);
+
+    return carregarApiSketchfab().then((Sketchfab) => new Promise((resolve) => {
+      let resolvido = false;
+      const desistir = (motivo) => { if (resolvido) return; resolvido = true; resolve(falhar(motivo)); };
+      const prazo = setTimeout(() => desistir('o modelo 3D não respondeu a tempo'), SK_PRAZO);
+
+      const client = new Sketchfab(ifr);
+      client.init(item.uid, {
+        autostart: 1, preload: 1, ui_theme: 'dark', transparent: 1, dnt: 1,
+        ui_infos: 0, ui_controls: opts.marcar ? 0 : 0, ui_watermark: 0, ui_hint: 0,
+        ui_ar: 0, ui_vr: 0, ui_fullscreen: 0, ui_help: 0, ui_settings: 0, ui_inspector: 0,
+        // as anotações SÃO as avarias: a barra de navegação delas fica escondida,
+        // mas os pinos continuam visíveis e clicáveis.
+        ui_annotations: 0, annotation_cycle: 0,
+        error: () => { clearTimeout(prazo); desistir('a Sketchfab recusou carregar o modelo'); },
+        success: (api) => {
+          api.start();
+          api.addEventListener('viewerready', () => {
+            clearTimeout(prazo);
+            if (resolvido) return;
+            resolvido = true;
+
+            let camera = { eye: [0, 0, 0], target: [0, 0, 0] };
+            const lerCamera = () => api.getCameraLookAt((_e, c) => { if (c) camera = { eye: c.position, target: c.target }; });
+            lerCamera();
+
+            const marcarPonto = (p3, titulo, texto) => {
+              try {
+                api.createAnnotationFromWorldPosition(p3, camera.eye, camera.target,
+                  String(titulo || 'Avaria'), String(texto || ''), function () {});
+              } catch (_) {}
+            };
+
+            // avarias que já existiam entram como anotação ancorada
+            (opts.danos || []).forEach((d) => {
+              if (!d || !d.p3) return;
+              marcarPonto(d.p3, (SEV_ROTULO[d.severidade] || '🔴 AVARIA'), d.nota || '');
+            });
+
+            if (opts.marcar && opts.onAdd) {
+              api.addEventListener('click', (info) => {
+                if (!info || !info.position3D || !info.instanceID) return;  // clicou no vazio
+                lerCamera();
+                opts.onAdd({ p3: info.position3D, sk: item.uid });
+              }, { pick: 'slow' });
+            }
+
+            resolve({
+              api, uid: item.uid, credito: item,
+              marcarPonto,
+              destruir() { try { api.stop(); } catch (_) {} try { container.innerHTML = ''; } catch (_) {} },
+            });
+          });
+        },
+      });
+    })).catch((e) => falhar(e && e.message ? e.message : 'falha ao abrir o modelo 3D'));
+  }
+
   global.WERK3D = {
-    mount, embedReal, bmwUid, temModelo3D, modeloDoCarro,
+    mount, embedReal, bmwUid, temModelo3D, modeloDoCarro, montarReal,
     supported: (function () {
       try { const el = document.createElement('div'); el.style.transform = 'translateZ(1px)'; return 'transformStyle' in el.style || 'webkitTransformStyle' in el.style; }
       catch (_) { return false; }
