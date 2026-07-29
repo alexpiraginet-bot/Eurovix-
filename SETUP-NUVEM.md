@@ -234,7 +234,7 @@ forçando (Ctrl+Shift+R).
 
 Faça na ordem — cada item prova uma parte do sistema:
 
-1. **Login da equipe.** Abra `https://eurovix.vercel.app/werkos.html`. Deve aparecer a
+1. **Login da equipe.** Abra `https://<seu-dominio>/werkos.html`. Deve aparecer a
    tela **"WERK OS — acesso da equipe"** pedindo e-mail e senha (antes, em modo demo,
    ia direto para o kanban). Entre com o e-mail e a senha do passo 4a. O kanban abre
    **vazio** — correto, ainda não há OS.
@@ -298,7 +298,7 @@ redefinir a senha — ou apague o usuário, crie de novo (4a) e repita o 4b.
 | Ativação de convite falha com **"email rate limit exceeded"** | Consequência do mesmo **"Confirm email"** ligado: cada tentativa de cadastro tenta enviar um e-mail de confirmação (para um endereço sintético que não existe) e o limite de envios do plano Free esgota rápido | Desligue o **Confirm email** (passo 3) — sem ele, nenhum e-mail é enviado e o limite deixa de ser tocado. O contador do limite zera sozinho em cerca de 1 hora; depois disso as ativações voltam a funcionar. |
 | A pessoa da equipe tenta logar e vê o aviso de que **não foi cadastrada como staff** — ou entra e **não vê nada** | Faltou o INSERT do **passo 4b** (o login existe, mas não está marcado como equipe) | Rode o comando do **4b** com o e-mail exato da pessoa e faça login de novo. |
 | O site mostra erro **"Invalid API key"** | A chave colada no `env.js` está errada: era a `service_role`, veio incompleta, ou a URL/chave são de **outro projeto** | Refaça o **5a/5b**: copie a **anon public** (`eyJ...`) OU a **Publishable** (`sb_publishable_...`) inteira e a **Project URL** do MESMO projeto, cole com cuidado e faça o commit. |
-| A página **continua em modo demonstração** (dados de exemplo, `werkos.html` sem pedir login) | O `env.js` não foi salvo/commitado, o deploy não rodou, ou o navegador está com a versão antiga | Confira no GitHub que `assets/js/env.js` mostra os valores preenchidos; na **Vercel → Deployments**, veja se o deploy mais recente está **Ready**; recarregue com **Ctrl+Shift+R**. Conferência direta: abra `https://eurovix.vercel.app/assets/js/env.js` e veja se os valores aparecem preenchidos. |
+| A página **continua em modo demonstração** (dados de exemplo, `werkos.html` sem pedir login) | O `env.js` não foi salvo/commitado, o deploy não rodou, ou o navegador está com a versão antiga | Confira no GitHub que `assets/js/env.js` mostra os valores preenchidos; na **Vercel → Deployments**, veja se o deploy mais recente está **Ready**; recarregue com **Ctrl+Shift+R**. Conferência direta: abra `https://<seu-dominio>/assets/js/env.js` e veja se os valores aparecem preenchidos. |
 | **Dados antigos da demonstração** aparecem misturados na tela | É o cache local que sobrou da fase demo naquele navegador (não está no banco) | No WERK OS: **Configurações → "Limpar cache local"** (se a página ainda estiver em modo demo, o mesmo botão aparece como **"Resetar demo"**). Uma vez por navegador/dispositivo resolve. |
 | Depois de alguns dias sem usar, **nada conecta** / erro de rede | O projeto Free foi **pausado** por inatividade | Veja o **passo 7**: supabase.com → **Restore project** e aguarde alguns minutos. |
 | Cliente abre o link e vê **"Convite inválido"** | O link foi **cortado** no envio (cópia parcial, quebra no WhatsApp) — ou é um convite antigo da demonstração | No painel, menu **Clientes & Acesso** → **copiar link** de novo e envie o link **inteiro**. Convites da fase demo não valem na nuvem. |
