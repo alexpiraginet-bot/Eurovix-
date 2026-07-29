@@ -38,7 +38,9 @@ body.app-body{
 /* ---------- Login ---------- */
 .login-view{
   position:absolute;inset:0;z-index:50;overflow-y:auto;
-  display:flex;flex-direction:column;justify-content:center;gap:26px;
+  /* "safe center" e não "center": o cadastro do convite é mais alto que a tela e
+     centralizar puro corta o topo sem deixar rolar até ele. */
+  display:flex;flex-direction:column;justify-content:safe center;gap:26px;
   padding:44px 30px 40px;
   background:linear-gradient(180deg,var(--paper) 0%,var(--stage-2) 100%);
   transition:opacity .45s ease,visibility .45s;
