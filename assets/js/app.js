@@ -67,11 +67,36 @@
     const session = EVX.getSession();
     const autentico = !WERK.cloud || !!WERK.authUser(); // nuvem exige sessão auth válida
     if (session && session.telefone && autentico) enter(session);
-    else {
+    else if (session && session.telefone && WERK.cloud) {
+      // A nuvem estourou o prazo de abertura e ainda não sabe quem é. NÃO apagamos a
+      // sessão nem mandamos o cliente digitar senha de novo: mostramos o login e, se
+      // a autenticação chegar depois, entramos sozinhos.
+      loginView.classList.remove('hide');
+      esperarNuvem(session);
+    } else {
       if (session) EVX.clearSession(); // sessão antiga/expirada → login por telefone
       loginView.classList.remove('hide');
     }
   });
+
+  /* A nuvem demorou mais que o prazo do splash. Enquanto a pessoa olha o login,
+     seguimos ouvindo: quando a autenticação finalmente chega, o app entra sozinho.
+     Sem isso, quem já estava logado teria de digitar a senha por culpa da rede. */
+  function esperarNuvem(session) {
+    let entrou = false;
+    const tentar = () => {
+      if (entrou || !WERK.authUser()) return;
+      if (!loginView.classList.contains('hide')) {   // só se ainda não entrou na mão
+        entrou = true;
+        window.removeEventListener('evx:sync', tentar);
+        clearInterval(t);
+        enter(session);
+      }
+    };
+    window.addEventListener('evx:sync', tentar);
+    const t = setInterval(tentar, 1500);
+    setTimeout(() => { clearInterval(t); window.removeEventListener('evx:sync', tentar); }, 60000);
+  }
 
   /* ============================================================
      Login por telefone + senha · convite do check-in

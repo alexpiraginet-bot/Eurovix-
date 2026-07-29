@@ -1159,6 +1159,21 @@
 
   sortOS();
   sortAg();
-  adapter.ready = init().catch((e) => warn('init', e)); // ready SEMPRE resolve — hidratação é tolerante a erro
+  /* `ready` NUNCA pode ficar pendurado. init() espera a autenticação e a primeira
+     hidratação; quando a nuvem não responde (rede ruim, projeto pausado, DNS), essas
+     promessas ficam abertas e QUEM ESPERA MORRE NO SPLASH — o app do cliente não
+     abria de jeito nenhum. Agora o boot tem prazo: passou disso, resolve assim mesmo
+     e a tela aparece (login ou o que houver em cache). A hidratação continua em
+     segundo plano e, quando chegar, dispara evx:sync e as telas se redesenham. */
+  const BOOT_MS = 9000;
+  let bootResolvido = false;
+  const bootPronto = init().catch((e) => warn('init', e)).then(() => { bootResolvido = true; });
+  adapter.ready = Promise.race([
+    bootPronto,
+    new Promise((r) => setTimeout(() => {
+      if (!bootResolvido) { warn('init', 'nuvem não respondeu em ' + (BOOT_MS / 1000) + 's — abrindo com o que há no aparelho'); setOnline(false); }
+      r();
+    }, BOOT_MS)),
+  ]);
   window.WERK = adapter; // substitui o módulo local (werk-data.js declara `var WERK`)
 })();
