@@ -400,6 +400,20 @@
     return t ? WERK.getAllOS().filter(o => WERK.normTel(o.telefone) === t) : [];
   }
   const osAtivas = () => myOS().filter(o => o.status !== 'entregue');
+
+  /* Avarias registradas no check-in mais recente DESTE carro — é o que o app
+     ancora no modelo 3D real para o cliente ver onde estão. Só as que têm ponto
+     3D: as antigas (marcadas na silhueta, só com x/y) não têm onde se prender
+     na lataria, então ficam de fora do 3D e seguem no Termo impresso. */
+  function danosDoVeiculo(v) {
+    if (!v) return [];
+    const placa = WERK.normPlaca(v.placa || '');
+    const doCarro = myOS()
+      .filter(o => (v.vin && o.vin === v.vin) || (placa && WERK.normPlaca(o.placa || '') === placa))
+      .sort((a, b) => new Date(b.criada) - new Date(a.criada));
+    const ck = doCarro.length && doCarro[0].checkin;
+    return (ck && Array.isArray(ck.danos) ? ck.danos : []).filter(d => d && d.p3);
+  }
   const osConcluidas = () => myOS().filter(o => o.status === 'entregue');
 
   function osStateCls(o) {
@@ -538,9 +552,16 @@
     // Modelo 3D real: monta JÁ ao abrir a tela (autostart no embed) — o cliente
     // não precisa tocar. Nunca pode derrubar a tela já montada (try/catch).
     try {
-      if (v && window.WERK3D && WERK3D.embedReal && WERK3D.temModelo3D && WERK3D.temModelo3D(v.modelo)) {
+      if (v && window.WERK3D && WERK3D.temModelo3D && WERK3D.temModelo3D(v.modelo)) {
         const box = document.getElementById('twinReal');
-        if (box) WERK3D.embedReal(box, v.modelo);
+        // As avarias registradas no check-in aparecem ANCORADAS na lataria do
+        // modelo real — o cliente gira o próprio carro e vê onde estão. Só leitura.
+        if (box && WERK3D.montarReal) {
+          WERK3D.montarReal(box, v.modelo, {
+            danos: danosDoVeiculo(v),
+            onFalha: () => { try { WERK3D.embedReal(box, v.modelo); } catch (_) {} },
+          });
+        } else if (box && WERK3D.embedReal) { WERK3D.embedReal(box, v.modelo); }
       }
     } catch (e) { console.error('modelo 3D real falhou (segue sem ele)', e); }
     bindCommon($('[data-view="inicio"]'));
