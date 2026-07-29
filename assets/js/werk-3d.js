@@ -1,5 +1,5 @@
 /* ============================================================
-   EUROVIX · WERK OS — carro 3D interativo de avarias
+   LexOS · WERK OS — carro 3D interativo de avarias
    ------------------------------------------------------------
    Visualizador 3D 100% próprio (CSS 3D transforms, sem nenhuma
    biblioteca externa). Arraste para girar, pinça/scroll p/ zoom.

@@ -1,5 +1,5 @@
 /* ============================================================
-   EUROVIX · Gêmeo Digital 3D (Three.js r128 UMD)
+   LexOS · Gêmeo Digital 3D (Three.js r128 UMD)
    Cupê estilizado em estúdio dark com hotspots de DVI ligados
    à saúde real do veículo. API: EVXTwin.mount(sel, opts)
    opts = { saude:{oleo,freios,pneus,bateria}, modelo, compact }

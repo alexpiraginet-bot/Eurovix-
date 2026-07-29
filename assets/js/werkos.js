@@ -1,5 +1,5 @@
 /* ============================================================
-   EUROVIX · WERK OS — painel da oficina
+   LexOS · WERK OS — painel da oficina
    Kanban · Check-in · OS/DVI · Orçamento · QC · Checkout ·
    Veículos/Prontuário · Motor de Peças · Gestão · Config
    ============================================================ */
@@ -2254,7 +2254,7 @@
         <h3>＋ Novo colaborador</h3>
         <div class="wk-grid2">
           <div class="wfield"><label>Nome completo</label><input id="eq-nome" placeholder="Ex.: Paulo Ferreira"></div>
-          <div class="wfield"><label>E-mail (será o login)</label><input id="eq-email" type="email" placeholder="paulo@eurovix.com.br" autocomplete="off"></div>
+          <div class="wfield"><label>E-mail (será o login)</label><input id="eq-email" type="email" placeholder="nome@suaoficina.com.br" autocomplete="off"></div>
         </div>
         <div class="wk-grid2" style="margin-top:12px">
           <div class="wfield"><label>Senha provisória (mín. 6)</label>

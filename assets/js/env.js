@@ -1,5 +1,5 @@
 /* ============================================================
-   EUROVIX · env.js — credenciais públicas do Supabase (produção)
+   LexOS · env.js — credenciais públicas do Supabase (produção)
    ------------------------------------------------------------
    Este arquivo é COMMITADO DE PROPÓSITO. A "anon key" do Supabase
    é pública por design: ela identifica o projeto, mas quem protege

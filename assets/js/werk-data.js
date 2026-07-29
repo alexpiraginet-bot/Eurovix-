@@ -1,5 +1,5 @@
 /* ============================================================
-   EUROVIX · WERK OS — camada de dados
+   LexOS · WERK OS — camada de dados
    Modelo operacional completo da oficina sobre localStorage.
    Em produção, cada bloco marcado [API] é substituído pela
    integração real (Supabase/Postgres, PartsLink24, TecDoc,

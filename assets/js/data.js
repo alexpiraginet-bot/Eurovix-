@@ -1,5 +1,5 @@
 /* ============================================================
-   EUROVIX · Dados compartilhados (demo)
+   LexOS · Dados compartilhados (demo)
    Catálogo de serviços, veículos e ordens de serviço usados
    pelo site, pelo fluxo de agendamento e pelo app do cliente.
    Persistência local via localStorage (chaves EVX.*).
@@ -84,7 +84,7 @@ const EVX = (() => {
   /* ---------- Conta demo do app ---------- */
   const DEMO_USER = {
     nome: 'Ricardo Almeida',
-    email: 'demo@eurovix.com.br',
+    email: 'demo@lexos.app',
     telefone: '(27) 99900-0000',
     cliente_desde: 2021,
   };

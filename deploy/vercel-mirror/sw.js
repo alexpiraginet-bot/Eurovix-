@@ -1,5 +1,5 @@
 /* ============================================================
-   EUROVIX · mirror de publicação (Vercel)
+   LexOS · mirror de publicação (Vercel)
    Service Worker que serve o ecossistema inteiro direto do
    GitHub (raw) com os content-types corretos, mesma origem.
    Cada push no branch atualiza o site publicado.

@@ -1,5 +1,5 @@
 /* ============================================================
-   EUROVIX · WERK OS — documentos exportáveis (PDF via print)
+   LexOS · WERK OS — documentos exportáveis (PDF via print)
    ?tipo=termo|dvi|orcamento|os|fatura|garantia & os=N
    ?tipo=prontuario & vin=V
    ============================================================ */

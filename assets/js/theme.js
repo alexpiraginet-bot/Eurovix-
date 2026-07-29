@@ -1,5 +1,5 @@
 /* ============================================================
-   EUROVIX · Tema + push flutuante (horário)
+   LexOS · Tema + push flutuante (horário)
    - Tema ÚNICO escuro (black + midnight) em todo o sistema;
      não há alternador — dark é sempre aplicado e persistido.
    - Horário oficial (Google Business da EUROVIX):
