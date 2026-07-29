@@ -27,6 +27,7 @@
   };
   function renderBrand() {
     let m = {}; try { m = (WERK.marca && WERK.marca()) || {}; } catch (_) {}
+    try { if (WERK.aplicarTemaMarca) WERK.aplicarTemaMarca(m); } catch (_) {}
     const logo = m.logo || null;
     $$('.js-brand-logo').forEach(img => {
       const holder = img.parentElement;

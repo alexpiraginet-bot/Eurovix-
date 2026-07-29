@@ -11,7 +11,12 @@
 
 .app-shell{
   /* tokens da camada de vidro */
-  --lq-accent:#0A84FF;          /* azul do sistema (dark) */
+  /* Acento do vidro. Padrão = azul do sistema (dark). A oficina que tiver cor
+     própria sobrescreve estas quatro no .app-shell (WERK.aplicarTemaMarca) e o
+     app inteiro — botões, brilhos, refração do fundo — vem junto. O -rgb existe
+     porque os brilhos precisam da cor em canais para variar só a opacidade. */
+  --lq-accent:#0A84FF;
+  --lq-accent-rgb:10,132,255;
   --lq-accent-2:#4AA3FF;
   --lq-accent-grad:linear-gradient(180deg,#3B9BFF 0%,#0A84FF 100%);
   --lq-glass:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.022));
@@ -25,7 +30,7 @@
   --lq-font:-apple-system,'SF Pro Text','SF Pro Display',system-ui,'Inter',Segoe UI,Roboto,sans-serif;
   /* fundo ambiente: azul-quase-preto com brilho de acento p/ o vidro refratar */
   background:
-    radial-gradient(130% 80% at 50% -8%, rgba(10,132,255,.20), transparent 58%),
+    radial-gradient(130% 80% at 50% -8%, rgba(var(--lq-accent-rgb),.20), transparent 58%),
     radial-gradient(120% 60% at 100% 100%, rgba(94,92,230,.14), transparent 60%),
     linear-gradient(180deg,#0a0e16 0%,#070a11 55%,#05070c 100%);
   font-family:var(--lq-font);
@@ -80,7 +85,7 @@
 /* Cartão do veículo — herói: mais presença, faixa de acento em gradiente */
 .app-shell .vehicle-card{
   background:
-    radial-gradient(120% 90% at 90% 0%, rgba(10,132,255,.12), transparent 55%),
+    radial-gradient(120% 90% at 90% 0%, rgba(var(--lq-accent-rgb),.12), transparent 55%),
     var(--lq-glass-strong);
   border-radius:var(--lq-r-lg);
   box-shadow:var(--lq-elev),var(--lq-hair-top);
@@ -107,7 +112,7 @@
   transition:transform .18s var(--lq-spring),border-color .18s,background .18s,box-shadow .18s;
 }
 .app-shell .os-card:active,.app-shell .svc-tile:active{transform:scale(.985)}
-.app-shell .os-card:hover,.app-shell .svc-tile:hover{border-color:rgba(10,132,255,.5);box-shadow:var(--lq-elev-sm),var(--lq-hair-top)}
+.app-shell .os-card:hover,.app-shell .svc-tile:hover{border-color:rgba(var(--lq-accent-rgb),.5);box-shadow:var(--lq-elev-sm),var(--lq-hair-top)}
 .app-shell .plist .prow:hover{background:rgba(255,255,255,.04)}
 .app-shell .plist .prow:active{background:rgba(255,255,255,.07)}
 
@@ -115,14 +120,14 @@
 .app-shell .svc-tile .ico-wrap,
 .app-shell .appt-date,
 .app-shell .notif .n-ico{
-  background:linear-gradient(180deg,rgba(10,132,255,.24),rgba(10,132,255,.10));
-  border:1px solid rgba(10,132,255,.24);color:var(--lq-accent-2);
+  background:linear-gradient(180deg,rgba(var(--lq-accent-rgb),.24),rgba(var(--lq-accent-rgb),.10));
+  border:1px solid rgba(var(--lq-accent-rgb),.24);color:var(--lq-accent-2);
 }
 .app-shell .appt-date b,.app-shell .appt-date span{color:var(--lq-accent-2)}
 
 /* Badges de status */
 .app-shell .os-badge{border-radius:999px;padding:5px 10px}
-.app-shell .os-badge.approve{background:rgba(10,132,255,.16);color:var(--lq-accent-2)}
+.app-shell .os-badge.approve{background:rgba(var(--lq-accent-rgb),.16);color:var(--lq-accent-2)}
 
 /* ---------- Botões primários: azul vibrante com brilho ---------- */
 .app-shell .btn-primary,
@@ -130,11 +135,11 @@
 .app-shell .approve-box .btn.btn-primary{
   background:var(--lq-accent-grad);
   border:none;border-radius:14px;color:#fff;font-weight:600;letter-spacing:-.01em;
-  box-shadow:0 8px 22px rgba(10,132,255,.42),inset 0 1px 0 rgba(255,255,255,.35);
+  box-shadow:0 8px 22px rgba(var(--lq-accent-rgb),.42),inset 0 1px 0 rgba(255,255,255,.35);
   transition:transform .16s var(--lq-spring),box-shadow .18s,filter .18s;
 }
 .app-shell .btn-primary:hover{filter:brightness(1.06)}
-.app-shell .btn-primary:active{transform:scale(.97);box-shadow:0 4px 14px rgba(10,132,255,.4),inset 0 1px 0 rgba(255,255,255,.3)}
+.app-shell .btn-primary:active{transform:scale(.97);box-shadow:0 4px 14px rgba(var(--lq-accent-rgb),.4),inset 0 1px 0 rgba(255,255,255,.3)}
 /* Botões secundários / switch — vidro */
 .app-shell .btn.btn-secondary,
 .app-shell .vc-switch,
@@ -162,8 +167,8 @@
 .app-shell .tab.on::before{
   content:"";position:absolute;inset:0;top:auto;left:0;transform:none;
   width:100%;height:100%;border-radius:16px;
-  background:linear-gradient(180deg,rgba(10,132,255,.34),rgba(10,132,255,.16));
-  border:1px solid rgba(10,132,255,.4);z-index:-1;
+  background:linear-gradient(180deg,rgba(var(--lq-accent-rgb),.34),rgba(var(--lq-accent-rgb),.16));
+  border:1px solid rgba(var(--lq-accent-rgb),.4);z-index:-1;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.2);
 }
 

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Auto Union Premium">
+  <!-- Ícone do app (PWA). Monograma "AU": o arco vermelho é o A, o U âmbar
+       se encaixa por baixo — os dois entrelaçados sobre chapa grafite. -->
+  <defs>
+    <linearGradient id="au-chapa" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A2925"/>
+      <stop offset="1" stop-color="#15150F"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#au-chapa)"/>
+  <rect x="6" y="6" width="500" height="500" rx="107" fill="none" stroke="#4A473E" stroke-width="5"/>
+  <g transform="translate(90,122) scale(0.861)">
+    <g transform="translate(76,92) rotate(180,155,110)">
+      <path d="M45,220 L45,45 L265,45 L265,220" fill="none" stroke="#12120F" stroke-width="108" stroke-linejoin="round"/>
+      <path d="M45,220 L45,45 L265,45 L265,220" fill="none" stroke="#F1BC45" stroke-width="90" stroke-linejoin="round"/>
+    </g>
+    <path d="M45,220 L45,45 L265,45 L265,220" fill="none" stroke="#12120F" stroke-width="108" stroke-linejoin="round"/>
+    <path d="M45,220 L45,45 L265,45 L265,220" fill="none" stroke="#C23233" stroke-width="90" stroke-linejoin="round"/>
+  </g>
+</svg>

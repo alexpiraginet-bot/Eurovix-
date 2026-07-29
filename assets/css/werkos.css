@@ -3,19 +3,28 @@
    ============================================================ */
 
 body.werk-body{
-  /* Identidade da PLATAFORMA: azul LexOS (não o vermelho EUROVIX). O produto é
-     LexOS; a marca do cliente entra por logo/nome (white-label), não na cor-chave. */
+  /* Cor de ação do painel. PADRÃO = azul LexOS: oficina sem cor configurada vê
+     a identidade da plataforma. Quem informa a cor da própria marca em
+     Configurações sobrescreve estas variáveis (WERK.aplicarTemaMarca) e o painel
+     inteiro acompanha — o -rgb existe porque brilhos e realces precisam da cor
+     em canais para variar só a opacidade. */
+  --wk-acento-rgb:59,134,242;
   --red:#3B86F2; --red-dark:#2E7BEE;
-  --red-soft:rgba(59,134,242,.14); --red-border:rgba(59,134,242,.42);
-  --wk-on:#8FBEFF; /* texto de item ativo (antes vermelho) */
+  --red-soft:rgba(var(--wk-acento-rgb),.14); --red-border:rgba(var(--wk-acento-rgb),.42);
+  --wk-on:#8FBEFF; /* texto de item ativo */
+  /* Severidade é SEMÂNTICA, não marca: crítico tem que ler como crítico mesmo
+     numa oficina cuja cor seja verde ou âmbar. Fica fora do white-label. */
+  --sev-critico:#E5484D;
+  --sev-critico-soft:rgba(229,72,77,.14);
+  --sev-critico-border:rgba(229,72,77,.42);
   background:var(--wk-bg,#07090C);
   display:grid;grid-template-columns:232px 1fr;
   min-height:100vh;
 }
 /* o glow do .btn-primary é hardcoded em vermelho no tokens.css — reescreve p/ azul
    só no painel (a land EUROVIX segue vermelha) */
-body.werk-body .btn-primary{box-shadow:0 10px 26px rgba(59,134,242,.32)}
-body.werk-body .btn-primary:hover{box-shadow:0 14px 32px rgba(59,134,242,.42)}
+body.werk-body .btn-primary{box-shadow:0 10px 26px rgba(var(--wk-acento-rgb),.32)}
+body.werk-body .btn-primary:hover{box-shadow:0 14px 32px rgba(var(--wk-acento-rgb),.42)}
 
 /* ---------- Sidebar ---------- */
 .wk-side{
@@ -91,7 +100,7 @@ body.werk-body .btn-primary:hover{box-shadow:0 14px 32px rgba(59,134,242,.42)}
 .kcard .ktec{font-size:9.5px;color:var(--txt-3)}
 .sev-pills{display:flex;gap:4px}
 .sev{width:9px;height:9px;border-radius:50%}
-.sev.critico{background:var(--red)}
+.sev.critico{background:var(--sev-critico)}
 .sev.preventivo{background:var(--warn)}
 .sev.ok{background:var(--ok)}
 
@@ -122,7 +131,7 @@ body.werk-body .btn-primary:hover{box-shadow:0 14px 32px rgba(59,134,242,.42)}
 }
 .wfield .hintline{font-size:10.5px;color:var(--txt-3);margin-top:5px}
 .wfield .hintline.ok{color:var(--ok)}
-.wfield .hintline.err{color:var(--wk-on)}
+.wfield .hintline.err{color:var(--sev-critico)}
 
 /* ---------- Wizard check-in ---------- */
 .wsteps{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
@@ -148,7 +157,7 @@ body.werk-body .btn-primary:hover{box-shadow:0 14px 32px rgba(59,134,242,.42)}
   position:absolute;width:22px;height:22px;border-radius:50%;transform:translate(-50%,-50%);
   background:var(--red);color:#fff;font-size:11px;font-weight:800;
   display:flex;align-items:center;justify-content:center;
-  border:2px solid #fff3;box-shadow:0 4px 14px rgba(59,134,242,.5);
+  border:2px solid #fff3;box-shadow:0 4px 14px rgba(var(--wk-acento-rgb),.5);
 }
 .dlist{display:grid;gap:7px;margin-top:10px}
 .dlist .drow{display:flex;gap:9px;align-items:center;font-size:12px;color:var(--txt-2)}
@@ -218,7 +227,7 @@ body.werk-body .btn-primary:hover{box-shadow:0 14px 32px rgba(59,134,242,.42)}
 .diag-item .di-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .diag-item .di-head b{font-family:var(--font-display);font-size:13.5px;flex:1}
 .sev-badge{font-family:var(--font-display);font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:7px}
-.sev-badge.critico{background:var(--red-soft);color:var(--wk-on);border:1px solid var(--red-border)}
+.sev-badge.critico{background:var(--sev-critico-soft);color:var(--sev-critico);border:1px solid var(--sev-critico-border)}
 .sev-badge.preventivo{background:var(--warn-soft);color:var(--warn);border:1px solid rgba(217,162,27,.4)}
 .sev-badge.ok{background:var(--ok-soft);color:var(--ok);border:1px solid rgba(49,168,95,.4)}
 .ap-badge{font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:7px;font-family:var(--font-display)}
@@ -234,7 +243,7 @@ body.werk-body .btn-primary:hover{box-shadow:0 14px 32px rgba(59,134,242,.42)}
 .lvl-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
 .lvl-table th{font-family:var(--font-display);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-3);text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
 .lvl-table td{padding:8px;border-bottom:1px solid var(--line);color:var(--txt-2)}
-.lvl-table tr.sel td{background:rgba(59,134,242,.08);color:var(--txt)}
+.lvl-table tr.sel td{background:rgba(var(--wk-acento-rgb),.08);color:var(--txt)}
 .lvl-table .pr{font-family:var(--font-display);font-weight:700;color:var(--txt)}
 .quote-btn{background:none;border:1px solid var(--line-strong);color:var(--txt-2);border-radius:7px;font-size:10px;padding:4px 9px;cursor:pointer}
 .quote-btn:hover{border-color:var(--blue-light);color:var(--blue-light)}
@@ -434,7 +443,7 @@ html[data-theme="light"] .kcard:hover{border-color:var(--red-border)}
 .ck-rascunho b{color:var(--txt);font-family:var(--font-display);margin-right:6px}
 .ck-rascunho .btn{padding:8px 14px;font-size:11.5px}
 
-.ck-ia-panel{border-color:var(--red-border);box-shadow:0 0 0 1px rgba(59,134,242,.14) inset}
+.ck-ia-panel{border-color:var(--red-border);box-shadow:0 0 0 1px rgba(var(--wk-acento-rgb),.14) inset}
 .ck-ia-panel h3{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .ck-ia-badge{font-family:ui-monospace,'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--wk-on);background:var(--red-soft);border:1px solid var(--red-border);border-radius:20px;padding:3px 10px;font-weight:700}
@@ -512,7 +521,7 @@ html[data-theme="light"] .kcard:hover{border-color:var(--red-border)}
   margin:0 0 2px;padding:12px 18px;background:linear-gradient(90deg,var(--red-soft),transparent);
   border:1px solid var(--red-border);border-bottom:0;text-decoration:none;color:var(--txt);font-size:13px}
 .wk-setup-banner[hidden]{display:none}
-.wk-setup-banner:hover{background:linear-gradient(90deg,rgba(59,134,242,.2),transparent)}
+.wk-setup-banner:hover{background:linear-gradient(90deg,rgba(var(--wk-acento-rgb),.2),transparent)}
 .wk-setup-banner b{color:var(--txt)}
 .wk-setup-cta{flex:none;font-weight:800;color:var(--red);white-space:nowrap}
 .wk-idbrand{display:flex;gap:18px;flex-wrap:wrap}

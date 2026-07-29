@@ -15,6 +15,7 @@
 
   const header = (titulo, sub) => {
     const m = (WERK.marca && WERK.marca()) || cfg.oficina || {};
+    try { if (WERK.aplicarTemaMarca) WERK.aplicarTemaMarca(m); } catch (_) {}
     const brand = m.logoDoc
       ? `<img src="${m.logoDoc}" alt="${m.nome || ''}" style="height:46px;width:auto">`
       : `<b style="font-size:22px;font-weight:800;letter-spacing:.01em;color:#0A0A0A">${m.nome || m.displayNome || 'Sua oficina'}</b>`;
