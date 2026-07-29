@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 212" width="880" height="212" role="img" aria-label="Auto Union Premium — Porsche &amp; Audi">
+  <!-- Lockup horizontal para fundos escuros (login e cabeçalho do app/painel).
+       Monograma "AU" entrelaçado: o arco vermelho é o A, o U âmbar encaixa por
+       baixo. O texto usa textLength para que a largura do lockup não dependa da
+       fonte instalada no aparelho. -->
+  <defs>
+    <linearGradient id="aul-cromo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0"    stop-color="#FFFFFF"/>
+      <stop offset="0.48" stop-color="#DCE1E8"/>
+      <stop offset="0.52" stop-color="#9AA3AE"/>
+      <stop offset="1"    stop-color="#EFF2F6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Monograma -->
+  <g transform="translate(30,23) scale(0.52)">
+    <g stroke="#4A473E" stroke-width="8" fill="#1C1B18">
+      <rect x="-26" y="-26" width="362" height="272" rx="46"/>
+      <rect x="50"  y="66"  width="362" height="272" rx="46"/>
+    </g>
+    <g fill="#1C1B18">
+      <rect x="-26" y="-26" width="362" height="272" rx="46"/>
+      <rect x="50"  y="66"  width="362" height="272" rx="46"/>
+    </g>
+    <g transform="translate(76,92) rotate(180,155,110)">
+      <path d="M45,220 L45,45 L265,45 L265,220" fill="none" stroke="#12120F" stroke-width="106" stroke-linejoin="round"/>
+      <path d="M45,220 L45,45 L265,45 L265,220" fill="none" stroke="#F1BC45" stroke-width="90" stroke-linejoin="round"/>
+    </g>
+    <path d="M45,220 L45,45 L265,45 L265,220" fill="none" stroke="#12120F" stroke-width="106" stroke-linejoin="round"/>
+    <path d="M45,220 L45,45 L265,45 L265,220" fill="none" stroke="#C23233" stroke-width="90" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Assinatura -->
+  <g transform="translate(292,0)" font-family="'Arial Black','Helvetica Neue',Impact,system-ui,sans-serif">
+    <g transform="skewX(-11)">
+      <text x="20" y="110" textLength="520" lengthAdjust="spacingAndGlyphs"
+            font-size="94" font-weight="900" letter-spacing="2"
+            fill="url(#aul-cromo)" stroke="#6E7681" stroke-width="1.5">AUTO UNION</text>
+    </g>
+    <text x="4" y="170" textLength="186" lengthAdjust="spacingAndGlyphs"
+          font-size="38" font-weight="900" letter-spacing="6" fill="#D9453F">PREMIUM</text>
+    <text x="212" y="168" textLength="300" lengthAdjust="spacingAndGlyphs"
+          font-size="26" font-weight="700" letter-spacing="5" fill="#8B93A0"
+          font-family="system-ui,-apple-system,'Segoe UI',sans-serif">PORSCHE &amp; AUDI</text>
+  </g>
+</svg>

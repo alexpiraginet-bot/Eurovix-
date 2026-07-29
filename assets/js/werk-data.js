@@ -29,7 +29,9 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     config: KB + '.config',
     agendamentos: KB + '.agendamentos',
     seedv: KB + '.seed.v1',
+    seedv2: KB + '.seed.v2',
     seedAgenda: KB + '.seed.agenda.v1',
+    seedAgenda2: KB + '.seed.agenda.v2',
     seq: KB + '.seq',
   };
 
@@ -236,6 +238,8 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
       logo: null,      // fundo escuro (painel/app do cliente)
       logoDoc: null,   // fundo claro (documentos impressos)
       icon: null,      // símbolo quadrado — vira o ícone do app instalado (PWA)
+      cor: null,       // cor de ação da oficina (#RRGGBB). Vazio = azul LexOS.
+      corDark: null,   // variante para o tema escuro; vazio = derivada de `cor`.
     },
     tecnicos: [
       { id: 't1', nome: 'Régis Souza',  espec: 'Motor / Powertrain' },
@@ -257,7 +261,112 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
   function marca() {
     const o = getConfig().oficina || {};
     const nome = (o.nome || '').trim();
-    return { ...o, nome, displayNome: nome || 'Sua oficina', temLogo: !!o.logo, temLogoDoc: !!o.logoDoc, temIcon: !!o.icon, configurada: !!(nome && o.logo) };
+    return { ...o, nome, displayNome: nome || 'Sua oficina', temLogo: !!o.logo, temLogoDoc: !!o.logoDoc, temIcon: !!o.icon, temCor: !!hexRGB(o.cor), configurada: !!(nome && o.logo) };
+  }
+
+  /* ---------- Cor de ação por oficina (white-label) ----------
+     Os componentes de todas as superfícies já leem --bmw (e --red/--blue são
+     apelidos dele em tokens.css). Então trocar esse punhado de variáveis veste
+     o sistema inteiro com a cor da oficina — sem tocar em CSS de componente.
+     Sem cor configurada, remove as variáveis e o azul LexOS volta: produção de
+     quem não configurou cor nenhuma continua exatamente como está. */
+  function hexRGB(h) {
+    let s = String(h || '').trim().replace(/^#/, '');
+    if (/^[0-9a-f]{3}$/i.test(s)) s = s.split('').map(c => c + c).join('');
+    if (!/^[0-9a-f]{6}$/i.test(s)) return null;
+    const n = parseInt(s, 16);
+    return [n >> 16 & 255, n >> 8 & 255, n & 255];
+  }
+  const hexOut = (r, g, b) => '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+  function misturar(a, b, t) {           // t=0 → a · t=1 → b
+    const A = hexRGB(a), B = hexRGB(b);
+    if (!A || !B) return a;
+    return hexOut(A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t);
+  }
+  function corAlfa(h, a) { const c = hexRGB(h); return c ? `rgba(${c[0]},${c[1]},${c[2]},${a})` : h; }
+
+  // Luminância relativa e contraste (WCAG 2.1) — usados para derivar a variante
+  // escura de forma que a cor da oficina continue LEGÍVEL, e não só bonita.
+  function luminancia(h) {
+    const c = hexRGB(h); if (!c) return 0;
+    const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+  }
+  function contraste(a, b) {
+    const A = luminancia(a), B = luminancia(b);
+    return (Math.max(A, B) + 0.05) / (Math.min(A, B) + 0.05);
+  }
+  /* Variante para o tema escuro quando a oficina não informou uma.
+     Clareia em passos até a cor destacar do fundo preto (4,5:1), mas para antes
+     de ficar clara demais para levar texto branco por cima — as duas coisas
+     puxam para lados opostos e o ponto de equilíbrio fica perto de 4,4:1 nas duas. */
+  function variantePraEscuro(cor) {
+    const FUNDO = '#0A0C10';
+    let c = cor;
+    for (let i = 0; i < 14 && contraste(c, FUNDO) < 4.5; i++) {
+      const proxima = misturar(c, '#FFFFFF', 0.07);
+      if (contraste(proxima, '#FFFFFF') < 4.1) break;   // texto branco no botão viraria papa
+      c = proxima;
+    }
+    return c;
+  }
+
+  const VARS_MARCA = ['--bmw', '--bmw-dark', '--bmw-soft', '--bmw-border',
+    '--red', '--red-dark', '--red-soft', '--red-border', '--wk-on', '--wk-acento-rgb'];
+  const VARS_VIDRO = ['--lq-accent', '--lq-accent-2', '--lq-accent-grad', '--lq-accent-rgb'];
+  let observandoTema = false;
+
+  function aplicarTemaMarca(m) {
+    const alvo = document.body;
+    if (!alvo) return;
+    const vidroEl = document.querySelector('.app-shell');
+    const cor = hexRGB((m && m.cor) || '') ? m.cor : null;
+    if (!cor) {
+      VARS_MARCA.forEach(v => alvo.style.removeProperty(v));
+      if (vidroEl) VARS_VIDRO.forEach(v => vidroEl.style.removeProperty(v));
+      return;
+    }
+
+    const escuro = document.documentElement.getAttribute('data-theme') === 'dark';
+    // No escuro a cor precisa clarear para manter contraste sobre fundo preto;
+    // no claro ela vale como está e a variante forte é a versão fechada.
+    const base  = escuro ? (hexRGB(m.corDark) ? m.corDark : variantePraEscuro(cor)) : cor;
+    const forte = escuro ? cor : misturar(cor, '#000000', 0.22);
+    alvo.style.setProperty('--bmw', base);
+    alvo.style.setProperty('--bmw-dark', forte);
+    alvo.style.setProperty('--bmw-soft', escuro ? corAlfa(base, 0.16) : misturar(cor, '#FFFFFF', 0.90));
+    alvo.style.setProperty('--bmw-border', escuro ? corAlfa(base, 0.4) : misturar(cor, '#FFFFFF', 0.62));
+
+    // O painel da oficina usa --red como cor de ação (azul LexOS por padrão).
+    // Quem tem cor de marca veste o painel também — era o pedido: o sistema
+    // inteiro na cor da empresa, não só as telas que o cliente final vê.
+    alvo.style.setProperty('--red', base);
+    alvo.style.setProperty('--red-dark', forte);
+    alvo.style.setProperty('--red-soft', escuro ? corAlfa(base, 0.14) : misturar(cor, '#FFFFFF', 0.90));
+    alvo.style.setProperty('--red-border', corAlfa(base, 0.42));
+    alvo.style.setProperty('--wk-on', misturar(base, '#FFFFFF', 0.45));
+    const canais = hexRGB(base);
+    if (canais) alvo.style.setProperty('--wk-acento-rgb', canais.join(','));
+
+    // O app do cliente roda sobre a camada "Liquid Glass", que tem acento próprio
+    // (azul do sistema iOS) declarado no .app-shell — mais específico que o body.
+    // Sem sobrescrever ali, os botões e os brilhos do vidro ficavam azuis com o
+    // resto do sistema já na cor da oficina.
+    if (vidroEl) {
+      const claro = misturar(base, '#FFFFFF', 0.18);
+      vidroEl.style.setProperty('--lq-accent', base);
+      vidroEl.style.setProperty('--lq-accent-2', claro);
+      vidroEl.style.setProperty('--lq-accent-grad', `linear-gradient(180deg,${claro} 0%,${base} 100%)`);
+      if (canais) vidroEl.style.setProperty('--lq-accent-rgb', canais.join(','));
+    }
+
+    // O alternador claro/escuro troca data-theme no <html>: reaplica sozinho,
+    // senão a cor ficaria calculada para o tema anterior.
+    if (!observandoTema && window.MutationObserver) {
+      observandoTema = true;
+      new MutationObserver(() => aplicarTemaMarca(marca()))
+        .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    }
   }
 
   const getVehicles = () => read(KEYS.vehicles, []);
@@ -660,6 +769,218 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     // seq segue do 1259
     write(KEYS.seq, 1259);
     write(KEYS.seedv, true);
+  }
+
+  /* ---------- Segunda leva da demonstração ----------
+     Mais clientes, mais carros e OS em TODAS as etapas do quadro — uma oficina
+     com movimento de verdade, não três cards. Guarda própria (seed.v2), então
+     roda também em navegadores que já abriram a demo antes desta leva existir.
+     Só toca no que ainda não existe: veículo é upsert por VIN e cada OS nasce
+     uma vez só, atrás da mesma chave. */
+  function seed2() {
+    if (read(KEYS.seedv2, false)) return;
+    const cfg = getConfig();
+    const h = (n) => new Date(Date.now() - n * 3600e3).toISOString();
+    const dias = (n) => new Date(Date.now() - n * 24 * 3600e3).toISOString();
+
+    const carro = (vin9, resto, extra) => {
+      const vin = fixVIN(vin9 + resto);
+      const v = { vin, ...decodeVIN(vin), ...extra };
+      upsertVehicle(v);
+      return v;
+    };
+
+    // Frota — as seis famílias Porsche/Audi que o decodificador conhece
+    const F = {
+      p911a:  carro('WP0ZZZ99Z', 'NS220841', { placa: 'PVE-1C09', cor: 'Prata GT',        km: 18400, cliente: 'Eduardo Nakamura',  telefone: '(27) 99655-7788', cofre: ['Manual do proprietário.pdf', 'Certificado de originalidade.pdf'] }),
+      p911b:  carro('WP0ZZZ99Z', 'PS114520', { placa: 'QNC-2R47', cor: 'Azul Gentian',    km: 9700,  cliente: 'Henrique Vasques',  telefone: '(27) 99871-3300', cofre: [] }),
+      cay:    carro('WP1BB2AY9', 'PLA33107', { placa: 'QRA-6H72', cor: 'Preto Jet',       km: 34900, cliente: 'Eduardo Nakamura',  telefone: '(27) 99655-7788', cofre: ['Nota da carga rápida.pdf'] }),
+      cay2:   carro('WP1BB2AY9', 'PLB70255', { placa: 'SDL-7K21', cor: 'Cinza Quartzo',   km: 52100, cliente: 'Otávio Bandeira',   telefone: '(27) 99404-2211', cofre: [] }),
+      macan2: carro('WP1AB2A50', 'NL209663', { placa: 'RXP-5M84', cor: 'Branco Carrara',  km: 71800, cliente: 'Camila Prado',      telefone: '(27) 98330-9911', cofre: ['Laudo cautelar 2025.pdf'] }),
+      q5b:    carro('WA1CBAFY7', 'P2118094', { placa: 'RUX-8C33', cor: 'Cinza Daytona',   km: 28600, cliente: 'Juliana Freire',    telefone: '(27) 98876-1122', cofre: [] }),
+      a4b:    carro('WAUZZZF40', 'MA307742', { placa: 'SBC-4A18', cor: 'Preto Mythos',    km: 44300, cliente: 'Ana Beatriz Rocha', telefone: '(27) 99123-4567', cofre: ['Manual do proprietário.pdf'] }),
+      rs3:    carro('TRUZZZ8Y0', 'R1044918', { placa: 'RTB-3J55', cor: 'Verde Kyalami',   km: 12900, cliente: 'Fernanda Salles',   telefone: '(27) 98120-4455', cofre: ['Termo de garantia estendida.pdf'] }),
+    };
+
+    // Abre uma OS já posicionada numa etapa do quadro
+    const abrir = (v, d, ajuste) => {
+      const os = novaOS({
+        vin: v.vin, veiculo: v.modelo, placa: v.placa, cliente: v.cliente, telefone: v.telefone,
+        sintoma: d.sintoma, tecnico: d.tecnico, ator: 'Paulo Victor de Almeida',
+        checkin: { ts: d.entrada, odometro: v.km, combustivel: d.comb || 50, itens: { documento: true, chaveReserva: !!d.chave2, triangulo: true, macaco: true, estepe: !!d.estepe }, luzes: d.luzes || [], danos: d.danos || [], fotos: d.fotos || 8, assinatura: true },
+      });
+      updateOS(os.numero, (o) => { o.criada = d.entrada; o.status = d.status; ajuste(o); });
+      return os;
+    };
+    const it = (o, dados) => novoItem(o, { midia: 'demo', ...dados }, cfg);
+    const ev = (o, ts, tipo, titulo, desc, ator) => o.eventos.push({ ts, tipo, titulo, desc, ator });
+
+    /* fila — acabou de entrar, ninguém olhou ainda */
+    abrir(F.p911a, {
+      sintoma: 'Revisão dos 20.000 km. Cliente relata ruído metálico leve na dianteira em piso irregular.',
+      tecnico: '', entrada: h(3), comb: 70, chave2: true, estepe: false, status: 'fila', fotos: 10,
+      danos: [{ x: 34, y: 63, nota: 'Micro-risco na saia dianteira esq.' }],
+    }, () => {});
+
+    /* diagnóstico — no elevador agora */
+    abrir(F.rs3, {
+      sintoma: 'Trancos na troca da 2ª para a 3ª quando frio. Some depois de alguns quilômetros.',
+      tecnico: 'Paula Freitas', entrada: h(9), comb: 45, chave2: true, estepe: true, status: 'diagnostico',
+      luzes: ['Nenhuma acesa no momento'],
+    }, (o) => {
+      o.dtcs = ['P189C — Embreagem 1: adaptação fora de faixa', 'P0741 — Conversor de torque: desempenho'];
+      ev(o, h(7), 'status', 'Diagnóstico', 'Leitura completa do S tronic. Adaptação em andamento.', 'Paula Freitas');
+    });
+
+    /* aguardando aprovação — orçamento no colo do cliente */
+    abrir(F.q5b, {
+      sintoma: 'Batida seca no quebra-molas, só do lado direito.',
+      tecnico: 'Diego Ramos', entrada: h(28), comb: 30, chave2: false, estepe: true, status: 'aprovacao',
+    }, (o) => {
+      o.dtcs = [];
+      o.itens = [
+        it(o, { titulo: 'Amortecedor dianteiro direito com vazamento', severidade: 'critico', nota: 'Haste oleada e batente esfarelado — troca aos pares por norma.', categoria: 'amortecedor' }),
+        it(o, { titulo: 'Bieletas dianteiras com folga', severidade: 'critico', nota: 'Origem do estalo seco confirmada no elevador.', categoria: 'bieleta' }),
+        it(o, { titulo: 'Óleo e filtro — plano de 30.000 km', severidade: 'preventivo', nota: 'Faltam 1.400 km; aproveitar o carro no box.', categoria: 'oleo' }),
+        it(o, { titulo: 'Pneus e freios traseiros', severidade: 'ok', nota: 'Dentro do padrão.', categoria: 'outro' }),
+      ];
+      ev(o, h(24), 'status', 'Diagnóstico', 'DVI concluído: 2 críticos, 1 preventivo', 'Diego Ramos');
+      ev(o, h(22), 'status', 'Aguardando aprovação', 'Orçamento enviado ao cliente (push + WhatsApp)', 'Sistema');
+    });
+
+    /* aguardando peça — importação com rastreio */
+    abrir(F.cay2, {
+      sintoma: 'Traseira baixa pela manhã e mensagem de suspensão no painel.',
+      tecnico: 'Régis Souza', entrada: dias(4), comb: 55, chave2: true, estepe: false, status: 'peca',
+      luzes: ['Suspensão pneumática — nível'],
+    }, (o) => {
+      o.dtcs = ['C1131 — Compressor da suspensão: tempo de funcionamento excedido'];
+      const a = it(o, { titulo: 'Compressor da suspensão pneumática fim de vida', severidade: 'critico', nota: 'Tempo de carga muito acima do especificado; bolsa traseira direita sem vazamento.', categoria: 'outro' });
+      a.aprovacao = 'aprovado'; a.nivelEscolhido = 'oem';
+      o.itens = [a];
+      o.aprovadoEm = dias(3);
+      ev(o, dias(3.6), 'status', 'Diagnóstico', 'Compressor condenado; bolsas aprovadas no teste de estanqueidade', 'Régis Souza');
+      ev(o, dias(3), 'aceite', 'Orçamento aprovado', 'Cliente aprovou 1 de 1 item (nível OEM)', 'Otávio Bandeira');
+      ev(o, dias(2.8), 'status', 'Aguardando peça', 'Compressor via importador — rastreio #BR-91277, previsão 2 dias úteis', 'Sistema');
+    });
+
+    /* em execução — segundo box ocupado */
+    abrir(F.macan2, {
+      sintoma: 'Revisão dos 70.000 km e troca do fluido do PDK.',
+      tecnico: 'Diego Ramos', entrada: dias(2), comb: 40, chave2: true, estepe: true, status: 'execucao',
+    }, (o) => {
+      const a = it(o, { titulo: 'Revisão 70.000 km — óleo, filtros e inspeção', severidade: 'preventivo', nota: 'Plano completo com inspeção de 60 itens.', categoria: 'oleo' });
+      const b = it(o, { titulo: 'Pastilhas dianteiras no limite', severidade: 'critico', nota: '2,8 mm restantes — abaixo do mínimo de 3 mm.', categoria: 'freio_d' });
+      a.aprovacao = b.aprovacao = 'aprovado'; a.nivelEscolhido = 'original'; b.nivelEscolhido = 'original';
+      o.itens = [a, b];
+      o.aprovadoEm = dias(1.7);
+      ev(o, dias(1.8), 'status', 'Diagnóstico', 'DVI concluído: 1 crítico, 1 preventivo', 'Diego Ramos');
+      ev(o, dias(1.7), 'aceite', 'Orçamento aprovado', 'Cliente aprovou 2 de 2 itens', 'Camila Prado');
+      ev(o, h(5), 'status', 'Em execução', 'Serviço iniciado no box 1', 'Diego Ramos');
+      ev(o, h(2), 'update', 'Micro-update do técnico', '📷 Pastilhas antigas ao lado das novas — diferença de 5,4 mm.', 'Diego Ramos');
+    });
+
+    /* controle de qualidade — pronto para conferência final */
+    abrir(F.a4b, {
+      sintoma: 'Luz do motor acesa e perda de potência na subida da serra.',
+      tecnico: 'Paula Freitas', entrada: dias(3), comb: 25, chave2: true, estepe: true, status: 'qc',
+      luzes: ['Motor (MIL)'],
+    }, (o) => {
+      o.dtcs = ['P2563 — Sensor de posição do atuador do turbo: faixa/desempenho'];
+      const a = it(o, { titulo: 'Atuador da geometria do turbo emperrado', severidade: 'critico', nota: 'Curso irregular no teste de atuação; substituído e recalibrado.', categoria: 'outro' });
+      const b = it(o, { titulo: 'Velas no fim do intervalo', severidade: 'preventivo', nota: 'Aproveitada a desmontagem.', categoria: 'vela' });
+      a.aprovacao = b.aprovacao = 'aprovado'; a.nivelEscolhido = 'oem'; b.nivelEscolhido = 'original';
+      o.itens = [a, b];
+      o.aprovadoEm = dias(2.5);
+      ev(o, dias(2.7), 'status', 'Diagnóstico', 'Falha do turbo confirmada com teste de atuação', 'Paula Freitas');
+      ev(o, dias(2.5), 'aceite', 'Orçamento aprovado', 'Cliente aprovou 2 de 2 itens', 'Ana Beatriz Rocha');
+      ev(o, h(20), 'status', 'Em execução', 'Atuador substituído e adaptado', 'Paula Freitas');
+      ev(o, h(4), 'status', 'Controle de qualidade', 'Rodagem de teste 6,1 km — sem falha reincidente', 'Régis Souza');
+    });
+
+    /* lavagem — última etapa antes de avisar o cliente */
+    abrir(F.p911b, {
+      sintoma: 'Troca dos quatro pneus, alinhamento e balanceamento.',
+      tecnico: 'Diego Ramos', entrada: dias(1.5), comb: 60, chave2: true, estepe: false, status: 'lavagem',
+    }, (o) => {
+      const a = it(o, { titulo: 'Pneus no limite legal (1,8 mm)', severidade: 'critico', nota: 'Jogo completo substituído; alinhamento fora de especificação corrigido.', categoria: 'outro' });
+      a.aprovacao = 'aprovado'; a.nivelEscolhido = 'original';
+      o.itens = [a];
+      o.aprovadoEm = dias(1.4);
+      ev(o, dias(1.4), 'aceite', 'Orçamento aprovado', 'Cliente aprovou 1 de 1 item', 'Henrique Vasques');
+      ev(o, h(6), 'status', 'Controle de qualidade', 'Alinhamento dentro da faixa; teste de rodagem aprovado', 'Régis Souza');
+      ev(o, h(1), 'status', 'Lavagem', 'Lavagem e acabamento em andamento', 'Sistema');
+    });
+
+    /* pronto — cliente já avisado, aguardando retirada */
+    abrir(F.cay, {
+      sintoma: 'Carregador de bordo não completa a carga na tomada de casa.',
+      tecnico: 'Paula Freitas', entrada: dias(5), comb: 80, chave2: true, estepe: false, status: 'pronto',
+      luzes: ['Sistema híbrido — verificar'],
+    }, (o) => {
+      o.dtcs = ['P0AA6 — Isolamento da alta tensão: resistência baixa'];
+      const a = it(o, { titulo: 'Cabo de carga com isolamento comprometido', severidade: 'critico', nota: 'Resistência de isolamento fora de norma — cabo substituído e sistema revalidado.', categoria: 'outro' });
+      a.aprovacao = 'aprovado'; a.nivelEscolhido = 'original';
+      o.itens = [a];
+      o.aprovadoEm = dias(4.5);
+      o.qc = { torques: true, resetService: true, testDrive: '3,4 km', assinaturaTecnico: 'Paula Freitas', assinaturaInspetor: 'Régis Souza', ts: dias(1) };
+      ev(o, dias(4.5), 'aceite', 'Orçamento aprovado', 'Cliente aprovou 1 de 1 item', 'Eduardo Nakamura');
+      ev(o, dias(1), 'status', 'Controle de qualidade', 'Carga completa validada em 3 ciclos', 'Régis Souza');
+      ev(o, h(3), 'status', 'Pronto', 'Cliente avisado por push e WhatsApp', 'Sistema');
+    });
+
+    /* histórico entregue — dá corpo ao prontuário e às garantias vigentes */
+    abrir(F.q5b, {
+      sintoma: 'Revisão dos 20.000 km.',
+      tecnico: 'Régis Souza', entrada: dias(96), comb: 50, chave2: true, estepe: true, status: 'entregue',
+    }, (o) => {
+      const a = it(o, { titulo: 'Revisão 20.000 km — óleo e filtros', severidade: 'preventivo', categoria: 'oleo' });
+      a.aprovacao = 'aprovado'; a.nivelEscolhido = 'original';
+      a.garantia = { inicio: dias(95).slice(0, 10), fim: new Date(Date.now() + 270 * 24 * 3600e3).toISOString().slice(0, 10) };
+      o.itens = [a];
+      o.qc = { torques: true, resetService: true, testDrive: '3,1 km', assinaturaTecnico: 'Régis Souza', assinaturaInspetor: 'Diego Ramos', ts: dias(95) };
+      o.pagamento = { metodo: 'Pix', valor: totalOS(o, true), ts: dias(95), txid: 'AUP' + o.numero };
+      o.nf = { numero: 'NFS-e 2026/000388', ts: dias(95) };
+      o.nps = 10;
+      ev(o, dias(95), 'entrega', 'Veículo entregue', 'Checkout concluído · NPS 10', 'Paulo Victor de Almeida');
+    });
+
+    abrir(F.p911a, {
+      sintoma: 'Troca de fluido de freio (plano de 2 anos).',
+      tecnico: 'Diego Ramos', entrada: dias(150), comb: 65, chave2: true, estepe: false, status: 'entregue',
+    }, (o) => {
+      const a = it(o, { titulo: 'Fluido de freio vencido', severidade: 'preventivo', nota: 'Teor de água acima de 2% — troca completa com sangria.', categoria: 'fluido_freio' });
+      a.aprovacao = 'aprovado'; a.nivelEscolhido = 'original';
+      a.garantia = { inicio: dias(149).slice(0, 10), fim: new Date(Date.now() + 215 * 24 * 3600e3).toISOString().slice(0, 10) };
+      o.itens = [a];
+      o.qc = { torques: true, resetService: true, testDrive: '2,6 km', assinaturaTecnico: 'Diego Ramos', assinaturaInspetor: 'Régis Souza', ts: dias(149) };
+      o.pagamento = { metodo: 'Cartão', valor: totalOS(o, true), ts: dias(149), txid: 'AUP' + o.numero };
+      o.nf = { numero: 'NFS-e 2026/000301', ts: dias(149) };
+      o.nps = 9;
+      ev(o, dias(149), 'entrega', 'Veículo entregue', 'Checkout concluído · NPS 9', 'Paulo Victor de Almeida');
+    });
+
+    write(KEYS.seedv2, true);
+  }
+
+  /* Mais agendamentos — a agenda da demo com semana cheia. */
+  function seedAgenda2() {
+    if (read(KEYS.seedAgenda2, false)) return;
+    const dia = (off) => { const t = new Date(); t.setDate(t.getDate() + off); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+    const lista = read(KEYS.agendamentos, []);
+    [
+      { nome: 'Eduardo Nakamura', telefone: '(27) 99655-7788', veiculo: 'Porsche 911 Carrera S (992)',      placa: 'PVE-1C09', servico: 'manutencao',  servico_nome: 'Manutenção',  data: dia(0), hora: '08:30', obs: 'Revisão dos 20.000 km — já deixou o carro.', status: 'confirmado' },
+      { nome: 'Camila Prado',     telefone: '(27) 98330-9911', veiculo: 'Porsche Macan S (95B)',            placa: 'RXP-5M84', servico: 'manutencao',  servico_nome: 'Manutenção',  data: dia(0), hora: '11:00', obs: 'Revisão dos 70.000 km + fluido do PDK.', status: 'confirmado' },
+      { nome: 'Otávio Bandeira',  telefone: '(27) 99404-2211', veiculo: 'Porsche Cayenne E-Hybrid (9YA)',   placa: 'SDL-7K21', servico: 'suspensao',   servico_nome: 'Suspensão',   data: dia(2), hora: '14:00', obs: 'Retorno para instalar o compressor assim que a peça chegar.', status: 'confirmado' },
+      { nome: 'Fernanda Salles',  telefone: '(27) 98120-4455', veiculo: 'Audi RS3 Sportback (8Y)',          placa: 'RTB-3J55', servico: 'diagnostico', servico_nome: 'Diagnóstico', data: dia(2), hora: '16:30', obs: 'Trancos na 2ª→3ª com o câmbio frio.', status: 'novo' },
+      { nome: 'Henrique Vasques', telefone: '(27) 99871-3300', veiculo: 'Porsche 911 Carrera S (992)',      placa: 'QNC-2R47', servico: 'manutencao',  servico_nome: 'Manutenção',  data: dia(4), hora: '09:30', obs: 'Alinhamento de conferência após 1.000 km com os pneus novos.', status: 'novo' },
+      { nome: 'Marcelo Costa',    telefone: '(27) 98811-2233', veiculo: 'Audi A4 45 TFSI quattro (B9)',     placa: 'SBX-9F31', servico: 'manutencao',  servico_nome: 'Manutenção',  data: dia(6), hora: '10:30', obs: 'Revisão dos 65.000 km.', status: 'novo' },
+    ].forEach((a, i) => lista.push({
+      id: 'ag-seed2-' + (i + 1), protocolo: 'AG-DEMO1' + (i + 1), os_numero: null,
+      criado_em: new Date(Date.now() - (7 - i) * 3600e3).toISOString(), ...a,
+    }));
+    write(KEYS.agendamentos, lista);
+    write(KEYS.seedAgenda2, true);
   }
 
   /* Seeds da Agenda — guarda própria: aparece também em demos que já
@@ -1180,31 +1501,39 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     if (!read(KEYS.seedv, false)) return;
     const c = read(KEYS.config, {}) || {};
     const nome = (c.oficina && c.oficina.nome || '').trim();
-    // Migra caches antigos: marca do cliente-piloto e o placeholder sem identidade.
-    const cacheVelho = DEMO && (/eurovix/i.test(nome) || /^Oficina Demonstra/i.test(nome));
+    // Migra caches antigos: marca do cliente-piloto, o placeholder sem identidade
+    // e a identidade anterior da própria demonstração.
+    const cacheVelho = DEMO && (/eurovix/i.test(nome) || /^Oficina Demonstra/i.test(nome) || /^nordwerk$/i.test(nome));
     if (nome && !cacheVelho) return;
-    // A DEMONSTRAÇÃO tem identidade própria — uma oficina fictícia, com logo e
-    // domínio próprios. Não é a marca de nenhum cliente, e não é o LexOS: é
-    // justamente essa separação que prova o white-label. Quem abre o demo vê o
+    // A DEMONSTRAÇÃO veste o sistema com a identidade de UMA oficina — nome,
+    // logos e cor de ação próprios. Não é a marca do LexOS nem a do cliente-piloto:
+    // é justamente essa separação que prova o white-label. Quem abre o demo vê o
     // sistema vestido de outra empresa, que é como ele será entregue.
+    // Contato, CNPJ e domínio aqui são placeholders de demonstração.
     write(KEYS.config, { ...c, oficina: {
-      nome: 'Nordwerk', cnpj: '00.000.000/0001-00',
+      nome: 'Auto Union Premium', cnpj: '00.000.000/0001-00',
       endereco: 'Av. das Oficinas, 1200 — Distrito Industrial',
-      cidade: 'Sua Cidade/UF', fone: '(00) 90000-0000',
-      email: 'contato@nordwerk.uselexgo.com',
-      pixChave: 'contato@nordwerk.uselexgo.com',
-      site: 'nordwerk.uselexgo.com',
+      cidade: 'Vila Velha/ES', fone: '(00) 90000-0000',
+      email: 'contato@autounion.uselexgo.com',
+      pixChave: 'contato@autounion.uselexgo.com',
+      site: 'autounion.uselexgo.com',
       horario: 'Seg–Sex 8h–18h · Sáb 8h–12h',
-      logo: 'assets/img/demo/nordwerk-logo.svg',
-      logoDoc: 'assets/img/demo/nordwerk-logo-doc.svg',
-      icon: 'assets/img/demo/nordwerk-icon.svg',
+      logo: 'assets/img/demo/autounion-logo.svg',
+      logoDoc: 'assets/img/demo/autounion-logo-doc.svg',
+      icon: 'assets/img/demo/autounion-icon.svg',
+      cor: '#C23233',      // vermelho da marca — vira a cor de ação do sistema
+      // corDark fica vazio de propósito: a variante do tema escuro é derivada
+      // por contraste (#CA4D4E), que é o caminho de qualquer oficina que só
+      // informe a cor principal.
     } });
   }
 
 
   if (!CLOUD) { // na nuvem o banco é a verdade: sem seeds/migração local
     seed();
+    seed2();
     seedAgenda();
+    seedAgenda2();
     ensureClients();
     ensureMarcaDemo();
   }
@@ -1236,7 +1565,7 @@ var WERK = (() => { // var: o adaptador de nuvem (werk-cloud.js) substitui este 
     getVehicles, upsertVehicle,
     normTel, normPlaca, getClientes, upsertCliente, clientePorTelefone, clientePorConvite,
     ativarCliente, loginCliente, garagemDe, conviteUrl, waLink,
-    marca,
+    marca, aplicarTemaMarca,
     getAllOS, saveAllOS, getOS, novaOS, novoItem, itemDeIsta, updateOS, setStatus,
     getAgendamentos, addAgendamento, setAgendamentoStatus, agendarPublico,
     pendencias, chatSend,

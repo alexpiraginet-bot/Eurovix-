@@ -1267,7 +1267,7 @@
     const podeLancar = os.status === 'diagnostico' || os.status === 'fila';
     const istaKey = c => c.codigo || String(c.termo_peca || c.descricao || 'Peça do diagnóstico').slice(0, 90);
     const lancados = new Set((os.itens || []).filter(i => i.origem && i.origem.indexOf('ista:') === 0).map(i => i.origem.slice(5)));
-    const sevCor = { critica: 'var(--red)', alta: '#ff8a3d', media: 'var(--warn)', baixa: 'var(--txt-3)' };
+    const sevCor = { critica: 'var(--sev-critico)', alta: '#ff8a3d', media: 'var(--warn)', baixa: 'var(--txt-3)' };
     const aviso = (l.requer_confirmacao_profissional && (l.avisos_seguranca || []).length)
       ? `<div style="background:rgba(255,60,60,.1);border:1px solid var(--red);border-radius:9px;padding:9px 11px;font-size:11.5px;color:#ffb4b4;margin-bottom:10px">⚠️ ${esc((l.avisos_seguranca || []).join(' '))}</div>` : '';
     const recap = l.recaptura_necessaria
@@ -1353,7 +1353,7 @@
   }
   function pranchaPecas(l, vin) {
     l = l || {};
-    const sevCor = { critica: 'var(--red)', alta: '#ff8a3d', media: 'var(--warn)', baixa: 'var(--txt-3)' };
+    const sevCor = { critica: 'var(--sev-critico)', alta: '#ff8a3d', media: 'var(--warn)', baixa: 'var(--txt-3)' };
     let parts = (l.codigos || []).filter(c => c && c.termo_peca);
     if (!parts.length) parts = (l.codigos || []).filter(c => c && (c.codigo || c.descricao));
     if (!parts.length) return '';
@@ -2464,6 +2464,21 @@
           <div class="wfield"><label>Chave Pix (recebimento)</label><input id="cf-pix" value="${esc(c.oficina.pixChave)}" placeholder="sua-chave@pix"></div>
           <div class="wfield"><label>Site / domínio</label><input id="cf-site" value="${esc(c.oficina.site)}" placeholder="suaoficina.com.br"></div>
         </div>
+        <div class="wk-grid2" style="margin-top:12px">
+          <div class="wfield">
+            <label>Cor da marca</label>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input id="cf-cor" type="color" value="${esc(c.oficina.cor || '#3B86F2')}" style="width:52px;height:42px;padding:3px;cursor:pointer">
+              <input id="cf-cor-hex" value="${esc(c.oficina.cor || '')}" placeholder="vazio = azul LexOS" style="flex:1">
+              <button type="button" class="btn btn-secondary" id="cf-cor-rm" style="padding:10px 14px;font-size:12px">limpar</button>
+            </div>
+            <p class="hintline">Vira a cor de ação de <b>todo o sistema</b> — painel, app do cliente e documentos. A variante do tema escuro é calculada por contraste. Deixe vazio para usar o azul LexOS.</p>
+          </div>
+          <div class="wfield">
+            <label>Prévia</label>
+            <div id="cf-cor-prev" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:11px 13px;border:1px solid var(--line-strong);border-radius:10px;background:var(--navy)"></div>
+          </div>
+        </div>
       </div>
       ${WERK.cloud ? `
       <div class="wk-panel">
@@ -2530,6 +2545,26 @@
     wireLogo('cf-logodoc', 'cf-logodoc-prev', 'cf-logodoc-ph', 'cf-logodoc-rm', v => { logoDocBuf = v; });
     wireLogo('cf-icon', 'cf-icon-prev', 'cf-icon-ph', 'cf-icon-rm', v => { iconBuf = v; });
 
+    /* Cor da marca: seletor e campo hexadecimal andam juntos, com prévia de como
+       a cor sai nos dois temas — inclusive o contraste do texto branco por cima,
+       que é onde uma cor bonita costuma reprovar. */
+    (function wireCor() {
+      const pick = $('#cf-cor'), hex = $('#cf-cor-hex'), rm = $('#cf-cor-rm'), prev = $('#cf-cor-prev');
+      if (!pick || !hex || !prev) return;
+      const valida = (v) => /^#?[0-9a-f]{6}$/i.test(String(v || '').trim()) ? ('#' + String(v).trim().replace(/^#/, '')).toUpperCase() : null;
+      const pintar = () => {
+        const v = valida(hex.value);
+        if (!v) { prev.innerHTML = '<span style="font-size:11.5px;color:var(--txt-3)">Sem cor própria — o sistema usa o azul LexOS.</span>'; return; }
+        prev.innerHTML =
+          `<span style="display:inline-flex;align-items:center;gap:7px;background:${v};color:#fff;font-family:var(--font-display);font-weight:700;font-size:12px;padding:9px 14px;border-radius:9px">Botão principal</span>` +
+          `<span style="font-size:11.5px;color:${v};font-weight:700">texto de ação</span>`;
+      };
+      pick.addEventListener('input', () => { hex.value = pick.value.toUpperCase(); pintar(); });
+      hex.addEventListener('input', () => { const v = valida(hex.value); if (v) pick.value = v; pintar(); });
+      if (rm) rm.addEventListener('click', () => { hex.value = ''; pintar(); });
+      pintar();
+    })();
+
     $('#cf-save').addEventListener('click', () => {
       const c2 = WERK.getConfig();
       c2.valorHora = +$('#cf-hora').value || 380;
@@ -2546,8 +2581,10 @@
       o.pixChave = $('#cf-pix').value.trim();
       o.site = $('#cf-site').value.trim();
       o.logo = logoBuf; o.logoDoc = logoDocBuf; o.icon = iconBuf;
+      const corDigitada = String(($('#cf-cor-hex') || {}).value || '').trim();
+      o.cor = /^#?[0-9a-f]{6}$/i.test(corDigitada) ? ('#' + corDigitada.replace(/^#/, '')).toUpperCase() : null;
       WERK.saveConfig(c2);
-      renderBrand();
+      renderBrand();   // aplica logo, nome E a cor — o painel muda na hora
       toast('Identidade salva', 'Sua marca já vale no painel, no app do cliente e nos documentos.');
     });
     $('#cf-seed15').addEventListener('click', () => {
@@ -2622,6 +2659,7 @@
      LexOS é a marca do fornecedor (sub-rótulo discreto). */
   function renderBrand() {
     const m = (WERK.marca && WERK.marca()) || {};
+    try { if (WERK.aplicarTemaMarca) WERK.aplicarTemaMarca(m); } catch (_) {}
     const el = $('#wkBrand');
     if (el) {
       const sub = '<small style="font-family:var(--font-display);font-size:8px;font-weight:700;letter-spacing:.26em;color:var(--red);text-transform:uppercase">LexOS · Painel da Oficina</small>';

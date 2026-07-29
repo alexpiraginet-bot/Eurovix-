@@ -47,7 +47,11 @@ python3 -m http.server 8080    # ou npx serve .
 
 **Acesso do cliente ao app:** o cadastro nasce no check-in — o painel gera um **link de convite exclusivo** (`app.html?convite=…`, também impresso com QR no Termo de Entrada); o cliente abre, **cria a própria senha**, e o login passa a ser **telefone + senha**. A **garagem segue o telefone do último check-in de cada placa**: se o carro for vendido, o próximo check-in (mesma placa, telefone do novo dono) migra o veículo para a garagem do comprador automaticamente — quem vendeu mantém as OS e garantias que pagou, e o **prontuário por VIN é exportável** (app → Perfil, ou painel → Veículos) para entregar ao novo dono.
 
-Conta demo do app: telefone `(27) 99900-0000` · senha `demo2026` (ou o botão de conta demo). Convite pendente de fábrica: `app.html?convite=demo-marcelo`. Reset da demo: **Configurações → Resetar demo** no painel.
+Conta demo do app: telefone `(27) 99900-0000` · senha `demo2026` (ou o botão de conta demo). Convite pendente de fábrica: `app.html?demo=1&convite=demo-marcelo`. Reset da demo: **Configurações → Resetar demo** no painel.
+
+**White-label, incluindo a cor.** A identidade da oficina (nome, logo escuro, logo para documento, ícone do app e **cor da marca**) fica em `config.oficina` e vale em todas as superfícies. A cor entra em `Configurações → Identidade`: ela substitui a cor de ação do painel, do app do cliente (inclusive a camada de vidro do iOS) e dos documentos. A variante do tema escuro é **derivada por contraste**, não escolhida no olho — a cor clareia até destacar do fundo preto, parando antes de ficar clara demais para levar texto branco por cima. Oficina sem cor configurada continua no azul LexOS. Severidade (crítico/preventivo/ok) fica **fora** do white-label: crítico precisa ler como crítico mesmo numa oficina cuja marca seja verde.
+
+A demonstração vem vestida de uma oficina fictícia especializada em Porsche e Audi, com 11 veículos, 9 clientes e OS abertas em **todas** as etapas do quadro — para o sistema aparecer com movimento de oficina de verdade, não com três cards.
 
 ## 🔩 WERK OS — cobertura da especificação
 
